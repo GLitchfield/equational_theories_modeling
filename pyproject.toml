@@ -1,0 +1,10 @@
+[project]
+name = "jepa-equational-implication"
+version = "0.1.0"
+description = "JEPA for equational implication geometry over magmas"
+requires-python = ">=3.10"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
