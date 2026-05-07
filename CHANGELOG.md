@@ -34,6 +34,10 @@ The plan's parser sketch uses a `lark` grammar. Inspection of the corpus shows e
 
 The plan says variables are assigned "by order of first appearance (DeBruijn-style): first variable seen = 0, second = 1, etc." but doesn't specify the traversal order, which matters when LHS and RHS share variables in different positions. The parser uses LHS pre-order, then RHS pre-order. Plan updated to specify this explicitly.
 
+### 6. Dropped `torch-scatter` and `torch-sparse` from `requirements.txt`
+
+The plan's dependency list included `torch-scatter` and `torch-sparse`. Verified empirically that `torch_geometric` 2.7 + `torch` 2.6 handle scatter and sparse ops via PyTorch's built-in primitives — `Data`, `Batch`, `GATv2Conv` (with `edge_dim`), and `global_mean_pool` / `global_max_pool` all work on CPU and GPU without those packages. Only an informational warning that "max" scatter could be accelerated by `torch-scatter`. The packages also need a special wheel index from the PyG project that has to match the exact `torch + cuda` build, making them awkward to reproduce. Dropped from `requirements.txt`; can be added back if profiling shows scatter ops are a bottleneck during training.
+
 ### Verification
 
-`tests/test_parser.py` covers all of the above (27 tests, including a smoke test that parses every line of the 4,694-equation corpus and verifies the Family-C count is exactly 1,555).
+`tests/test_parser.py` covers the parser deviations (27 tests, full-corpus parse, Family-C count = 1,555). The full pipeline (parser → PyG `Data` → `Batch` → `GATv2Conv` → pooling) was smoke-tested on CPU and CUDA. Cache built via `scripts/parse_equations.py` (6.25 MB, 4,694 entries, max 10 nodes / 9 edges per equation).
