@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+*:Zone.Identifier
+
+# data/raw — symlinks to external projects, never committed
+data/raw/*
+!data/raw/.gitkeep
+
+# data/processed — generated PyG caches, large binaries
+data/processed/*
+!data/processed/.gitkeep
+
+# data/splits — committed (small JSON, needed for reproducibility),
+#               so NOT ignored.
+
+# Outputs — checkpoints, embeddings, figures all generated, not committed
+outputs/checkpoints/*
+outputs/embeddings/*
+outputs/probing_results/*
+outputs/figures/*
+!outputs/checkpoints/.gitkeep
+!outputs/embeddings/.gitkeep
+!outputs/probing_results/.gitkeep
+!outputs/figures/.gitkeep
+
+# wandb local logs
+wandb/
+
+# trash — kept around as a directory but contents are not committed by default
+trash/*
+!trash/.gitkeep
+
+# Logs
+*.log
+
+# Notebook checkpoints
+.ipynb_checkpoints/
