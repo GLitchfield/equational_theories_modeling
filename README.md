@@ -30,6 +30,17 @@ Files used:
 
 Do not write to `data/raw/`. All processing goes to `data/processed/` (caches) or `data/splits/` (committed split indices).
 
+### Build the processed caches
+
+Once the `data/raw/` symlinks are in place:
+
+```bash
+python scripts/parse_equations.py     # data/processed/equation_graphs.pt   (~6 MB)
+python scripts/build_pair_table.py    # data/processed/implication_pairs.parquet  (~35 MB)
+```
+
+Both are deterministic and re-runnable; their outputs are gitignored. See the script docstrings for the schema and CLI flags.
+
 ## Layout
 
 See [jepa_engineering_plan.md](jepa_engineering_plan.md) §"File Structure".
