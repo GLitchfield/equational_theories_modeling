@@ -1,0 +1,68 @@
+# Default configuration for JEPA training.
+# Architecture/EMA values come straight from the engineering plan.
+# Training/loss values are reasonable starting points; Phase 3 will sweep them.
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  num_workers: 4
+
+# --- Model ------------------------------------------------------------
+
+encoder:
+  node_features: 7      # is_op, is_var, var_id_0..3, is_lhs_var
+  edge_features: 2      # is_left, is_right
+  hidden_dim: 128
+  embed_dim: 64
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 64
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+# --- Training (starting points; tune in Phase 3) ---------------------
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+
+loss:
+  type: contrastive       # or infonce; switch if collapse observed
+  margin: 1.0
+  true_weight: 1.0        # >1 to upweight TRUE pairs against the 63% FALSE prior
+  vicreg_weight: 0.0      # enable if embeddings collapse
+
+# --- Holdout (Phase 1 starts at level 1) -----------------------------
+
+holdout:
+  level: 1                     # 1, 2, or 3
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+# --- Logging ----------------------------------------------------------
+
+wandb:
+  project: jepa-equational-implication
+  entity: null
+  log_every: 50
