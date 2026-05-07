@@ -47,9 +47,11 @@ Represent each equation's RHS as a directed tree (PyTorch Geometric `Data` objec
 - **Edges**: Parent-to-child directed edges with left/right labels
   - Edge features: one-hot `[is_left, is_right]`
 
-Node feature vector (per node): `[is_op, is_var, var_id_0, var_id_1, var_id_2, var_id_3, is_lhs_var]` = 7 dimensions.
+Node feature vector (per node): `[is_op, is_var, var_id_0, var_id_1, var_id_2, var_id_3, var_id_4, var_id_5, is_lhs_var]` = 9 dimensions. The corpus uses six variables (`{u, v, w, x, y, z}`) and up to 6 distinct per equation; see CHANGELOG entry 2026-05-06.
 
-For equations where LHS is a product (Family C, ~1,555 equations), encode the full LHS tree as well and add it as a subgraph with a special root-to-root edge.
+Variables are canonicalized DeBruijn-style by walking LHS pre-order, then RHS pre-order; the first new variable seen gets id 0, the next 1, and so on.
+
+For equations where LHS is a product (Family C, 1,555 equations), encode the full LHS tree as well and add it as a subgraph with a directional root-to-root edge from LHS root to RHS root. The root-link carries `edge_attr = [0, 0]` (neither left nor right — a third implicit class encoded via all-zeros). For Family-C inputs, `is_lhs_var = 0` throughout; the LHS-vs-RHS distinction is carried by the LHS subtree's presence and the root-link direction.
 
 ### Encoder Architecture
 

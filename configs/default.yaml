@@ -15,8 +15,8 @@ data:
 # --- Model ------------------------------------------------------------
 
 encoder:
-  node_features: 7      # is_op, is_var, var_id_0..3, is_lhs_var
-  edge_features: 2      # is_left, is_right
+  node_features: 9      # is_op, is_var, var_id_0..5, is_lhs_var (see CHANGELOG 2026-05-06)
+  edge_features: 2      # [is_left, is_right]; Family-C root-link uses [0, 0]
   hidden_dim: 128
   embed_dim: 64
   num_layers: 4

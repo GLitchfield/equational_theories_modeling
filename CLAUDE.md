@@ -1,6 +1,8 @@
 # CLAUDE.md — JEPA for Equational Implication
 
-The full plan is `jepa_engineering_plan.md`. Read it first when starting a session.
+The full plan is `jepa_engineering_plan.md`. Read it first when starting a session. `CHANGELOG.md` records deviations from the plan and explains *why* the plan reads the way it does — read it whenever the plan references a CHANGELOG entry.
+
+When you deviate from the plan, update the plan to match reality AND add a CHANGELOG.md entry explaining why, in the same commit as the deviating code.
 
 ## Operational rules
 
