@@ -1,0 +1,81 @@
+# embed_dim 64 → 128 — does a wider embedding lift the 0.815 ceiling?
+#
+# Hypothesis: the true_weight_1p7 plateau at ~0.815 may be partly due to
+# the 64-dim embedding being too narrow to express the implication
+# geometry. Doubling embed_dim widens the encoder's final projection
+# (2*hidden_dim → embed_dim) and both predictor linears (embed_dim ↔
+# hidden_dim). The GATv2 layers themselves are unchanged.
+#
+# Param count: encoder 153,920 → ~170,368, predictor 16,576 → ~33,024.
+# Both encoder and predictor outputs remain L2-normalized (now on a
+# 128-dim unit sphere instead of 64-dim).
+#
+# Otherwise identical to true_weight_1p7.yaml (the new reference
+# baseline: 10 epochs, true_weight=1.7).
+#
+# Result: outputs/results/embed_dim_128.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/embed_dim_128.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 128
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 128
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.7
+  vicreg_weight: 0.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: embed_dim_128
+  log_every: 50
