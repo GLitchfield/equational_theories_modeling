@@ -1,0 +1,84 @@
+{
+  "checkpoint": "outputs/checkpoints/epoch_006.pt",
+  "config": {
+    "data": {
+      "equations_file": "data/raw/etp/equations.txt",
+      "graph_cache_path": "data/processed/equation_graphs.pt",
+      "holdout_path": "data/splits/level1_holdout_seed42.parquet",
+      "num_workers": 4,
+      "pair_table_path": "data/processed/implication_pairs.parquet",
+      "pairs_file": "data/raw/etp/2025-08-11-vampire.json.gz",
+      "processed_dir": "data/processed",
+      "raw_dir": "data/raw",
+      "splits_dir": "data/splits"
+    },
+    "ema": {
+      "schedule": "cosine",
+      "tau_final": 0.999,
+      "tau_start": 0.996
+    },
+    "encoder": {
+      "dropout": 0.1,
+      "edge_features": 4,
+      "embed_dim": 64,
+      "hidden_dim": 128,
+      "node_features": 9,
+      "num_heads": 4,
+      "num_layers": 4
+    },
+    "holdout": {
+      "level": 1,
+      "level1_ratio": 0.1,
+      "level2_num_equations": 500,
+      "level3_num_equiv_classes": 150,
+      "seed": 42
+    },
+    "loss": {
+      "margin": 1.0,
+      "true_weight": 1.0,
+      "type": "contrastive",
+      "vicreg_weight": 0.0
+    },
+    "predictor": {
+      "embed_dim": 64,
+      "hidden_dim": 128,
+      "num_layers": 2
+    },
+    "seed": 42,
+    "training": {
+      "batch_size": 2048,
+      "checkpoint_dir": "outputs/checkpoints",
+      "epochs": 10,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.001,
+      "max_val_batches": 200,
+      "optimizer": "adamw",
+      "scheduler": "cosine_warmup",
+      "warmup_steps": 1000,
+      "weight_decay": 0.05
+    },
+    "wandb": {
+      "enabled": true,
+      "entity": null,
+      "log_every": 50,
+      "name": "phase1_l2norm_10ep",
+      "project": "jepa-equational-implication"
+    }
+  },
+  "encoder_params": 153920,
+  "epoch": 6,
+  "eval": {
+    "balanced_accuracy": 0.8121480986609664,
+    "false_recall": 0.8708406861116967,
+    "loss": 0.34170389012584385,
+    "n_evaluated": 2202788,
+    "threshold": 1.0613481998443604,
+    "true_recall": 0.7534555112102359
+  },
+  "git_commit": "f601c002e9c5101f77fecf3a1093fd6a33108985",
+  "holdout_path": "data/splits/level1_holdout_seed42.parquet",
+  "name": "baseline_phase1_l2norm",
+  "notes": "Phase 1 baseline: 10 epochs on full L1 train (19.8M pairs), default config + L2-normalized encoder/predictor outputs. Best epoch (6) selected; full no-cap eval over 2,202,788 L1 val pairs.",
+  "predictor_params": 16576,
+  "wandb_url": "https://wandb.ai/gavinm-litchfield2/jepa-equational-implication/runs/fxwe85fy"
+}

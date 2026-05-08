@@ -4,6 +4,24 @@ Deviations from `jepa_engineering_plan.md` and other notable project decisions, 
 
 ---
 
+## 2026-05-08 — Phase 1 baseline locked
+
+`outputs/results/baseline_phase1_l2norm.json` is the project's reference baseline. It captures `epoch_006.pt` from the `phase1_l2norm_10ep` wandb run, evaluated on all 2,202,788 L1 val pairs (no batch cap):
+
+  - balanced_accuracy = 0.8121
+  - true_recall = 0.7535
+  - false_recall = 0.8708
+  - threshold = 1.0613 (L2-normalized embeddings, distances ∈ [0, 2])
+  - epoch 6 of 10 (per-epoch peak; epoch 9 is statistically identical at 0.8119)
+  - encoder 153,920 params, predictor 16,576 params
+  - default config: hidden 128, embed 64, 4 layers, 4 heads, dropout 0.1, batch 2048, lr 1e-3, weight_decay 0.05, margin 1.0, true_weight 1.0
+  - git commit: `f601c00`
+  - wandb run: `fxwe85fy`
+
+Subsequent variants will be recorded the same way under `outputs/results/<variant_name>.json` via `scripts/record_run.py`. Comparison table: `python scripts/record_run.py --summary`.
+
+---
+
 ## 2026-05-07 — L2-normalize encoder + predictor outputs (collapse fix)
 
 The first end-to-end Phase 1 sanity training (1 epoch on 19.8M train pairs, run `phase1_sanity_1ep` on wandb) showed a classic JEPA failure mode: distances grew unboundedly during training, exceeding the contrastive loss's `margin = 1.0` after the LR warmup, at which point the FALSE term `relu(margin - d)² = 0` went silent. With only the TRUE term active, no force kept the embedding scale bounded; train loss saturated near 42 and val balanced accuracy plateaued at 0.635 (barely above the 0.63 majority-class baseline). Calibrated val threshold settled at ~7.99 — about 8× the loss's margin.
