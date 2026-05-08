@@ -4,6 +4,21 @@ Deviations from `jepa_engineering_plan.md` and other notable project decisions, 
 
 ---
 
+## 2026-05-07 — Predictor design clarifications
+
+The plan's §"Predictor Architecture" is brief: "Small MLP, 2 layers, hidden_dim=128, smaller than encoder." Several details needed clarification at implementation time. User direction:
+
+- **"2 layers" = two weight matrices** (BYOL/SimSiam convention): `Linear(64→128) → ReLU → Linear(128→64)`. *Not* three weight matrices. Three would add expressivity, pushing against the design principle of keeping the predictor bottlenecked.
+- **No dropout** (the predictor's `dropout=0`, in contrast to the encoder's `0.1`). The predictor must be a clean, deterministic mapping from embedding space to embedding space; dropout would inject noise into `z_predicted` and degrade the contrastive loss signal. BYOL and SimSiam predictors have no dropout for exactly this reason — the precise-bottleneck role is the design principle.
+- **No layer normalization, no output L2-normalization**. If embedding collapse occurs at training time, try VICReg regularization first; only L2-normalize the predictor output if VICReg doesn't help.
+- **Activation = ReLU**, **bias = on**.
+
+Final structure (`src/model/predictor.py`): 16,576 parameters. Encoder is 152,896, so predictor is ~9× smaller — comfortably within the "smaller than encoder" hard constraint.
+
+The plan stays as-is (still vague on these specifics); this entry is the canonical record of the design choices.
+
+---
+
 ## 2026-05-07 — Bidirectional edges with 4-dim edge features (plan amendment)
 
 The plan previously specified parent→child unidirectional edges with a 2-dim `[is_left, is_right]` edge feature, plus a single directional root-to-root edge for Family-C with `edge_attr = [0, 0]`. With unidirectional edges, the root never receives any message from its descendants in any number of message-passing layers — all structural integration was forced into the global pooling step.
