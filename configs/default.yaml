@@ -67,7 +67,8 @@ holdout:
 # --- Logging ----------------------------------------------------------
 
 wandb:
-  enabled: false                # flip to true once Phase 1 sanity is validated
+  enabled: true
   project: jepa-equational-implication
-  entity: null
+  entity: null                  # null → use the default entity from ~/.netrc
+  name: null                    # null → wandb auto-generates a random name
   log_every: 50

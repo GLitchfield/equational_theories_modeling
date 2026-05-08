@@ -167,12 +167,14 @@ def evaluate(
 
 def init_wandb(config: dict):
     """Initialize a wandb run if config['wandb']['enabled']; else None."""
-    if not config.get('wandb', {}).get('enabled', False):
+    wcfg = config.get('wandb', {})
+    if not wcfg.get('enabled', False):
         return None
     import wandb  # local import — only required when wandb is enabled
     run = wandb.init(
-        project=config['wandb']['project'],
-        entity=config['wandb'].get('entity'),
+        project=wcfg['project'],
+        entity=wcfg.get('entity'),
+        name=wcfg.get('name'),
         config=config,
     )
     return run
