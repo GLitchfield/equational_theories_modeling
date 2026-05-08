@@ -141,8 +141,18 @@ def make_loaders(
     num_workers: int = 0,
     pin_memory: bool = True,
     shuffle_train: bool = True,
+    val_shuffle_seed: int = 0,
 ) -> tuple[DataLoader, DataLoader, ImplicationPairsDataset, ImplicationPairsDataset]:
     """Build training and validation DataLoaders from the cache + pair table + holdout.
+
+    The val dataset's indices are deterministically permuted with
+    ``val_shuffle_seed``. Without this, ``holdout_idx`` is sorted ascending
+    by pair-table row, which correlates with equation ID and thus with
+    equation complexity — so an evaluator using ``max_batches=N`` on the
+    val_loader (i.e. taking the first N batches) reads a biased slice
+    rather than a representative sample. Permuting once means the capped
+    slice is an unbiased random sample, deterministic across epochs and
+    runs.
 
     Returns:
         ``(train_loader, val_loader, train_dataset, val_dataset)``.
@@ -152,8 +162,12 @@ def make_loaders(
     holdout_idx = load_holdout_indices(holdout_path)
     train_idx = derive_train_indices(values, holdout_idx)
 
+    rng = np.random.default_rng(val_shuffle_seed)
+    val_idx = holdout_idx.copy()
+    rng.shuffle(val_idx)
+
     train_ds = ImplicationPairsDataset(eq1_ids, eq2_ids, values, graphs, train_idx)
-    val_ds = ImplicationPairsDataset(eq1_ids, eq2_ids, values, graphs, holdout_idx)
+    val_ds = ImplicationPairsDataset(eq1_ids, eq2_ids, values, graphs, val_idx)
 
     train_loader = DataLoader(
         train_ds,

@@ -140,6 +140,62 @@ def test_make_loaders_smoke():
     assert ((labels == 0) | (labels == 1)).all()
 
 
+def test_make_loaders_val_is_shuffled_unbiased():
+    """The val loader's first 200 batches must be representative of the
+    full holdout's TRUE/FALSE distribution. Regression test for the bias
+    where the unshuffled holdout (sorted by pair-table row, correlated
+    with equation complexity) made the first-N-batches slice non-random.
+    """
+    pair_path = os.path.join(_REPO_ROOT, 'data/processed/implication_pairs.parquet')
+    cache_path = os.path.join(_REPO_ROOT, 'data/processed/equation_graphs.pt')
+    split_path = os.path.join(_REPO_ROOT, 'data/splits/level1_holdout_seed42.parquet')
+    if not all(os.path.exists(p) for p in [pair_path, cache_path, split_path]):
+        return
+
+    _, val_loader, _, val_ds = make_loaders(
+        pair_path, cache_path, split_path,
+        batch_size=2048, num_workers=0, pin_memory=False,
+    )
+
+    # Full val TRUE/FALSE rate.
+    full_labels = val_ds.values[val_ds.indices]
+    full_true_rate = float((full_labels == 1).mean())
+
+    # Capped slice: first 200 batches' labels.
+    cap_n = 200 * 2048
+    cap_labels = val_ds.values[val_ds.indices[:cap_n]]
+    cap_true_rate = float((cap_labels == 1).mean())
+
+    # Pre-fix the gap was ~5.6 pp (0.371 full vs 0.427 capped). After
+    # shuffling, both rates should match within ~0.5 pp at this cap size.
+    assert abs(cap_true_rate - full_true_rate) < 0.005, (
+        f'capped slice TRUE rate {cap_true_rate:.4f} differs from full '
+        f'{full_true_rate:.4f} — val shuffle is broken'
+    )
+
+
+def test_make_loaders_val_shuffle_is_deterministic():
+    """Same seed → same val ordering → epoch-to-epoch and run-to-run
+    capped scores remain comparable."""
+    pair_path = os.path.join(_REPO_ROOT, 'data/processed/implication_pairs.parquet')
+    cache_path = os.path.join(_REPO_ROOT, 'data/processed/equation_graphs.pt')
+    split_path = os.path.join(_REPO_ROOT, 'data/splits/level1_holdout_seed42.parquet')
+    if not all(os.path.exists(p) for p in [pair_path, cache_path, split_path]):
+        return
+
+    _, _, _, val_ds_a = make_loaders(
+        pair_path, cache_path, split_path,
+        batch_size=2048, num_workers=0, pin_memory=False,
+        val_shuffle_seed=42,
+    )
+    _, _, _, val_ds_b = make_loaders(
+        pair_path, cache_path, split_path,
+        batch_size=2048, num_workers=0, pin_memory=False,
+        val_shuffle_seed=42,
+    )
+    assert np.array_equal(val_ds_a.indices, val_ds_b.indices)
+
+
 # --- driver -----------------------------------------------------------------
 
 if __name__ == '__main__':
