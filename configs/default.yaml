@@ -10,6 +10,9 @@ data:
   splits_dir: data/splits
   equations_file: data/raw/etp/equations.txt
   pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
   num_workers: 4
 
 # --- Model ------------------------------------------------------------
@@ -44,6 +47,7 @@ training:
   warmup_steps: 1000
   epochs: 10
   grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
 
 loss:
   type: contrastive       # or infonce; switch if collapse observed
@@ -63,6 +67,7 @@ holdout:
 # --- Logging ----------------------------------------------------------
 
 wandb:
+  enabled: false                # flip to true once Phase 1 sanity is validated
   project: jepa-equational-implication
   entity: null
   log_every: 50
