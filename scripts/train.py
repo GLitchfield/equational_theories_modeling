@@ -48,6 +48,17 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help='Override training.batch_size from the config',
     )
+    parser.add_argument(
+        '--max-val-batches',
+        type=int,
+        default=None,
+        help='Cap validation batches per eval pass (no cap by default)',
+    )
+    parser.add_argument(
+        '--name',
+        default=None,
+        help='Wandb run name override',
+    )
     args = parser.parse_args(argv)
 
     config_path = args.config
@@ -61,6 +72,10 @@ def main(argv: list[str] | None = None) -> int:
         config['training']['epochs'] = args.epochs
     if args.batch_size is not None:
         config['training']['batch_size'] = args.batch_size
+    if args.max_val_batches is not None:
+        config['training']['max_val_batches'] = args.max_val_batches
+    if args.name is not None:
+        config.setdefault('wandb', {})['name'] = args.name
 
     train(config, sanity_check=args.sanity_check)
     return 0

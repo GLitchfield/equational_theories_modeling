@@ -264,7 +264,7 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         max_val_batches = 20
     else:
         max_train_batches = None
-        max_val_batches = None
+        max_val_batches = config['training'].get('max_val_batches')
 
     batches_per_epoch = len(train_loader) if max_train_batches is None else min(
         len(train_loader), max_train_batches
