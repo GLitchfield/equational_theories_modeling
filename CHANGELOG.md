@@ -4,6 +4,20 @@ Deviations from `jepa_engineering_plan.md` and other notable project decisions, 
 
 ---
 
+## 2026-05-07 — Encoder parameter count: ~150K for Phase 1 sanity
+
+Implementing the plan's encoder config literally (`hidden_dim=128`, `embed_dim=64`, `num_layers=4`, `num_heads=4`, `dropout=0.1`; GATv2Conv with `concat=True` and `per_head_dim = hidden_dim / num_heads = 32`) yields **152,896 parameters** — an order of magnitude below the plan's "Estimated ~1-2M parameters."
+
+User confirmed the plan's 1-2M estimate was off and that we should proceed with the ~150K config for Phase 1 ("let's just see if this works at all"). Larger models are flagged for later experimentation, presumably under the Phase 3 architecture sweep.
+
+The plan still reads "~1-2M" — that wording is the user's prerogative; this changelog entry exists so future sessions reading the plan don't misinterpret the ~150K implementation as accidental drift.
+
+Per-GATv2-layer breakdown (in=128, out=32, heads=4, edge_dim=2): `lin_l` 16,512 + `lin_r` 16,512 + `lin_edge` 256 + `att` 128 + `bias` 128 = 33,536. × 4 layers = 134,144. Plus input proj (1,280) + final proj 256→64 (16,448) + four LayerNorms (1,024 total) ≈ 152,896.
+
+Bonus consequence: GPU forward on a batch of 2,048 graphs is ~4.6 ms, putting an epoch over 22M pairs at ~3 minutes — well below the plan's "30-60 minutes/epoch" estimate (which presumably assumed the larger encoder).
+
+---
+
 ## 2026-05-06 — Parser deviations from the engineering plan
 
 When implementing `src/data/parser.py` (Phase 1, first task), three encoding deviations and one implementation choice came up:
