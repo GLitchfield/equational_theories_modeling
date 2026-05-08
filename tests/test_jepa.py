@@ -79,6 +79,25 @@ def test_forward_target_has_no_grad():
     assert not z_tgt.requires_grad
 
 
+def test_forward_outputs_are_unit_norm_and_distance_is_bounded():
+    """With both predictor and target encoder L2-normalizing their outputs,
+    pairwise distances must lie in [0, 2]. This is the property that lets
+    the contrastive loss's margin (1.0) sit inside a meaningful range."""
+    import torch.nn.functional as F
+    jepa = _make_jepa()
+    jepa.eval()
+    eq1, eq2 = _example_pair_batch()
+    with torch.no_grad():
+        z_pred, z_tgt = jepa(eq1, eq2)
+    pred_norms = z_pred.norm(dim=-1)
+    tgt_norms = z_tgt.norm(dim=-1)
+    assert torch.allclose(pred_norms, torch.ones_like(pred_norms), atol=1e-5)
+    assert torch.allclose(tgt_norms, torch.ones_like(tgt_norms), atol=1e-5)
+    distances = F.pairwise_distance(z_pred, z_tgt)
+    assert (distances >= 0).all()
+    assert (distances <= 2.0 + 1e-5).all()
+
+
 def test_backward_only_updates_context_and_predictor():
     """Loss gradient must flow through context_encoder + predictor only."""
     jepa = _make_jepa()

@@ -11,18 +11,23 @@ encoder"; rest clarified by the user 2026-05-07, see CHANGELOG):
   - No dropout. The predictor must be a clean, deterministic mapping;
     dropout would inject noise into z_predicted and degrade the
     contrastive loss. BYOL and SimSiam predictors have no dropout.
-  - No layer normalization or output L2-normalization. If embedding
-    collapse occurs at training time, try VICReg regularization first.
+  - No layer normalization between layers.
+  - Output is L2-normalized along the embedding axis (added 2026-05-07
+    after the first sanity training showed unbounded distance growth;
+    see CHANGELOG). With both encoder and predictor outputs on the unit
+    sphere, distances are bounded to [0, 2] and the contrastive loss's
+    margin sits inside the achievable range.
 """
 
 from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class ImplicationPredictor(nn.Module):
-    """Two-layer MLP predictor.
+    """Two-layer MLP predictor with L2-normalized output.
 
     Args:
         embed_dim: input and output dimension (default 64, matching
@@ -42,7 +47,7 @@ class ImplicationPredictor(nn.Module):
         )
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
-        return self.net(z)
+        return F.normalize(self.net(z), dim=-1)
 
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)

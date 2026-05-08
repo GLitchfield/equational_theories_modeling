@@ -4,6 +4,30 @@ Deviations from `jepa_engineering_plan.md` and other notable project decisions, 
 
 ---
 
+## 2026-05-07 — L2-normalize encoder + predictor outputs (collapse fix)
+
+The first end-to-end Phase 1 sanity training (1 epoch on 19.8M train pairs, run `phase1_sanity_1ep` on wandb) showed a classic JEPA failure mode: distances grew unboundedly during training, exceeding the contrastive loss's `margin = 1.0` after the LR warmup, at which point the FALSE term `relu(margin - d)² = 0` went silent. With only the TRUE term active, no force kept the embedding scale bounded; train loss saturated near 42 and val balanced accuracy plateaued at 0.635 (barely above the 0.63 majority-class baseline). Calibrated val threshold settled at ~7.99 — about 8× the loss's margin.
+
+**Fix**: L2-normalize the output of the encoder *and* the predictor (`F.normalize(..., dim=-1)`). Both encoder outputs (which the EMA target encoder also produces by construction) and predictor outputs now lie on the unit sphere. Pairwise distances are bounded to `[0, 2]`, so:
+
+- The `margin = 1.0` sits at the midpoint of the achievable range (rather than being trivially exceeded).
+- The FALSE term is always active when distances are below 1.
+- There is no scale dimension for the optimizer to escape into.
+
+This is the standard practice in modern contrastive learning (SimCLR, BYOL, DINO). User direction was specifically: try L2-normalization first; reach for VICReg only if dimensional collapse appears *after* this fixes the scale issue.
+
+**Code changes**:
+- `src/model/encoder.py`: `forward(batch)` returns `F.normalize(self.proj(pooled), dim=-1)`.
+- `src/model/predictor.py`: `forward(z)` returns `F.normalize(self.net(z), dim=-1)`.
+- This supersedes a 2026-05-07 design note saying the predictor should *not* L2-normalize. Predictor module docstring updated to reflect the new state.
+
+**New tests** (3, all in addition to the existing suite):
+- `test_encoder_output_is_unit_norm`
+- `test_predictor_output_is_unit_norm`
+- `test_forward_outputs_are_unit_norm_and_distance_is_bounded` (JEPA level — verifies distances ≤ 2)
+
+---
+
 ## 2026-05-07 — Predictor design clarifications
 
 The plan's §"Predictor Architecture" is brief: "Small MLP, 2 layers, hidden_dim=128, smaller than encoder." Several details needed clarification at implementation time. User direction:

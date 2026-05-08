@@ -42,6 +42,19 @@ def test_encoder_forward_shape():
     assert torch.isfinite(out).all()
 
 
+def test_encoder_output_is_unit_norm():
+    """Encoder output is L2-normalized: every embedding lives on the unit
+    sphere. Bounds the contrastive loss's distance space."""
+    torch.manual_seed(0)
+    enc = EquationEncoder()
+    enc.eval()
+    batch = _example_batch()
+    with torch.no_grad():
+        out = enc(batch)
+    norms = out.norm(dim=-1)
+    assert torch.allclose(norms, torch.ones_like(norms), atol=1e-5)
+
+
 def test_encoder_handles_single_node_graph():
     """Trivial reflexive 'x = x' is a 1-node graph with 0 edges; with the
     GATv2Conv default ``add_self_loops=True`` it should still produce a

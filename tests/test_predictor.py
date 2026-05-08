@@ -21,6 +21,17 @@ def test_predictor_forward_shape():
     assert out.shape == (8, 64)
 
 
+def test_predictor_output_is_unit_norm():
+    """Predictor output is L2-normalized; bounds JEPA distances to [0, 2]."""
+    torch.manual_seed(0)
+    pred = ImplicationPredictor()
+    pred.eval()
+    z = torch.randn(16, 64)
+    out = pred(z)
+    norms = out.norm(dim=-1)
+    assert torch.allclose(norms, torch.ones_like(norms), atol=1e-5)
+
+
 def test_predictor_default_dims():
     pred = ImplicationPredictor()
     assert pred.embed_dim == 64
