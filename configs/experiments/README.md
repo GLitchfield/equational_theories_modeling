@@ -44,3 +44,4 @@ The header comment in each YAML states the **hypothesis** and links to the resul
 | Name | Hypothesis | Result | Notes |
 |---|---|---|---|
 | `baseline` | Vanilla GATv2 + JEPA + contrastive (`true_weight=1.0`, `margin=1.0`) clears the Phase 1 sanity bar (≥80% bal_acc on L1). | [`outputs/results/baseline.json`](../../outputs/results/baseline.json) (pending — re-run via launcher) — historical hand-named record at [`outputs/results/baseline_phase1_l2norm.json`](../../outputs/results/baseline_phase1_l2norm.json) | First framework run; matches the locked-in pre-framework baseline configuration. |
+| `true_weight_1p7` | Setting `loss.true_weight` to the inverse-prevalence value (1.7) equalizes per-class loss contribution against the 62.9 % FALSE / 37.1 % TRUE corpus skew and should narrow the recall gap. | [`outputs/results/true_weight_1p7.json`](../../outputs/results/true_weight_1p7.json) (pending) | Otherwise identical to `baseline`. |
