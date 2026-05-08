@@ -176,9 +176,16 @@ def test_arrays_x_eq_y():
 
 def test_arrays_simple_op():
     nodes, edges, eattr = equation_to_arrays('x = x ◇ y')
+    # 3 nodes: op (0), var x (1), var y (2).
+    # Bidirectional tree: 4 edges (left-down, left-up, right-down, right-up).
     assert len(nodes) == 3
-    assert edges == [(0, 1), (0, 2)]
-    assert eattr == [[1.0, 0.0], [0.0, 1.0]]
+    assert edges == [(0, 1), (1, 0), (0, 2), (2, 0)]
+    assert eattr == [
+        [1.0, 0.0, 1.0, 0.0],   # 0→1 left, down
+        [1.0, 0.0, 0.0, 1.0],   # 1→0 left, up
+        [0.0, 1.0, 1.0, 0.0],   # 0→2 right, down
+        [0.0, 1.0, 0.0, 1.0],   # 2→0 right, up
+    ]
     assert nodes[0] == [1, 0, 0, 0, 0, 0, 0, 0, 0]                # Op
     assert nodes[1] == [0, 1, 1, 0, 0, 0, 0, 0, 1]                # Var x, is_lhs_var
     assert nodes[2] == [0, 1, 0, 1, 0, 0, 0, 0, 0]                # Var y
@@ -194,9 +201,24 @@ def test_arrays_lhs_var_does_not_appear_in_rhs():
 def test_arrays_family_c_root_link():
     nodes, edges, eattr = equation_to_arrays('x ◇ x = x ◇ y')
     # 6 nodes: LHS Op(0), Var(x)(1), Var(x)(2); RHS Op(3), Var(x)(4), Var(y)(5).
+    # Tree edges: 4 per op (bidirectional × 2 children) × 2 ops = 8.
+    # Cross-link: bidirectional root-to-root = 2.
+    # Total 10 edges.
     assert len(nodes) == 6
-    assert edges == [(0, 1), (0, 2), (3, 4), (3, 5), (0, 3)]
-    assert eattr == [[1, 0], [0, 1], [1, 0], [0, 1], [0, 0]]
+    assert edges == [
+        (0, 1), (1, 0),  # LHS Op → left child x  (and back)
+        (0, 2), (2, 0),  # LHS Op → right child x (and back)
+        (3, 4), (4, 3),  # RHS Op → left child x  (and back)
+        (3, 5), (5, 3),  # RHS Op → right child y (and back)
+        (0, 3), (3, 0),  # bidirectional cross-link
+    ]
+    assert eattr == [
+        [1, 0, 1, 0], [1, 0, 0, 1],
+        [0, 1, 1, 0], [0, 1, 0, 1],
+        [1, 0, 1, 0], [1, 0, 0, 1],
+        [0, 1, 1, 0], [0, 1, 0, 1],
+        [0, 0, 0, 0], [0, 0, 0, 0],   # cross-link, both directions
+    ]
     is_lhs_idx = 2 + NUM_VAR_SLOTS
     assert all(n[is_lhs_idx] == 0 for n in nodes)
 
@@ -258,11 +280,12 @@ def test_parse_full_corpus():
         assert len(edges) == len(eattrs)
         ids = canonical_var_ids(eq)
         assert len(ids) <= NUM_VAR_SLOTS
-        # Edge count = 2 * num_internal_op_nodes + (1 if family-C else 0)
+        # Bidirectional tree edges: 4 per op (2 children × down/up).
+        # Family-C cross-link: bidirectional → +2.
         ops = sum(1 for n in nodes if n[0] == 1.0)
-        family_c_link = 0 if isinstance(eq.lhs, Var) else 1
-        assert len(edges) == 2 * ops + family_c_link
-        if family_c_link:
+        n_cross = 0 if isinstance(eq.lhs, Var) else 2
+        assert len(edges) == 4 * ops + n_cross
+        if n_cross:
             family_c += 1
     assert family_c == 1555
 
@@ -279,8 +302,9 @@ def test_pyg_data_smoke():
     except ImportError:
         return  # torch_geometric not installed
     assert tuple(data.x.shape) == (3, NODE_FEATURE_DIM)
-    assert tuple(data.edge_index.shape) == (2, 2)
-    assert tuple(data.edge_attr.shape) == (2, EDGE_FEATURE_DIM)
+    # Bidirectional tree: 1 op × 4 edges = 4 directed edges.
+    assert tuple(data.edge_index.shape) == (2, 4)
+    assert tuple(data.edge_attr.shape) == (4, EDGE_FEATURE_DIM)
 
 
 # --- driver for running directly (no pytest) --------------------------------

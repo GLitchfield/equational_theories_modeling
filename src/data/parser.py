@@ -6,13 +6,21 @@ Equation syntax (verified against the ETP equations.txt corpus, 4,694 lines):
   - Sub-products are always parenthesized; top-level products never parenthesized
   - 'LHS = RHS' with whitespace-separated tokens; max depth 4
 
-Encoding (deviations from the engineering plan, recorded for reviewability):
-  - 6 variable slots (var_id_0..5) instead of the plan's 4 — actual data uses 6.
-  - Family-C root-to-root edge gets edge_attr = [0, 0] (neither left nor right);
-    keeps the plan's 2-dim edge feature without inventing a third class.
-  - is_lhs_var = 1 only when LHS is a single variable AND the RHS variable node
-    matches it. For Family-C (LHS is a product), is_lhs_var = 0 everywhere; the
-    LHS subtree's presence and the directional root-link encode the distinction.
+Encoding:
+  - Node features are 9-dim: [is_op, is_var, var_id_0..5, is_lhs_var].
+    Six variable slots because the corpus alphabet is {u, v, w, x, y, z}.
+  - Edge features are 4-dim: [is_left, is_right, is_downward, is_upward].
+    For every parent-child link in the parse tree we emit TWO edges
+    (parent→child downward, child→parent upward) so message passing can
+    integrate ancestor and descendant context within K layers.
+  - Family-C (LHS is a product, 1,555 equations): both subtrees are emitted
+    and joined by a bidirectional root-to-root cross-link. Both cross-link
+    edges carry edge_attr = [0, 0, 0, 0] — neither left/right nor up/down,
+    since it isn't a parent-child relationship. The all-zeros pattern lets
+    GAT attention treat cross-links as a learnable distinct edge type.
+  - is_lhs_var = 1 only when LHS is a single variable AND the RHS variable
+    node matches it. Family-C has is_lhs_var = 0 throughout; the LHS-vs-RHS
+    distinction is carried by the LHS subtree's presence and the cross-link.
 """
 
 from __future__ import annotations
@@ -23,7 +31,7 @@ from typing import Union
 OPERATOR = '◇'  # ◇
 NUM_VAR_SLOTS = 6
 NODE_FEATURE_DIM = 2 + NUM_VAR_SLOTS + 1  # is_op, is_var, var_id_0..5, is_lhs_var = 9
-EDGE_FEATURE_DIM = 2  # [is_left, is_right]; root-link in Family-C uses [0, 0]
+EDGE_FEATURE_DIM = 4  # [is_left, is_right, is_downward, is_upward]
 
 
 @dataclass(frozen=True)
@@ -193,12 +201,15 @@ def equation_to_arrays(
     Encoding rules:
       - bare-LHS (LHS is a single variable): emit only the RHS subtree; var nodes
         in the RHS whose name matches the LHS variable get is_lhs_var=1.
-      - Family-C (LHS is a product): emit the LHS subtree, then the RHS subtree,
-        then a root-to-root edge from LHS_root to RHS_root with edge_attr=[0,0].
-        is_lhs_var=0 throughout.
+      - Family-C (LHS is a product): emit LHS subtree, then RHS subtree, then a
+        bidirectional root-to-root cross-link. is_lhs_var = 0 throughout.
 
-    Edges are parent→child as the plan specifies; edge_attr is one-hot
-    [is_left, is_right] for tree edges, and [0, 0] for the Family-C root-link.
+    Tree edges are bidirectional. For each parent-child link we emit two
+    edges with 4-dim attrs:
+      parent→child  (is_left or is_right) + is_downward
+      child→parent  (is_left or is_right) + is_upward
+
+    Family-C cross-link edges (both directions) carry [0, 0, 0, 0].
     """
     eq = parse_equation(text)
     var_ids = canonical_var_ids(eq)
@@ -218,10 +229,16 @@ def equation_to_arrays(
         node_feats.append(_op_features())
         l = emit(t.left)
         r = emit(t.right)
+        # Left child: down (parent→child) + up (child→parent).
         edges.append((idx, l))
-        edge_attrs.append([1.0, 0.0])
+        edge_attrs.append([1.0, 0.0, 1.0, 0.0])
+        edges.append((l, idx))
+        edge_attrs.append([1.0, 0.0, 0.0, 1.0])
+        # Right child: down + up.
         edges.append((idx, r))
-        edge_attrs.append([0.0, 1.0])
+        edge_attrs.append([0.0, 1.0, 1.0, 0.0])
+        edges.append((r, idx))
+        edge_attrs.append([0.0, 1.0, 0.0, 1.0])
         return idx
 
     if bare_lhs_var is not None:
@@ -229,8 +246,11 @@ def equation_to_arrays(
     else:
         lhs_root = emit(eq.lhs)
         rhs_root = emit(eq.rhs)
+        # Bidirectional cross-link with no left/right or up/down semantics.
         edges.append((lhs_root, rhs_root))
-        edge_attrs.append([0.0, 0.0])
+        edge_attrs.append([0.0, 0.0, 0.0, 0.0])
+        edges.append((rhs_root, lhs_root))
+        edge_attrs.append([0.0, 0.0, 0.0, 0.0])
 
     return node_feats, edges, edge_attrs
 

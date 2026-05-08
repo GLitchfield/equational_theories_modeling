@@ -123,6 +123,40 @@ def test_encoder_cuda_forward():
     assert torch.isfinite(out).all()
 
 
+def test_bidirectional_edges_propagate_root_from_leaf_in_one_layer():
+    """With bidirectional edges, a single message-passing step is enough for
+    the root node to receive information from a leaf. This is the entire
+    reason for the 4-dim bidirectional edge representation: with the prior
+    parent→child-only spec, the root would only see itself in 1 layer.
+    """
+    from torch_geometric.nn import GATv2Conv
+
+    from src.data.parser import EDGE_FEATURE_DIM, equation_to_pyg
+
+    # Three nodes: op (0), var x (1), var y (2). Bidirectional edges mean
+    # the op node has incoming edges from both leaves.
+    g = equation_to_pyg('x = x ◇ y')
+    assert g.x.shape[0] == 3
+
+    torch.manual_seed(0)
+    conv = GATv2Conv(g.x.shape[1], 16, edge_dim=EDGE_FEATURE_DIM)
+    conv.eval()
+
+    with torch.no_grad():
+        out_orig = conv(g.x, g.edge_index, g.edge_attr)
+
+    # Perturb only the leaf at index 1; root output (index 0) must change.
+    x_pert = g.x.clone()
+    x_pert[1, 0] += 1.0
+    with torch.no_grad():
+        out_pert = conv(x_pert, g.edge_index, g.edge_attr)
+
+    assert not torch.allclose(out_orig[0], out_pert[0], atol=1e-6), (
+        "Root output did not change when a leaf's input was perturbed — "
+        "upward edges may not be wired up correctly."
+    )
+
+
 # --- driver -----------------------------------------------------------------
 
 if __name__ == '__main__':

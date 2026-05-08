@@ -4,6 +4,25 @@ Deviations from `jepa_engineering_plan.md` and other notable project decisions, 
 
 ---
 
+## 2026-05-07 — Bidirectional edges with 4-dim edge features (plan amendment)
+
+The plan previously specified parent→child unidirectional edges with a 2-dim `[is_left, is_right]` edge feature, plus a single directional root-to-root edge for Family-C with `edge_attr = [0, 0]`. With unidirectional edges, the root never receives any message from its descendants in any number of message-passing layers — all structural integration was forced into the global pooling step.
+
+User authorized a plan amendment: edges are now **bidirectional** (`parent→child` *and* `child→parent` for every tree link), and the edge feature is 4-dim **`[is_left, is_right, is_downward, is_upward]`**. Family-C cross-link is also bidirectional, with both edges carrying `[0, 0, 0, 0]` (neither left/right nor up/down — an all-zeros pattern that attention can learn to treat as a distinct cross-link edge type).
+
+Plan §"Parse Tree Representation" updated and a new §"Edge Representation" sub-section added (verbatim from the user's spec).
+
+Effects:
+- `EDGE_FEATURE_DIM`: 2 → 4 in `src/data/parser.py`.
+- Parser emits two edges per tree link (down and up) with the four bits set per the spec.
+- Family-C: bidirectional cross-link replacing the previous single directional root-to-root edge.
+- Encoder default `edge_features`: 2 → 4 (`GATv2Conv(..., edge_dim=4)`).
+- `configs/default.yaml` `encoder.edge_features`: 2 → 4.
+- `data/processed/equation_graphs.pt` rebuilt: max edges per equation went 9 → 18, file 6.25 MB → 7.67 MB. Family-C count unchanged at 1,555.
+- New test `test_bidirectional_edges_propagate_root_from_leaf_in_one_layer` in `tests/test_encoder.py` validates the entire reason for the change: a single GATv2Conv layer over a 3-node tree, perturbing only a leaf's input features, and asserting the root's output changes.
+
+---
+
 ## 2026-05-07 — Encoder parameter count: ~150K for Phase 1 sanity
 
 Implementing the plan's encoder config literally (`hidden_dim=128`, `embed_dim=64`, `num_layers=4`, `num_heads=4`, `dropout=0.1`; GATv2Conv with `concat=True` and `per_head_dim = hidden_dim / num_heads = 32`) yields **152,896 parameters** — an order of magnitude below the plan's "Estimated ~1-2M parameters."

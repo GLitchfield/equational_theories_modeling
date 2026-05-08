@@ -44,14 +44,41 @@ Represent each equation's RHS as a directed tree (PyTorch Geometric `Data` objec
 - **Node features**: One-hot encoding of node type + variable identity
   - Variables encoded by order of first appearance (DeBruijn-style): first variable seen = 0, second = 1, etc.
   - This makes the encoding invariant to variable renaming (x,y,z vs a,b,c)
-- **Edges**: Parent-to-child directed edges with left/right labels
-  - Edge features: one-hot `[is_left, is_right]`
 
 Node feature vector (per node): `[is_op, is_var, var_id_0, var_id_1, var_id_2, var_id_3, var_id_4, var_id_5, is_lhs_var]` = 9 dimensions. The corpus uses six variables (`{u, v, w, x, y, z}`) and up to 6 distinct per equation; see CHANGELOG entry 2026-05-06.
 
 Variables are canonicalized DeBruijn-style by walking LHS pre-order, then RHS pre-order; the first new variable seen gets id 0, the next 1, and so on.
 
-For equations where LHS is a product (Family C, 1,555 equations), encode the full LHS tree as well and add it as a subgraph with a directional root-to-root edge from LHS root to RHS root. The root-link carries `edge_attr = [0, 0]` (neither left nor right — a third implicit class encoded via all-zeros). For Family-C inputs, `is_lhs_var = 0` throughout; the LHS-vs-RHS distinction is carried by the LHS subtree's presence and the root-link direction.
+For equations where LHS is a product (Family C, 1,555 equations), encode the full LHS tree as well and add it as a subgraph with a bidirectional root-to-root cross-link. Both cross-link edges carry `edge_attr = [0, 0, 0, 0]` since the link is neither left/right nor parent-child; this all-zeros pattern lets attention treat cross-links as a learnable distinct edge type. For Family-C inputs, `is_lhs_var = 0` throughout; the LHS-vs-RHS distinction is carried by the LHS subtree's presence and the cross-link.
+
+### Edge Representation
+
+Use BIDIRECTIONAL edges. For every parent-child relationship in the parse tree,
+create TWO edges: parent→child (downward) and child→parent (upward).
+
+Edge features are 4-dimensional: [is_left, is_right, is_downward, is_upward]
+
+For a parent node P with left child L and right child R:
+  P→L: [1, 0, 1, 0]   downward, left position
+  L→P: [1, 0, 0, 1]   upward, left position
+  P→R: [0, 1, 1, 0]   downward, right position
+  R→P: [0, 1, 0, 1]   upward, right position
+
+This ensures information flows both ways during message passing:
+- Downward: each node learns its ancestor context (the path from root)
+- Upward: each node learns its subtree structure (what's below it)
+
+After K rounds of message passing, every node knows about the full tree
+within K hops in both directions. The root sees its entire subtree.
+The leaves see their full ancestor path. Internal nodes see both.
+
+Do NOT use unidirectional parent→child edges. With top-down-only edges,
+the root never receives information about its descendants, forcing all
+structural integration into the pooling layer. Bidirectional edges let
+the message passing rounds do the integration incrementally.
+
+Update encoder edge_features dimension from 2 to 4 accordingly:
+  GATv2Conv(..., edge_dim=4)
 
 ### Encoder Architecture
 

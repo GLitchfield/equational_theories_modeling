@@ -16,7 +16,7 @@ data:
 
 encoder:
   node_features: 9      # is_op, is_var, var_id_0..5, is_lhs_var (see CHANGELOG 2026-05-06)
-  edge_features: 2      # [is_left, is_right]; Family-C root-link uses [0, 0]
+  edge_features: 4      # [is_left, is_right, is_downward, is_upward]; bidirectional edges (see CHANGELOG 2026-05-07)
   hidden_dim: 128
   embed_dim: 64
   num_layers: 4

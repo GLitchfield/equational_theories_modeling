@@ -32,7 +32,7 @@ class EquationEncoder(nn.Module):
     def __init__(
         self,
         node_features: int = 9,
-        edge_features: int = 2,
+        edge_features: int = 4,
         hidden_dim: int = 128,
         embed_dim: int = 64,
         num_layers: int = 4,
