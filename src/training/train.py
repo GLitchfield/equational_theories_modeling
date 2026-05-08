@@ -8,8 +8,9 @@ epoch boundary in non-sanity mode.
 Phase 1 sanity goal: ≥80% balanced accuracy on the L1 holdout.
 
 Public entry points:
-  - ``train(config, sanity_check=False)``: run a full training; return
-    final epoch's metrics.
+  - ``train(config, sanity_check=False)``: run a full training; return a
+    dict with the final-epoch metrics, the best (max-bal-acc) checkpoint
+    path, the checkpoint dir, and the wandb run URL/ID if logging is on.
   - ``evaluate(jepa, loader, ...)``: compute loss + balanced-accuracy on
     a loader, optionally with a pre-supplied threshold (calibrates one
     on the loader if not given).
@@ -202,6 +203,20 @@ def _resolve_device(device_cfg: str) -> str:
     return device_cfg
 
 
+def _resolve_checkpoint_dir(config: dict) -> str:
+    """Where to write epoch_NNN.pt for this run.
+
+    Convention: ``<base>/<wandb.name>/`` so concurrent or sequential runs
+    don't clobber each other. Falls back to a flat ``<base>/`` when no
+    name is set, preserving legacy behavior for ad-hoc training calls.
+    """
+    base = config['training'].get('checkpoint_dir', 'outputs/checkpoints')
+    name = config.get('wandb', {}).get('name')
+    if name:
+        return os.path.join(base, name)
+    return base
+
+
 def train(config: dict, sanity_check: bool = False) -> dict:
     """Run JEPA training. Returns the final epoch's metrics."""
     seed = int(config.get('seed', 42))
@@ -295,6 +310,10 @@ def train(config: dict, sanity_check: bool = False) -> dict:
     step = 0
     t_start = time.perf_counter()
     last_metrics: dict = {}
+    best_bal_acc = -float('inf')
+    best_ckpt_path: str | None = None
+    best_epoch_metrics: dict = {}
+    ckpt_dir = _resolve_checkpoint_dir(config)
 
     for epoch in range(epochs):
         jepa.train()
@@ -360,7 +379,6 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         last_metrics = epoch_metrics
 
         if not sanity_check:
-            ckpt_dir = config['training'].get('checkpoint_dir', 'outputs/checkpoints')
             os.makedirs(ckpt_dir, exist_ok=True)
             ckpt_path = os.path.join(ckpt_dir, f'epoch_{epoch:03d}.pt')
             torch.save({
@@ -371,9 +389,23 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             }, ckpt_path)
             print(f'  saved checkpoint: {ckpt_path}')
 
+            if val['balanced_accuracy'] > best_bal_acc:
+                best_bal_acc = val['balanced_accuracy']
+                best_ckpt_path = ckpt_path
+                best_epoch_metrics = epoch_metrics
+
+    wandb_url = getattr(run, 'url', None) if run is not None else None
+    wandb_run_id = getattr(run, 'id', None) if run is not None else None
     if run is not None:
         run.finish()
 
     elapsed = time.perf_counter() - t_start
     print(f'\ntraining complete in {elapsed:.1f}s ({elapsed / 60:.1f} min)')
-    return last_metrics
+    return {
+        'final_metrics': last_metrics,
+        'best_checkpoint': best_ckpt_path,
+        'best_epoch_metrics': best_epoch_metrics,
+        'checkpoint_dir': ckpt_dir,
+        'wandb_url': wandb_url,
+        'wandb_run_id': wandb_run_id,
+    }
