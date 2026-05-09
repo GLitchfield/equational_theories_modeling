@@ -11,7 +11,11 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.training.losses import contrastive_loss  # noqa: E402
+from src.training.losses import (  # noqa: E402
+    contrastive_loss,
+    effective_rank,
+    vicreg_terms,
+)
 
 
 def test_loss_returns_scalar():
@@ -144,6 +148,120 @@ def test_loss_cuda():
     loss.backward()
     assert loss.device.type == 'cuda'
     assert z1.grad is not None
+
+
+# --- VICReg ---------------------------------------------------------------
+
+def test_vicreg_terms_returns_two_scalars():
+    z = torch.randn(32, 16)
+    var_loss, cov_loss = vicreg_terms(z)
+    assert var_loss.shape == ()
+    assert cov_loss.shape == ()
+
+
+def test_vicreg_variance_loss_high_when_collapsed():
+    """All rows identical → per-dim std ≈ sqrt(eps) → variance loss
+    ≈ gamma - sqrt(eps), close to gamma for the default eps=1e-4."""
+    z = torch.ones(16, 8)
+    var_loss, _ = vicreg_terms(z, gamma=1.0)
+    # std = sqrt(0 + 1e-4) = 0.01, relu(1.0 - 0.01) = 0.99
+    assert var_loss.item() > 0.98
+
+
+def test_vicreg_variance_loss_zero_when_above_threshold():
+    """Per-dim std >> gamma → variance term is zero."""
+    torch.manual_seed(0)
+    z = torch.randn(64, 8) * 5.0  # std ≈ 5 ≫ gamma=1
+    var_loss, _ = vicreg_terms(z, gamma=1.0)
+    assert var_loss.item() == 0.0
+
+
+def test_vicreg_covariance_loss_zero_for_identity_covariance():
+    """An orthogonal-column matrix has zero off-diagonal covariance."""
+    torch.manual_seed(0)
+    B, D = 256, 8
+    # Construct z so columns are independent unit-variance Gaussians;
+    # off-diagonal cov in expectation is zero, exact value tiny.
+    z = torch.randn(B, D)
+    z = z - z.mean(dim=0, keepdim=True)
+    _, cov_loss = vicreg_terms(z)
+    assert cov_loss.item() < 0.05
+
+
+def test_vicreg_covariance_loss_high_when_columns_correlated():
+    """All columns equal → maximum correlation → big off-diagonal cov."""
+    torch.manual_seed(0)
+    B, D = 64, 8
+    base = torch.randn(B, 1)
+    z = base.expand(B, D).clone()
+    _, cov_loss = vicreg_terms(z)
+    assert cov_loss.item() > 0.5
+
+
+def test_vicreg_backward_yields_gradients():
+    """VICReg gradient must flow into the input embedding so it can update
+    upstream encoder / predictor parameters."""
+    z = torch.randn(32, 16, requires_grad=True)
+    var_loss, cov_loss = vicreg_terms(z)
+    (var_loss + cov_loss).backward()
+    assert z.grad is not None
+    assert z.grad.abs().sum().item() > 0
+
+
+def test_vicreg_rejects_one_dim_input():
+    z = torch.randn(8)
+    try:
+        vicreg_terms(z)
+    except ValueError:
+        return
+    raise AssertionError('expected ValueError for 1-D input')
+
+
+def test_vicreg_rejects_singleton_batch():
+    z = torch.randn(1, 8)
+    try:
+        vicreg_terms(z)
+    except ValueError:
+        return
+    raise AssertionError('expected ValueError for B=1')
+
+
+# --- effective rank -------------------------------------------------------
+
+def test_effective_rank_low_for_collapsed_input():
+    """All rows identical → rank 1 → effective rank ≈ 1."""
+    z = torch.ones(64, 32)
+    er = effective_rank(z)
+    assert 0.95 < er < 1.05
+
+
+def test_effective_rank_high_for_random_input():
+    """Random Gaussian columns → near-full effective rank."""
+    torch.manual_seed(0)
+    B, D = 4096, 32
+    z = torch.randn(B, D)
+    er = effective_rank(z)
+    # Should be close to D — exact value depends on the realization, but
+    # comfortably above D/2 for random Gaussians.
+    assert er > D * 0.85
+
+
+def test_effective_rank_intermediate_for_low_rank_input():
+    """Embedding constructed to have rank ≈ 5 in a D=32 ambient space →
+    effective rank should be near 5, far below D."""
+    torch.manual_seed(0)
+    B, K, D = 1024, 5, 32
+    A = torch.randn(B, K)
+    M = torch.randn(K, D)
+    z = A @ M  # rank K = 5
+    er = effective_rank(z)
+    assert 4.0 < er < 6.0
+
+
+def test_effective_rank_zero_for_zero_matrix():
+    z = torch.zeros(8, 4)
+    er = effective_rank(z)
+    assert er == 0.0
 
 
 # --- driver --------------------------------------------------------------
