@@ -60,7 +60,7 @@ class JEPA(nn.Module):
         self,
         eq1_batch,
         eq2_batch,
-        return_pre_norm: bool = False,
+        return_encoder_raw: bool = False,
     ):
         """Run the JEPA forward pass.
 
@@ -70,29 +70,31 @@ class JEPA(nn.Module):
         encoder's frozen parameters, this makes the target side a true
         stop-gradient.
 
-        With ``return_pre_norm=True``, also returns the pre-normalization
-        outputs of the predictor and target encoder:
-        ``(z_predicted, z_target, z_predicted_raw, z_target_raw)``.
-        VICReg consumes the *raw* tensors so its variance / covariance
-        terms operate on the unconstrained space rather than fighting
-        the unit-sphere constraint imposed by L2 normalization.
-        ``z_predicted_raw`` carries gradient through the predictor and
-        on into the context encoder; ``z_target_raw`` is detached
-        (target encoder is frozen and the call is wrapped in
-        ``no_grad``), so VICReg on it contributes only a logged value,
-        not a training signal — the target encoder still gets the
-        diversity benefit through the EMA update from the context
-        encoder.
+        With ``return_encoder_raw=True``, also returns the *encoder*
+        pre-normalization outputs:
+        ``(z_predicted, z_target, z_context_raw, z_target_raw)``.
+        VICReg consumes the encoder raws (not the predictor's) because
+        the encoder is what produces the model's representation; the
+        predictor is downstream of an L2 normalization that fixes total
+        variance at 1, so VICReg routed through the predictor can never
+        exit the unit-sphere bottleneck onto the encoder.
+        ``z_context_raw`` carries gradient → context encoder;
+        ``z_target_raw`` is detached (target encoder is frozen + the
+        call is wrapped in ``no_grad``), so VICReg on it contributes
+        only a logged value, not a training signal. The target encoder
+        still picks up the diversity benefit through the EMA update
+        from the gradient-updated context encoder.
         """
-        z_context = self.context_encoder(eq1_batch)
-        if return_pre_norm:
+        if return_encoder_raw:
+            z_context_raw = self.context_encoder(eq1_batch, normalize=False)
+            z_context = F.normalize(z_context_raw, dim=-1)
             with torch.no_grad():
                 z_target_raw = self.target_encoder(eq2_batch, normalize=False)
                 z_target = F.normalize(z_target_raw, dim=-1)
-            z_predicted_raw = self.predictor(z_context, normalize=False)
-            z_predicted = F.normalize(z_predicted_raw, dim=-1)
-            return z_predicted, z_target, z_predicted_raw, z_target_raw
+            z_predicted = self.predictor(z_context)
+            return z_predicted, z_target, z_context_raw, z_target_raw
 
+        z_context = self.context_encoder(eq1_batch)
         with torch.no_grad():
             z_target = self.target_encoder(eq2_batch)
         z_predicted = self.predictor(z_context)

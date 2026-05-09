@@ -79,41 +79,49 @@ def test_forward_target_has_no_grad():
     assert not z_tgt.requires_grad
 
 
-def test_forward_return_pre_norm_returns_four_tensors():
-    """``return_pre_norm=True`` returns the raw (un-normalized) predictor
-    and target embeddings alongside the normalized ones, for VICReg."""
+def test_forward_return_encoder_raw_returns_four_tensors():
+    """``return_encoder_raw=True`` returns the *encoder* pre-normalization
+    outputs alongside the normalized predictor + target. VICReg consumes
+    the raws to push the encoder representation off rank-9 — applying it
+    further downstream (on the predictor) leaves the encoder->predictor
+    L2-normalization bottleneck in place."""
     jepa = _make_jepa()
     eq1, eq2 = _example_pair_batch()
-    z_pred, z_tgt, z_pred_raw, z_tgt_raw = jepa(eq1, eq2, return_pre_norm=True)
+    z_pred, z_tgt, z_context_raw, z_tgt_raw = jepa(eq1, eq2, return_encoder_raw=True)
     assert z_pred.shape == (3, 64)
     assert z_tgt.shape == (3, 64)
-    assert z_pred_raw.shape == (3, 64)
+    assert z_context_raw.shape == (3, 64)
     assert z_tgt_raw.shape == (3, 64)
 
 
-def test_forward_pre_norm_directions_match_normalized():
-    """``raw / ||raw|| == normed`` for both predictor and target paths."""
+def test_forward_encoder_raw_directions_match_post_norm():
+    """``encoder_raw / ||encoder_raw|| == post_norm_for_predictor``. The
+    raw output of the context encoder, divided by its norm, equals the
+    z_context that gets fed into the predictor and ultimately compared
+    against z_target via the contrastive loss."""
     import torch.nn.functional as F
     jepa = _make_jepa()
     jepa.eval()
     eq1, eq2 = _example_pair_batch()
     with torch.no_grad():
-        z_pred, z_tgt, z_pred_raw, z_tgt_raw = jepa(eq1, eq2, return_pre_norm=True)
-    assert torch.allclose(F.normalize(z_pred_raw, dim=-1), z_pred, atol=1e-5)
+        # Use return_encoder_raw to get raw encoder outputs.
+        _, z_tgt, z_context_raw, z_tgt_raw = jepa(eq1, eq2, return_encoder_raw=True)
+        # Compare against z_context produced via the encoder directly.
+        z_context_via_encoder = jepa.context_encoder(eq1)
+    assert torch.allclose(F.normalize(z_context_raw, dim=-1), z_context_via_encoder, atol=1e-5)
     assert torch.allclose(F.normalize(z_tgt_raw, dim=-1), z_tgt, atol=1e-5)
 
 
-def test_forward_pre_norm_target_is_no_grad():
-    """``z_target_raw`` must be stop-gradient — VICReg on it should
-    contribute zero training signal through the target encoder, which is
-    EMA-updated, not gradient-updated."""
+def test_forward_encoder_raw_grad_flow():
+    """``z_context_raw`` carries gradient (this is the whole point — it
+    gives VICReg a direct path into the context encoder, bypassing the
+    L2 bottleneck). ``z_target_raw`` is detached (target frozen +
+    no_grad)."""
     jepa = _make_jepa()
     eq1, eq2 = _example_pair_batch()
-    _, _, z_pred_raw, z_tgt_raw = jepa(eq1, eq2, return_pre_norm=True)
+    _, _, z_context_raw, z_tgt_raw = jepa(eq1, eq2, return_encoder_raw=True)
+    assert z_context_raw.requires_grad
     assert not z_tgt_raw.requires_grad
-    # z_predicted_raw must carry gradient — VICReg's training signal flows
-    # back through the predictor and on into the context encoder.
-    assert z_pred_raw.requires_grad
 
 
 def test_forward_outputs_are_unit_norm_and_distance_is_bounded():

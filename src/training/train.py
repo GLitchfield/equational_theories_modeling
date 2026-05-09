@@ -203,6 +203,38 @@ def _resolve_device(device_cfg: str) -> str:
     return device_cfg
 
 
+def _corpus_effective_ranks(
+    context_encoder,
+    graphs: dict,
+    device: str,
+    batch_size: int = 1024,
+) -> tuple[float, float]:
+    """Encode every unique equation through the context encoder and
+    return ``(post_norm_eff_rank, pre_norm_eff_rank)`` over the corpus.
+
+    Mirrors ``scripts/embedding_spectrum.py`` so the per-epoch metric is
+    directly comparable to the offline diagnostic. Eval mode + no_grad
+    so dropout is disabled and the autograd graph isn't held.
+    """
+    from torch_geometric.data import Batch
+
+    was_training = context_encoder.training
+    context_encoder.eval()
+    eq_ids = sorted(graphs.keys())
+    raw_chunks: list[torch.Tensor] = []
+    with torch.no_grad():
+        for start in range(0, len(eq_ids), batch_size):
+            chunk = [graphs[i] for i in eq_ids[start:start + batch_size]]
+            batch = Batch.from_data_list(chunk).to(device)
+            raw = context_encoder(batch, normalize=False).cpu()
+            raw_chunks.append(raw)
+    if was_training:
+        context_encoder.train()
+    z_raw = torch.cat(raw_chunks, dim=0)
+    z_post = F.normalize(z_raw, dim=-1)
+    return effective_rank(z_post), effective_rank(z_raw)
+
+
 def _resolve_checkpoint_dir(config: dict) -> str:
     """Where to write epoch_NNN.pt for this run.
 
@@ -332,8 +364,8 @@ def train(config: dict, sanity_check: bool = False) -> dict:
 
             optimizer.zero_grad()
             if vicreg_active:
-                z_pred, z_tgt, z_pred_raw, z_tgt_raw = jepa(
-                    eq1, eq2, return_pre_norm=True,
+                z_pred, z_tgt, z_context_raw, z_tgt_raw = jepa(
+                    eq1, eq2, return_encoder_raw=True,
                 )
             else:
                 z_pred, z_tgt = jepa(eq1, eq2)
@@ -342,14 +374,19 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             )
             loss = cont_loss
             if vicreg_active:
-                # Average var/cov over the two views; only z_pred_raw
-                # contributes gradient (z_tgt_raw is detached — target encoder
-                # gets diversity through EMA from the gradient-updated
-                # context encoder).
-                var_p, cov_p = vicreg_terms(z_pred_raw, gamma=vicreg_gamma)
+                # VICReg on the *encoder* pre-norm tensors: gives a direct
+                # gradient into the context encoder, bypassing the
+                # encoder→predictor L2-normalization bottleneck (under
+                # which the unit-sphere total-variance-fixed-at-1
+                # constraint makes gamma=1.0 unsatisfiable). Average over
+                # the two encoder views; only z_context_raw contributes
+                # gradient (z_tgt_raw is detached — target encoder picks
+                # up diversity via EMA from the gradient-updated context
+                # encoder).
+                var_c, cov_c = vicreg_terms(z_context_raw, gamma=vicreg_gamma)
                 var_t, cov_t = vicreg_terms(z_tgt_raw, gamma=vicreg_gamma)
-                var_loss = 0.5 * (var_p + var_t)
-                cov_loss = 0.5 * (cov_p + cov_t)
+                var_loss = 0.5 * (var_c + var_t)
+                cov_loss = 0.5 * (cov_c + cov_t)
                 loss = (
                     cont_loss
                     + vicreg_var_weight * var_loss
@@ -394,22 +431,16 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             max_batches=max_val_batches,
         )
 
-        # Effective-rank probe: one fixed val batch (val_loader has
-        # shuffle=False over the deterministic-shuffled val indices, so
-        # the same equations are used every epoch — clean trend signal).
-        # Cheap (one forward pass on 2048 graphs); tracks whether VICReg
-        # is actually expanding the embedding space's effective rank
-        # over the ~9 baseline measured by the spectrum diagnostic.
-        jepa.eval()
-        with torch.no_grad():
-            eq1_dbg, eq2_dbg, _ = next(iter(val_loader))
-            eq1_dbg = eq1_dbg.to(device)
-            eq2_dbg = eq2_dbg.to(device)
-            zp, zt, zp_raw, zt_raw = jepa(eq1_dbg, eq2_dbg, return_pre_norm=True)
-            eff_rank_pred = effective_rank(zp)
-            eff_rank_pred_raw = effective_rank(zp_raw)
-            eff_rank_tgt = effective_rank(zt)
-            eff_rank_tgt_raw = effective_rank(zt_raw)
+        # Corpus-wide effective rank: encode every unique equation in the
+        # graph cache through the context encoder (eval mode, batched),
+        # compute Roy-Vetterli effective rank on the resulting [N, embed_dim]
+        # matrix for both pre- and post-L2-normalization. This is the
+        # diagnostic from scripts/embedding_spectrum.py, run per epoch so
+        # the collapse-resolve trajectory is visible in real time. Cheap
+        # (~5 forward passes on 1024 graphs each on a 4080).
+        eff_rank_corpus, eff_rank_corpus_raw = _corpus_effective_ranks(
+            jepa.context_encoder, val_ds.graphs, device,
+        )
 
         epoch_metrics = {
             'epoch': epoch,
@@ -420,10 +451,8 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'val/false_recall': val['false_recall'],
             'val/threshold': val['threshold'],
             'val/n_evaluated': val['n_evaluated'],
-            'val/eff_rank_pred': eff_rank_pred,
-            'val/eff_rank_pred_raw': eff_rank_pred_raw,
-            'val/eff_rank_tgt': eff_rank_tgt,
-            'val/eff_rank_tgt_raw': eff_rank_tgt_raw,
+            'val/corpus_eff_rank': eff_rank_corpus,
+            'val/corpus_eff_rank_raw': eff_rank_corpus_raw,
             'elapsed_sec': time.perf_counter() - t_start,
         }
         log_metrics(epoch_metrics, run, step=step, prefix=f'[ep{epoch} eval]')
