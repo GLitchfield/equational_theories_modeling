@@ -1,0 +1,92 @@
+# num_layers 4 → 6 — first step in the depth sweep at the embed=512 frame.
+#
+# Width sweep is settled (embed_dim=512 locked, hidden_dim=128 locked).
+# Now testing whether deeper message-passing helps. Each additional
+# GATv2 layer is one more round of node-to-neighbor information flow,
+# which can in principle help when relational signals need to propagate
+# further across the parse tree. Parse trees here are small (≤ 10
+# nodes), so beyond ~depth = tree-diameter the extra layers may just
+# over-smooth.
+#
+# Decision rule:
+#   - bal_acc > 0.852 → depth helps; try 8 next.
+#   - bal_acc ≈ 0.852 → depth neutral at 6; either over-smoothing
+#     starts here or the relational signal saturates at 4 layers.
+#     Stay at 4 unless 8 reveals a real lift.
+#   - bal_acc ≪ 0.852 → over-smoothing / vanishing gradient territory
+#     already at 6 layers. Stop the depth sweep here.
+#
+# Param impact (relative to embed_dim_512.yaml):
+#   per-GATv2 layer + LayerNorm  ~34K  × +2 layers = +68K
+#   encoder    269,056 → ~337K   (+25%)
+#   predictor  131,712 (unchanged)
+#   total     ~400,768 → ~469K   (+17%)
+#
+# Otherwise identical to embed_dim_512.yaml.
+#
+# Result: outputs/results/num_layers_6.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/num_layers_6.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 6
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.7
+  vicreg_weight: 0.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: num_layers_6
+  log_every: 50
