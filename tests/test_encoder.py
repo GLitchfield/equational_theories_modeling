@@ -55,6 +55,27 @@ def test_encoder_output_is_unit_norm():
     assert torch.allclose(norms, torch.ones_like(norms), atol=1e-5)
 
 
+def test_encoder_normalize_false_returns_raw_projection():
+    """``normalize=False`` skips the L2 step so VICReg can operate on the
+    pre-normalization space. The raw projection generally has non-unit
+    norm; otherwise we'd be on the unit sphere by accident."""
+    torch.manual_seed(0)
+    enc = EquationEncoder()
+    enc.eval()
+    batch = _example_batch()
+    with torch.no_grad():
+        normed = enc(batch, normalize=True)
+        raw = enc(batch, normalize=False)
+
+    # Same direction — raw / ||raw|| equals normed.
+    raw_dir = torch.nn.functional.normalize(raw, dim=-1)
+    assert torch.allclose(raw_dir, normed, atol=1e-5)
+
+    # ... but raw is generally not unit-norm.
+    raw_norms = raw.norm(dim=-1)
+    assert not torch.allclose(raw_norms, torch.ones_like(raw_norms), atol=1e-3)
+
+
 def test_encoder_handles_single_node_graph():
     """Trivial reflexive 'x = x' is a 1-node graph with 0 edges; with the
     GATv2Conv default ``add_self_loops=True`` it should still produce a

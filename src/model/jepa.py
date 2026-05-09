@@ -24,6 +24,7 @@ import copy
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from src.model.encoder import EquationEncoder
 from src.model.predictor import ImplicationPredictor
@@ -59,16 +60,39 @@ class JEPA(nn.Module):
         self,
         eq1_batch,
         eq2_batch,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+        return_pre_norm: bool = False,
+    ):
         """Run the JEPA forward pass.
 
-        Returns:
-            ``(z_predicted, z_target)`` — both shape ``[num_graphs, embed_dim]``.
-            ``z_target`` is computed under ``torch.no_grad`` so it carries no
-            gradient track; combined with the target encoder's frozen
-            parameters, this makes the target side a true stop-gradient.
+        Default returns ``(z_predicted, z_target)`` — both
+        ``[num_graphs, embed_dim]`` and L2-normalized. ``z_target`` is
+        computed under ``torch.no_grad``; combined with the target
+        encoder's frozen parameters, this makes the target side a true
+        stop-gradient.
+
+        With ``return_pre_norm=True``, also returns the pre-normalization
+        outputs of the predictor and target encoder:
+        ``(z_predicted, z_target, z_predicted_raw, z_target_raw)``.
+        VICReg consumes the *raw* tensors so its variance / covariance
+        terms operate on the unconstrained space rather than fighting
+        the unit-sphere constraint imposed by L2 normalization.
+        ``z_predicted_raw`` carries gradient through the predictor and
+        on into the context encoder; ``z_target_raw`` is detached
+        (target encoder is frozen and the call is wrapped in
+        ``no_grad``), so VICReg on it contributes only a logged value,
+        not a training signal — the target encoder still gets the
+        diversity benefit through the EMA update from the context
+        encoder.
         """
         z_context = self.context_encoder(eq1_batch)
+        if return_pre_norm:
+            with torch.no_grad():
+                z_target_raw = self.target_encoder(eq2_batch, normalize=False)
+                z_target = F.normalize(z_target_raw, dim=-1)
+            z_predicted_raw = self.predictor(z_context, normalize=False)
+            z_predicted = F.normalize(z_predicted_raw, dim=-1)
+            return z_predicted, z_target, z_predicted_raw, z_target_raw
+
         with torch.no_grad():
             z_target = self.target_encoder(eq2_batch)
         z_predicted = self.predictor(z_context)

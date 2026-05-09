@@ -32,6 +32,23 @@ def test_predictor_output_is_unit_norm():
     assert torch.allclose(norms, torch.ones_like(norms), atol=1e-5)
 
 
+def test_predictor_normalize_false_returns_raw_mlp():
+    """``normalize=False`` skips the L2 step. Raw output should preserve
+    direction with the normalized version (raw / ||raw|| == normed) but
+    have non-unit norms — used by VICReg, which needs the unconstrained
+    space."""
+    torch.manual_seed(0)
+    pred = ImplicationPredictor()
+    pred.eval()
+    z = torch.randn(16, 64)
+    normed = pred(z, normalize=True)
+    raw = pred(z, normalize=False)
+    raw_dir = torch.nn.functional.normalize(raw, dim=-1)
+    assert torch.allclose(raw_dir, normed, atol=1e-5)
+    raw_norms = raw.norm(dim=-1)
+    assert not torch.allclose(raw_norms, torch.ones_like(raw_norms), atol=1e-3)
+
+
 def test_predictor_default_dims():
     pred = ImplicationPredictor()
     assert pred.embed_dim == 64

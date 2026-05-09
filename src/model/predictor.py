@@ -46,8 +46,18 @@ class ImplicationPredictor(nn.Module):
             nn.Linear(hidden_dim, embed_dim),
         )
 
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
-        return F.normalize(self.net(z), dim=-1)
+    def forward(self, z: torch.Tensor, normalize: bool = True) -> torch.Tensor:
+        """Map ``z`` (typically a unit-norm embedding) through the MLP.
+
+        When ``normalize=True`` (default), the output is L2-normalized so
+        the contrastive loss's margin in [0, 2] is reachable. When
+        ``normalize=False``, the raw MLP output is returned — used by
+        VICReg, which needs to operate on the pre-normalization space
+        (where variance and covariance are not constrained to live on
+        a sphere of fixed radius).
+        """
+        out = self.net(z)
+        return F.normalize(out, dim=-1) if normalize else out
 
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)

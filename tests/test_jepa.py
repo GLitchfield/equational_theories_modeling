@@ -79,6 +79,43 @@ def test_forward_target_has_no_grad():
     assert not z_tgt.requires_grad
 
 
+def test_forward_return_pre_norm_returns_four_tensors():
+    """``return_pre_norm=True`` returns the raw (un-normalized) predictor
+    and target embeddings alongside the normalized ones, for VICReg."""
+    jepa = _make_jepa()
+    eq1, eq2 = _example_pair_batch()
+    z_pred, z_tgt, z_pred_raw, z_tgt_raw = jepa(eq1, eq2, return_pre_norm=True)
+    assert z_pred.shape == (3, 64)
+    assert z_tgt.shape == (3, 64)
+    assert z_pred_raw.shape == (3, 64)
+    assert z_tgt_raw.shape == (3, 64)
+
+
+def test_forward_pre_norm_directions_match_normalized():
+    """``raw / ||raw|| == normed`` for both predictor and target paths."""
+    import torch.nn.functional as F
+    jepa = _make_jepa()
+    jepa.eval()
+    eq1, eq2 = _example_pair_batch()
+    with torch.no_grad():
+        z_pred, z_tgt, z_pred_raw, z_tgt_raw = jepa(eq1, eq2, return_pre_norm=True)
+    assert torch.allclose(F.normalize(z_pred_raw, dim=-1), z_pred, atol=1e-5)
+    assert torch.allclose(F.normalize(z_tgt_raw, dim=-1), z_tgt, atol=1e-5)
+
+
+def test_forward_pre_norm_target_is_no_grad():
+    """``z_target_raw`` must be stop-gradient — VICReg on it should
+    contribute zero training signal through the target encoder, which is
+    EMA-updated, not gradient-updated."""
+    jepa = _make_jepa()
+    eq1, eq2 = _example_pair_batch()
+    _, _, z_pred_raw, z_tgt_raw = jepa(eq1, eq2, return_pre_norm=True)
+    assert not z_tgt_raw.requires_grad
+    # z_predicted_raw must carry gradient — VICReg's training signal flows
+    # back through the predictor and on into the context encoder.
+    assert z_pred_raw.requires_grad
+
+
 def test_forward_outputs_are_unit_norm_and_distance_is_bounded():
     """With both predictor and target encoder L2-normalizing their outputs,
     pairwise distances must lie in [0, 2]. This is the property that lets

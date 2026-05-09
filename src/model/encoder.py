@@ -73,15 +73,21 @@ class EquationEncoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.proj = nn.Linear(2 * hidden_dim, embed_dim)
 
-    def forward(self, batch: Any) -> torch.Tensor:
+    def forward(self, batch: Any, normalize: bool = True) -> torch.Tensor:
         """Encode a PyG ``Batch`` of equation graphs.
 
-        Returns a tensor of shape ``(batch.num_graphs, embed_dim)``,
-        L2-normalized along the embedding axis (every output lies on
-        the unit sphere). See CHANGELOG 2026-05-07 for rationale —
-        without this normalization, distances grew unboundedly during
-        the first sanity training and the contrastive loss's margin
-        became unreachable.
+        Returns a tensor of shape ``(batch.num_graphs, embed_dim)``.
+
+        When ``normalize=True`` (default), the output is L2-normalized
+        along the embedding axis — every row lies on the unit sphere
+        (see CHANGELOG 2026-05-07: without this, distances grew
+        unboundedly and the contrastive margin became unreachable).
+
+        When ``normalize=False``, the raw post-projection output is
+        returned. Used by VICReg to operate on the unconstrained
+        embedding space, since enforcing variance/decorrelation on
+        already-unit-norm vectors fights a hard constraint (total
+        variance is fixed at 1 by the L2 projection).
         """
         x, edge_index, edge_attr, b = (
             batch.x,
@@ -99,7 +105,8 @@ class EquationEncoder(nn.Module):
         mean_pool = global_mean_pool(h, b)
         max_pool = global_max_pool(h, b)
         pooled = torch.cat([mean_pool, max_pool], dim=-1)
-        return F.normalize(self.proj(pooled), dim=-1)
+        out = self.proj(pooled)
+        return F.normalize(out, dim=-1) if normalize else out
 
     def num_parameters(self) -> int:
         """Count of learnable parameters."""
