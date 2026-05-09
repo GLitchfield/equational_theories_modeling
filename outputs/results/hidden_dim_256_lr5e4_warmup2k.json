@@ -1,0 +1,84 @@
+{
+  "checkpoint": "outputs/checkpoints/hidden_dim_256_lr5e4_warmup2k/epoch_009.pt",
+  "config": {
+    "data": {
+      "equations_file": "data/raw/etp/equations.txt",
+      "graph_cache_path": "data/processed/equation_graphs.pt",
+      "holdout_path": "data/splits/level1_holdout_seed42.parquet",
+      "num_workers": 4,
+      "pair_table_path": "data/processed/implication_pairs.parquet",
+      "pairs_file": "data/raw/etp/2025-08-11-vampire.json.gz",
+      "processed_dir": "data/processed",
+      "raw_dir": "data/raw",
+      "splits_dir": "data/splits"
+    },
+    "ema": {
+      "schedule": "cosine",
+      "tau_final": 0.999,
+      "tau_start": 0.996
+    },
+    "encoder": {
+      "dropout": 0.1,
+      "edge_features": 4,
+      "embed_dim": 256,
+      "hidden_dim": 256,
+      "node_features": 9,
+      "num_heads": 4,
+      "num_layers": 4
+    },
+    "holdout": {
+      "level": 1,
+      "level1_ratio": 0.1,
+      "level2_num_equations": 500,
+      "level3_num_equiv_classes": 150,
+      "seed": 42
+    },
+    "loss": {
+      "margin": 1.0,
+      "true_weight": 1.7,
+      "type": "contrastive",
+      "vicreg_weight": 0.0
+    },
+    "predictor": {
+      "embed_dim": 256,
+      "hidden_dim": 128,
+      "num_layers": 2
+    },
+    "seed": 42,
+    "training": {
+      "batch_size": 2048,
+      "checkpoint_dir": "outputs/checkpoints",
+      "epochs": 10,
+      "grad_clip_norm": 1.0,
+      "learning_rate": 0.0005,
+      "max_val_batches": 200,
+      "optimizer": "adamw",
+      "scheduler": "cosine_warmup",
+      "warmup_steps": 2000,
+      "weight_decay": 0.05
+    },
+    "wandb": {
+      "enabled": true,
+      "entity": null,
+      "log_every": 50,
+      "name": "hidden_dim_256_lr5e4_warmup2k",
+      "project": "jepa-equational-implication"
+    }
+  },
+  "encoder_params": 668416,
+  "epoch": 9,
+  "eval": {
+    "balanced_accuracy": 0.8114795025733319,
+    "false_recall": 0.8674492622190901,
+    "loss": 0.563473404229352,
+    "n_evaluated": 2202788,
+    "threshold": 1.0828337669372559,
+    "true_recall": 0.7555097429275737
+  },
+  "git_commit": "87662fa7a2cabbe95bb9334be4b13b56955fc868",
+  "holdout_path": "data/splits/level1_holdout_seed42.parquet",
+  "name": "hidden_dim_256_lr5e4_warmup2k",
+  "notes": "",
+  "predictor_params": 65920,
+  "wandb_url": "https://wandb.ai/gavinm-litchfield2/jepa-equational-implication/runs/i7le9p9f"
+}
