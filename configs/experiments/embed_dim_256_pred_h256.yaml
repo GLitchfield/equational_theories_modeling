@@ -1,0 +1,92 @@
+# embed_dim=256, predictor.hidden_dim=256 — encoder vs predictor bottleneck.
+#
+# Hypothesis: at embed_dim_256 the predictor became a bottleneck
+# (256 → 128 → 256), forcing it to compress the embedding through a
+# narrow middle. If the predictor is the binding constraint on
+# downstream balanced accuracy, widening the predictor middle
+# (256 → 256 → 256) should lift bal_acc above 0.846. If it stays at
+# ~0.846, the encoder is the constraint and we should focus the next
+# probe there (e.g. hidden_dim, num_layers).
+#
+# Note: this intentionally violates the plan's "predictor must be a
+# bottleneck" JEPA design rationale (which holds that a tight predictor
+# forces the encoder to learn good representations). The downstream
+# bal_acc metric doesn't distinguish where capability lives — it
+# measures combined output quality. If the symmetric predictor wins
+# materially on bal_acc, that's a real tension with the JEPA design
+# claim, worth a CHANGELOG entry / plan discussion before locking it
+# in for further work.
+#
+# Param counts:
+#   encoder:   203,264 (unchanged from embed_dim_256.yaml)
+#   predictor: 131,584 (was 65,920 at hidden=128 — +65,664)
+#   total:     334,848 (was 269,184 — +24%)
+#
+# Otherwise identical to embed_dim_256.yaml.
+#
+# Result: outputs/results/embed_dim_256_pred_h256.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/embed_dim_256_pred_h256.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 256
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 256
+  hidden_dim: 256
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.7
+  vicreg_weight: 0.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: embed_dim_256_pred_h256
+  log_every: 50
