@@ -41,15 +41,15 @@ The header comment in each YAML states the **hypothesis** and links to the resul
 
 ## Reference run
 
-After the architecture sweep, the locked-in encoder frame is:
+Locked-in encoder frame after the width sweep:
 
-- `embed_dim=256` — the {64, 128, 256} sweep showed roughly linear gains; 512 is the next experiment to confirm whether to lock here or one step further.
-- `encoder.hidden_dim=128` — widening to 256 went *backwards* and neither lower LR (5e-4) nor more attention heads (8) recovered. Locked.
-- `predictor.hidden_dim=128` — widening to 256 gave noise-level improvement (+0.002), aligns with the plan's predictor-as-bottleneck design.
-- `num_heads=4`, `num_layers=4` — unchanged from the plan default; depth is the next probe after embed_dim is fully settled.
+- `embed_dim=512` — the {64, 128, 256, 512} sweep slope went +1.5 / +1.7 / +0.6 pp per doubling; 512 captured the diminishing-returns gain. Locked.
+- `encoder.hidden_dim=128` — widening to 256 went *backwards* and neither lower LR nor more attention heads recovered. Locked.
+- `predictor.hidden_dim=128` — widening to 256 gave noise-level improvement, aligns with the plan's predictor-as-bottleneck design.
+- `num_heads=4`, `num_layers=4` — unchanged from the plan default; depth (`num_layers`) is the next sweep direction.
 - `true_weight=1.7` — inverse-prevalence upweighting of TRUE pairs.
 
-**Current best: `embed_dim_256_pred_h256` at bal_acc 0.8480** (effectively tied with `embed_dim_256` at 0.8461 — the predictor widening was within noise). Future variants compare against this. New experiments use 10 epochs unless explicitly probing training length.
+**Current best: `embed_dim_512` at bal_acc 0.8518.** Future variants compare against this. New experiments use 10 epochs unless explicitly probing training length.
 
 ## Experiment list
 
