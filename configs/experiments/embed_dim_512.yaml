@@ -1,0 +1,92 @@
+# embed_dim 256 → 512 — extend the embedding-width sweep one more step.
+#
+# The {64, 128, 256} sweep showed near-linear gains (+1.5 / +1.7 pp per
+# doubling), no clear diminishing returns yet. Encoder.hidden_dim is
+# now locked at 128 (256 went backwards across three optimization
+# variants). Doubling embed_dim again to 512 tests whether the
+# projection width still has headroom; the answer decides whether to
+# lock embed_dim at 256 or 512 before moving to depth (num_layers).
+#
+# Param impact:
+#   encoder.proj    Linear(256, 512)   131,584 (was 65,792 at embed=256)
+#   encoder total   269,056             (was 203,264 — +32%)
+#   predictor       131,712             (Linear(512, 128) + Linear(128, 512); was 65,920 — 2x)
+#   total           400,768             (was 269,184 — +49%)
+#
+# Predictor relative share grows: at embed=256 the predictor was 32%
+# of the encoder's params; at embed=512 it's 49%. The encoder's GATv2
+# layers (the actual relational stack) still dominate, but the
+# predictor is now closer to half the param budget. The predictor
+# remains a bottleneck (512 → 128 → 512), now compressing 4× through
+# its middle vs 2× at embed=256.
+#
+# Otherwise identical to embed_dim_256.yaml. Same optimization recipe
+# (LR=1e-3, warmup=1000) — that worked at embed=256 with similar
+# param count, and the relational stack isn't changing here.
+#
+# Result: outputs/results/embed_dim_512.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/embed_dim_512.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.7
+  vicreg_weight: 0.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: embed_dim_512
+  log_every: 50
