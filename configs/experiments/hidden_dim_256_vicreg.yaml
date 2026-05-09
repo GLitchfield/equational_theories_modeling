@@ -1,0 +1,103 @@
+# hidden_dim 128 → 256 at the new VICReg-on-encoder reference frame.
+#
+# The original hidden_dim_256 run lost 2.9 pp bal_acc against the
+# pre-VICReg reference, and neither halving LR (lr5e4_warmup2k) nor
+# splitting heads (h8) recovered. That diagnostic happened in the
+# rank-9 collapse regime — every wider-GAT variant produced features
+# that immediately got compressed back to a ~9-dim active subspace.
+# Whatever extra signal the wider GNN was extracting had nowhere to
+# live.
+#
+# Hypothesis: with VICReg-on-encoder holding corpus_eff_rank at 27-31,
+# the wider relational stack now has somewhere to put the additional
+# features it can extract. If hidden_dim=256 + VICReg beats 0.8908,
+# the original negative result was entirely a collapse artifact and
+# the small-tree saturation argument was wrong. If it still goes
+# backwards, the small-tree argument holds regardless of collapse —
+# parse trees of ≤ 10 nodes truly don't need >128 per-layer width.
+#
+# Param impact:
+#   encoder.proj  Linear(2*256, 512)   262,656  (was Linear(2*128, 512) = 131,584 at hidden=128)
+#   per GATv2 layer at hidden=256       ~133K    (was ~33K)
+#   × 4 layers                         +400K
+#   encoder    269,056 → ~800,000    (~3x)
+#   predictor  131,712 (unchanged — predictor.embed_dim=512, hidden_dim=128)
+#   total     ~400K → ~932K          (~2.3x)
+#
+# LR=1e-3 unchanged (it worked at hidden=128 with VICReg). Watch for
+# the same under-optimization symptom from the original hidden_dim_256
+# run — train loss settling HIGHER than the narrower model's. If that
+# happens despite VICReg, the wider GNN genuinely doesn't help and
+# we'd need to lower LR before drawing the conclusion.
+#
+# Otherwise identical to vicreg_encoder_v0p25c0p25_tw1p0.yaml (current
+# reference at 0.8908).
+#
+# Result: outputs/results/hidden_dim_256_vicreg.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/hidden_dim_256_vicreg.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.0
+  vicreg_var_weight: 0.25
+  vicreg_cov_weight: 0.25
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: hidden_dim_256_vicreg
+  log_every: 50
