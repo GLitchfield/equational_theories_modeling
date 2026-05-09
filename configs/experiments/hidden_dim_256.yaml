@@ -1,0 +1,85 @@
+# encoder.hidden_dim 128 → 256 — does widening the GAT stack lift the
+# 0.846 ceiling that proved encoder-bound at embed_dim=256?
+#
+# Hypothesis: embed_dim_256_pred_h256 showed the predictor's narrow
+# middle wasn't the constraint (+0.002 from +65K predictor params,
+# within noise). The 0.846 ceiling is encoder-bound. Widening
+# encoder.hidden_dim doubles the per-layer capacity of every GATv2
+# layer (lin_l, lin_r, the LayerNorms) and the input/output projections
+# scale with it. If bal_acc lifts materially, the relational stack was
+# the binding constraint. If it stays near 0.846, the bottleneck is
+# elsewhere (depth — num_layers; or the loss form / data geometry).
+#
+# Encoder frame from here: embed_dim=256 + predictor.hidden_dim=128
+# (the cheaper variant from the predictor-bottleneck ablation, which
+# matched the unbottlenecked predictor on bal_acc and aligns with the
+# plan's predictor-as-bottleneck design intent).
+#
+# Otherwise identical to embed_dim_256.yaml: 10 epochs, true_weight=1.7.
+#
+# Result: outputs/results/hidden_dim_256.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/hidden_dim_256.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 256
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 256
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.7
+  vicreg_weight: 0.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: hidden_dim_256
+  log_every: 50
