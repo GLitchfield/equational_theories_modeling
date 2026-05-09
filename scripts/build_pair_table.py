@@ -1,18 +1,35 @@
-"""Build a parquet pair table from the Vampire-labelled JSON.
+"""Build a parquet pair table from the ETP raw-implications CSV.
 
-Reads:  data/raw/etp/2025-08-11-vampire.json.gz
+Reads:  data/raw/etp_export/export_raw_implications_5_9_2026.csv
 Writes: data/processed/implication_pairs.parquet
 
-Schema:
-  eq1_id : int32   1-indexed equation ID (line number in equations.txt)
-  eq2_id : int32   1-indexed equation ID
-  value  : int8    0 = FALSE, 1 = TRUE, 2 = unknown (Vampire timed out)
+The CSV is a 4694×4694 dense int8 matrix where ``M[i, j]`` encodes the
+relationship between equation ``i+1`` and equation ``j+1`` (1-indexed
+into ``equations.txt``). Codes::
 
-Rows are sorted by (eq1_id, eq2_id) for deterministic, scan-friendly output.
+   3   TRUE   — implication holds (regular proof)
+   4   TRUE   — implication holds (special / structural)  ~10K entries
+  -3   FALSE  — implication fails (regular counterexample)
+  -4   FALSE  — implication fails (special / structural)  ~590K entries
 
-The JSON file is ~88 MB compressed and ~700 MB decompressed; ``json.load``
-takes ~30 s on a modern CPU and uses several GB of RAM transiently. The
-output parquet (zstd-compressed) is ~70 MB.
+The Austin-implications file is a curated subset of the FALSE pairs;
+"Austin" pairs split across both ``-3`` and ``-4`` codes.
+
+The CSV is the **authoritative ground truth** — it's derived from
+Lean-verified results in the Equational Theories Project rather than
+from Vampire's proof search. Predecessor pair tables built from
+``2025-08-11-vampire.json.gz`` left 1,062 pairs as ``value=2``
+("Vampire timeout"); those are now resolved to FALSE under this CSV.
+
+Output schema (off-diagonal only — diagonal pairs eq=eq are excluded):
+
+  eq1_id : int32  1-indexed equation ID
+  eq2_id : int32  1-indexed equation ID
+  value  : int8   0 = FALSE, 1 = TRUE  (binary label for training)
+  code   : int8   -4 / -3 / 3 / 4      (full CSV code, for diagnostics)
+
+Rows are sorted by (eq1_id, eq2_id) for deterministic, scan-friendly
+output.
 
 Usage:
   python scripts/build_pair_table.py
@@ -22,8 +39,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import gzip
-import json
 import os
 import sys
 import time
@@ -31,7 +46,6 @@ import time
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
@@ -42,85 +56,92 @@ def _abs(path: str) -> str:
 
 def build_pair_table(input_path: str, output_path: str, compression: str = 'zstd') -> dict:
     if not os.path.exists(input_path):
-        raise FileNotFoundError(f'vampire JSON not found: {input_path}')
+        raise FileNotFoundError(f'CSV not found: {input_path}')
 
     print(f'reading {input_path}')
     t0 = time.perf_counter()
-    with gzip.open(input_path, 'rt') as f:
-        raw = json.load(f)
-    print(f'  json load: {time.perf_counter() - t0:.1f}s')
+    M = np.loadtxt(input_path, delimiter=',', dtype=np.int8)
+    print(f'  loaded {M.shape} matrix in {time.perf_counter() - t0:.1f}s')
 
-    if 'values' not in raw:
-        raise ValueError(f"unexpected JSON shape; expected top-level 'values' key, got {list(raw)[:5]}")
-    entries = raw['values']
-    n = len(entries)
-    print(f'  entries: {n:,}')
+    if M.shape[0] != M.shape[1]:
+        raise ValueError(f'expected square matrix; got {M.shape}')
+    N = M.shape[0]
+
+    # Validate codes — anything outside {-4, -3, 3, 4} is unexpected.
+    unique = set(np.unique(M).tolist())
+    expected = {-4, -3, 3, 4}
+    extra = unique - expected
+    if extra:
+        raise ValueError(f'unexpected codes in CSV: {sorted(extra)}')
+
+    # Validate diagonal — every Eq → Eq is reflexively TRUE.
+    diag = M.diagonal()
+    if not np.all(diag > 0):
+        n_bad = int(np.sum(diag <= 0))
+        raise ValueError(f'expected positive code on every diagonal entry; got {n_bad} non-positive')
 
     t1 = time.perf_counter()
-    eq1 = np.empty(n, dtype=np.int32)
-    eq2 = np.empty(n, dtype=np.int32)
-    val = np.empty(n, dtype=np.int8)
-    for idx, (key, payload) in enumerate(entries.items()):
-        i_str, j_str = key.split('_', 1)
-        eq1[idx] = int(i_str)
-        eq2[idx] = int(j_str)
-        val[idx] = payload['value']
-    print(f'  ndarray fill: {time.perf_counter() - t1:.1f}s')
+    # Build off-diagonal pair list. Vectorize: enumerate i,j ≠ each other.
+    rows, cols = np.meshgrid(np.arange(N), np.arange(N), indexing='ij')
+    mask = rows != cols
+    eq1 = (rows[mask] + 1).astype(np.int32, copy=False)   # 1-indexed
+    eq2 = (cols[mask] + 1).astype(np.int32, copy=False)
+    code = M[mask].astype(np.int8, copy=False)
+    value = (code > 0).astype(np.int8, copy=False)        # 1 if TRUE, else 0
+    print(f'  flattened {len(eq1):,} off-diagonal entries in {time.perf_counter() - t1:.1f}s')
 
-    # Free the giant python dict before sorting + writing.
-    del entries
-    del raw
+    # Already in (eq1, eq2) lex order from the meshgrid construction;
+    # no explicit sort needed. Sanity-check a few rows.
+    assert eq1[0] == 1 and eq2[0] == 2 and eq1[-1] == N and eq2[-1] == N - 1
 
-    t2 = time.perf_counter()
-    # Composite key: (eq1, eq2) lex order. argsort with stable sort, multi-key trick:
-    # sort by eq2 first, then by eq1 stably to get (eq1, eq2) lex order.
-    order = np.argsort(eq2, kind='stable')
-    eq1, eq2, val = eq1[order], eq2[order], val[order]
-    order = np.argsort(eq1, kind='stable')
-    eq1, eq2, val = eq1[order], eq2[order], val[order]
-    print(f'  sort: {time.perf_counter() - t2:.1f}s')
-
-    n_false = int((val == 0).sum())
-    n_true = int((val == 1).sum())
-    n_unknown = int((val == 2).sum())
-    eq_min = int(eq1.min()) if n else 0
-    eq_max = int(eq1.max()) if n else 0
-    print(f'  distribution: FALSE={n_false:,}  TRUE={n_true:,}  unknown={n_unknown:,}')
-    print(f'  eq id range: {eq_min}..{eq_max}')
+    n_false = int((value == 0).sum())
+    n_true = int((value == 1).sum())
+    n_neg3 = int((code == -3).sum())
+    n_neg4 = int((code == -4).sum())
+    n_pos3 = int((code == 3).sum())
+    n_pos4 = int((code == 4).sum())
+    print(f'  values:  TRUE={n_true:,}  FALSE={n_false:,}')
+    print(f'  codes :  +3={n_pos3:,}  +4={n_pos4:,}  -3={n_neg3:,}  -4={n_neg4:,}')
+    print(f'  eq id range: 1..{N}')
 
     table = pa.table({
         'eq1_id': pa.array(eq1, type=pa.int32()),
         'eq2_id': pa.array(eq2, type=pa.int32()),
-        'value': pa.array(val, type=pa.int8()),
+        'value': pa.array(value, type=pa.int8()),
+        'code': pa.array(code, type=pa.int8()),
     })
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    t3 = time.perf_counter()
+    t2 = time.perf_counter()
     pq.write_table(table, output_path, compression=compression)
-    print(f'  parquet write: {time.perf_counter() - t3:.1f}s')
+    print(f'  parquet write: {time.perf_counter() - t2:.1f}s')
 
     size_mb = os.path.getsize(output_path) / 1024 / 1024
     print(f'wrote {size_mb:.1f} MB to {output_path}')
 
     return {
-        'num_rows': n,
+        'num_rows': len(eq1),
         'num_false': n_false,
         'num_true': n_true,
-        'num_unknown': n_unknown,
-        'eq_id_min': eq_min,
-        'eq_id_max': eq_max,
+        'num_unknown': 0,
+        'num_neg3': n_neg3,
+        'num_neg4': n_neg4,
+        'num_pos3': n_pos3,
+        'num_pos4': n_pos4,
+        'eq_id_min': 1,
+        'eq_id_max': N,
         'output_size_mb': size_mb,
     }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description='Convert the Vampire-labelled JSON to a parquet pair table.',
+        description='Convert the ETP raw-implications CSV to a parquet pair table.',
     )
     parser.add_argument(
         '--input',
-        default='data/raw/etp/2025-08-11-vampire.json.gz',
-        help='input gzipped JSON (default: %(default)s)',
+        default='data/raw/etp_export/export_raw_implications_5_9_2026.csv',
+        help='input CSV (4694×4694 int8 matrix; default: %(default)s)',
     )
     parser.add_argument(
         '--output',
