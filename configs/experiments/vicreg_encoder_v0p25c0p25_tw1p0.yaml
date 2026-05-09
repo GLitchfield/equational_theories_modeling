@@ -1,0 +1,88 @@
+# VICReg-on-encoder + true_weight back to 1.0.
+#
+# vicreg_encoder_v0p25c0p25 cleared 0.85 (+2.5 pp over the reference)
+# but the per-class shift was strongly asymmetric: TRUE recall jumped
+# 0.83 → 0.96 while FALSE dropped 0.87 → 0.80. With VICReg unlocking
+# encoder representation capacity, the model can pull TRUE pairs tight
+# in the much-larger active subspace — and `true_weight=1.7` (which
+# was set in the pre-VICReg world to compensate for the FALSE-skewed
+# corpus prior on a rank-9 representation) is likely now overshooting.
+#
+# Hypothesis: with the richer geometry, the contrastive loss's natural
+# TRUE-pair pull is strong enough on its own. Dropping true_weight
+# back to 1.0 should rebalance per-class recalls toward each other
+# without sacrificing the headline bal_acc gain. If bal_acc rises
+# further (cleaner balance + same total error), true_weight had become
+# redundant. If bal_acc drops, the upweighting was still doing real
+# work.
+#
+# Otherwise identical to vicreg_encoder_v0p25c0p25.yaml.
+#
+# Result: outputs/results/vicreg_encoder_v0p25c0p25_tw1p0.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/vicreg_encoder_v0p25c0p25_tw1p0.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.0
+  vicreg_var_weight: 0.25
+  vicreg_cov_weight: 0.25
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: vicreg_encoder_v0p25c0p25_tw1p0
+  log_every: 50
