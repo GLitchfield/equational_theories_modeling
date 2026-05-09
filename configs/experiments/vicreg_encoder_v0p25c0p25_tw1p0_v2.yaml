@@ -1,0 +1,90 @@
+# Current-best recipe re-run on the post-2026-05-09 data.
+#
+# Same recipe as vicreg_encoder_v0p25c0p25_tw1p0 (prior best at
+# bal_acc 0.8908): VICReg-on-encoder var=0.25, cov=0.25, tw=1.0,
+# embed_dim=512, hidden_dim=128. Same architecture, optimizer, seed.
+#
+# Only difference is the underlying data, post the CSV cutover
+# (CHANGELOG 2026-05-09):
+#   - pair table now from the ETP raw-implications CSV
+#     (Lean-verified ground truth) instead of Vampire JSON
+#   - 1,062 ex-unknown pairs are now labeled FALSE → enter the
+#     candidate pool
+#   - L1 split rebuilt at seed=42 over the full 22,028,942 candidates:
+#     2,202,894 holdout / 19,826,048 train
+#     (vs 2,202,788 / 19,825,092 before)
+#
+# The volume change is 0.005% but the random subsample at seed=42 is
+# bit-for-bit different. Sanity check: does bal_acc land near 0.89
+# again? Does the per-epoch trajectory look similar? If yes, the
+# cutover is benign. Bonus: the new L1 holdout has ~80 Austin pairs
+# (vs 21), so a_holdout statistics improve substantially.
+#
+# Result: outputs/results/vicreg_encoder_v0p25c0p25_tw1p0_v2.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/vicreg_encoder_v0p25c0p25_tw1p0_v2.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.0
+  vicreg_var_weight: 0.25
+  vicreg_cov_weight: 0.25
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: vicreg_encoder_v0p25c0p25_tw1p0_v2
+  log_every: 50
