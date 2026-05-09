@@ -1,0 +1,86 @@
+# hidden_dim=256 retry — half LR (1e-3 → 5e-4) and 2× warmup (1000 → 2000).
+#
+# The first hidden_dim=256 run lost 2.9 pp bal_acc against
+# embed_dim_256 (0.8169 vs 0.8461) with HIGHER training loss — clearly
+# under-optimized, not overfit. The most likely cause is that LR=1e-3
+# was tuned for ~270K-param models; tripling encoder params to 734K
+# total likely requires lower LR and longer warmup to settle into a
+# good basin.
+#
+# Decision rule for this experiment:
+#   - bal_acc > 0.846 → original run was purely an optimization issue,
+#     wider GAT stack helps; lock in hidden_dim=256 with this LR/warmup.
+#   - bal_acc ≈ 0.846 → wider stack matches narrower; lock in
+#     hidden_dim=128 (cheaper) and probe other levers (depth, loss).
+#   - bal_acc still ≪ 0.846 → either LR still too high, OR hidden_dim
+#     doesn't help for this task structure regardless of LR. Try
+#     another LR step (3e-4) before drawing a conclusion.
+#
+# Otherwise identical to hidden_dim_256.yaml.
+#
+# Result: outputs/results/hidden_dim_256_lr5e4_warmup2k.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/hidden_dim_256_lr5e4_warmup2k.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 256
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 256
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 5.0e-4
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 2000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.7
+  vicreg_weight: 0.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: hidden_dim_256_lr5e4_warmup2k
+  log_every: 50
