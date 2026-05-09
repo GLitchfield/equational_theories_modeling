@@ -1,22 +1,52 @@
-"""Evaluate a JEPA checkpoint on the Austin-implications holdout subset.
+"""Evaluate a JEPA checkpoint on the Austin-implications subset.
 
 Austin implications (``data/raw/etp/Austin_implications.txt``) are
-implication pairs that are FALSE in general (refuted by infinite magma)
-but happen to be TRUE for every finite magma. They are adversarially
-hard FALSE pairs: structurally near-identical to TRUE implications, so
-a model that latches onto small-counterexample patterns will mis-label
-them as TRUE.
+implication pairs that hold for every FINITE magma but fail on some
+INFINITE magma. The general-case answer (over all magmas) is FALSE,
+and that is the ETP's authoritative ground truth — derived from
+Lean-verified infinite-counterexample constructions, not from Vampire.
 
-This script measures FALSE-recall on the subset of Austin pairs that
-fall in the holdout (so they were never seen during training) and
-compares against the overall FALSE-recall on the same checkpoint. A
-big gap (Austin recall ≪ overall recall) means the model relies on
-finite-counterexample-like patterns — informative about *what* it's
-actually learning, not just *how well*.
+All 820 Austin pairs are therefore ground-truth FALSE for our task.
+They are adversarially hard: structurally near-identical to TRUE
+implications, since a model trained on finite-counterexample-style
+signals (which is essentially what Vampire's fmb output gives us)
+has no native way to distinguish them.
+
+How they sit in our pair table (built from Vampire's 2025-08-11
+output): Vampire's fmb couldn't find finite counterexamples (none
+exist) and its casc proof search couldn't close the proof (the
+implication IS false in general); it timed out and marked these
+pairs ``value=2`` (unknown). So 610 of the 820 are excluded from
+training and the L1 holdout entirely. The remaining 210 happen to
+have ``value=0`` already (presumably resolved by Vampire on a
+different code path), and 21 of those fall in the L1 holdout via
+the 10% random split.
+
+Three buckets, all ground-truth FALSE:
+
+  ``train``   — Austin pair with corpus value=0, NOT in L1 holdout
+                (~189 pairs). Model has seen these during training.
+                Performance measures memorization.
+  ``holdout`` — Austin pair with corpus value=0, IN the L1 holdout
+                (~21 pairs). Held-out generalization on adversarial
+                structure.
+  ``unseen``  — Austin pair with corpus value=2 (unknown to Vampire).
+                ~610 pairs. Never seen during training and never in
+                the holdout split. True out-of-distribution
+                generalization on adversarial structure.
+
+A model that has *learned the structure* of equational implication
+should perform similarly across the three buckets. A model that has
+*memorized finite-counterexample patterns* will get the train bucket
+right and fail on holdout+unseen. The gap between the three is the
+diagnostic.
 
 Usage:
-  # One checkpoint:
+  # One checkpoint, three-bucket Austin recall:
   python scripts/austin_eval.py outputs/checkpoints/<name>/epoch_NNN.pt
+
+  # Same plus per-pair detail (sorted by distance) for the holdout bucket:
+  python scripts/austin_eval.py <ckpt> --detail
 
   # All checkpoints with a recorded result JSON, in one table:
   python scripts/austin_eval.py --all-records
@@ -56,24 +86,47 @@ def _load_austin_pairs(path: str) -> set[tuple[int, int]]:
     return out
 
 
-def _select_holdout_austin(
+def _bucket_austin_pairs(
     pair_table_path: str,
     holdout_path: str,
     austin: set[tuple[int, int]],
-) -> list[tuple[int, int, int, int]]:
-    """Return ``[(row, eq1_id, eq2_id, value), ...]`` for Austin pairs in the
-    holdout."""
-    holdout_idx = pq.read_table(holdout_path)['pair_idx'].to_numpy().astype(np.int64)
+) -> dict[str, list[tuple[int, int, int]]]:
+    """Bucket every Austin pair by training visibility.
+
+    Returns ``{'train': [...], 'holdout': [...], 'unseen': [...]}`` where
+    each entry is ``(eq1_id, eq2_id, corpus_value)``. All Austin pairs
+    are ground-truth FALSE per the ETP's Lean-verified infinite-
+    counterexample constructions.
+    """
+    holdout_idx = set(pq.read_table(holdout_path)['pair_idx'].to_numpy().astype(np.int64).tolist())
     tbl = pq.read_table(pair_table_path)
     eq1_arr = tbl['eq1_id'].to_numpy()
     eq2_arr = tbl['eq2_id'].to_numpy()
     val_arr = tbl['value'].to_numpy()
-    out = []
-    for row in holdout_idx:
-        pair = (int(eq1_arr[row]), int(eq2_arr[row]))
-        if pair in austin:
-            out.append((int(row), pair[0], pair[1], int(val_arr[row])))
-    return out
+
+    # Build pair → row index lookup so we can ask each Austin pair "which
+    # bucket are you in?".
+    pair_to_row: dict[tuple[int, int], int] = {}
+    for i in range(len(eq1_arr)):
+        pair_to_row[(int(eq1_arr[i]), int(eq2_arr[i]))] = i
+
+    buckets: dict[str, list[tuple[int, int, int]]] = {
+        'train': [], 'holdout': [], 'unseen': [],
+    }
+    for pair in austin:
+        row = pair_to_row.get(pair)
+        if row is None:
+            continue  # Pair isn't in the corpus at all (shouldn't happen
+                      # for the current 4694-eq corpus, which has every
+                      # off-diagonal pair, but defensive).
+        v = int(val_arr[row])
+        if v == 2:
+            buckets['unseen'].append((pair[0], pair[1], v))
+        elif row in holdout_idx:
+            buckets['holdout'].append((pair[0], pair[1], v))
+        else:
+            buckets['train'].append((pair[0], pair[1], v))
+    return buckets
 
 
 def _evaluate_checkpoint(ckpt_path: str, austin_pairs: set, device: str = 'cuda') -> dict:
@@ -102,55 +155,57 @@ def _evaluate_checkpoint(ckpt_path: str, austin_pairs: set, device: str = 'cuda'
     holdout_path = os.path.join(_REPO_ROOT, cfg['data']['holdout_path'])
     cache_path = os.path.join(_REPO_ROOT, cfg['data']['graph_cache_path'])
 
-    holdout_austin = _select_holdout_austin(pair_path, holdout_path, austin_pairs)
-    if not holdout_austin:
-        return {'name': name, 'epoch': int(ckpt['epoch']), 'n_austin_holdout': 0}
-
+    buckets = _bucket_austin_pairs(pair_path, holdout_path, austin_pairs)
     graphs = load_graph_cache(cache_path)
-    g1 = Batch.from_data_list([graphs[p[1]] for p in holdout_austin]).to(device)
-    g2 = Batch.from_data_list([graphs[p[2]] for p in holdout_austin]).to(device)
-    with torch.no_grad():
-        z_pred, z_tgt = jepa(g1, g2)
-    distances = F.pairwise_distance(z_pred, z_tgt).cpu().numpy()
-    labels = np.array([p[3] for p in holdout_austin])
 
-    return {
+    out = {
         'name': name,
         'epoch': int(ckpt['epoch']),
         'checkpoint': os.path.relpath(ckpt_path, _REPO_ROOT),
-        'n_austin_holdout': len(holdout_austin),
-        'n_austin_FALSE': int((labels == 0).sum()),
-        'n_austin_TRUE': int((labels == 1).sum()),
-        'distances': distances,
-        'pairs': [(p[1], p[2]) for p in holdout_austin],
-        'labels': labels,
+        'buckets': {},
     }
+    for bucket_name, pairs in buckets.items():
+        if not pairs:
+            out['buckets'][bucket_name] = {'n': 0, 'distances': np.array([]), 'pairs': []}
+            continue
+        g1 = Batch.from_data_list([graphs[p[0]] for p in pairs]).to(device)
+        g2 = Batch.from_data_list([graphs[p[1]] for p in pairs]).to(device)
+        with torch.no_grad():
+            z_pred, z_tgt = jepa(g1, g2)
+        distances = F.pairwise_distance(z_pred, z_tgt).cpu().numpy()
+        out['buckets'][bucket_name] = {
+            'n': len(pairs),
+            'distances': distances,
+            'pairs': [(p[0], p[1]) for p in pairs],
+        }
+    return out
+
+
+def _bucket_recall(distances: np.ndarray, threshold: float) -> tuple[float, int, int]:
+    """All Austin pairs are ground-truth FALSE, so recall = fraction with
+    ``distance >= threshold``. Returns ``(recall, n_correct, n_total)``.
+    """
+    if distances.size == 0:
+        return float('nan'), 0, 0
+    n_correct = int((distances >= threshold).sum())
+    return n_correct / distances.size, n_correct, int(distances.size)
 
 
 def _print_one(result: dict, threshold: float, overall_false_recall: float | None = None) -> None:
     name, epoch = result['name'], result['epoch']
-    n = result['n_austin_holdout']
-    if n == 0:
-        print(f'{name} (ep {epoch}): no Austin pairs in holdout')
-        return
-    distances = result['distances']
-    labels = result['labels']
-    false_mask = labels == 0
-    n_false = int(false_mask.sum())
-    if n_false == 0:
-        print(f'{name} (ep {epoch}): no FALSE Austin pairs in holdout')
-        return
-    preds_true = (distances < threshold).astype(int)
-    n_correct_false = int(((preds_true == 0) & false_mask).sum())
-    austin_false_recall = n_correct_false / n_false
-    print(
-        f'{name} (ep {epoch}, threshold={threshold:.4f}): '
-        f'Austin FALSE recall = {austin_false_recall:.4f} '
-        f'({n_correct_false}/{n_false})'
-    )
+    print(f'{name} (ep {epoch}, threshold={threshold:.4f})')
     if overall_false_recall is not None:
-        gap = overall_false_recall - austin_false_recall
-        print(f'  vs overall FALSE recall {overall_false_recall:.4f}  →  gap {gap:+.4f}')
+        print(f'  overall FALSE recall on L1 holdout : {overall_false_recall:.4f}')
+    print()
+    print(f'  {"bucket":<8}  {"n":>4}  {"recall":>7}  {"correct":>9}')
+    for bucket in ('train', 'holdout', 'unseen'):
+        info = result['buckets'][bucket]
+        n = info['n']
+        if n == 0:
+            print(f'  {bucket:<8}  {n:>4}     —          —')
+            continue
+        rec, ok, total = _bucket_recall(info['distances'], threshold)
+        print(f'  {bucket:<8}  {n:>4}   {rec:>7.4f}    {ok:>3}/{total:<3}')
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -190,35 +245,42 @@ def main(argv: list[str] | None = None) -> int:
             threshold = float(rec['eval']['threshold'])
             overall_false = float(rec['eval']['false_recall'])
             overall_bal = float(rec['eval']['balanced_accuracy'])
-            n = result['n_austin_holdout']
-            n_false = result['n_austin_FALSE']
-            distances = result['distances']
-            labels = result['labels']
-            false_mask = labels == 0
-            preds_true = (distances < threshold).astype(int)
-            austin_false_recall = float(((preds_true == 0) & false_mask).sum()) / max(n_false, 1)
+            train_rec, _, _ = _bucket_recall(result['buckets']['train']['distances'], threshold)
+            ho_rec, _, _ = _bucket_recall(result['buckets']['holdout']['distances'], threshold)
+            unseen_rec, _, _ = _bucket_recall(result['buckets']['unseen']['distances'], threshold)
             rows.append({
                 'name': rec['name'],
                 'overall_bal_acc': overall_bal,
                 'overall_false_recall': overall_false,
-                'austin_false_recall': austin_false_recall,
-                'gap': overall_false - austin_false_recall,
-                'n_false_austin': n_false,
+                'train_rec': train_rec,
+                'ho_rec': ho_rec,
+                'unseen_rec': unseen_rec,
             })
 
-        # Sort by overall_bal_acc ascending so the table reads chronologically-ish.
+        # Sort by overall_bal_acc ascending so the table reads
+        # chronologically-ish.
         rows.sort(key=lambda r: r['overall_bal_acc'])
         name_w = max(len(r['name']) for r in rows)
-        print(f'{"name":<{name_w}}  {"bal_acc":>7}  {"overall_F":>9}  {"austin_F":>8}  {"gap":>7}  {"n":>3}')
+        header = (
+            f'{"name":<{name_w}}  {"bal_acc":>7}  {"overall_F":>9}  '
+            f'{"a_train":>7}  {"a_holdout":>9}  {"a_unseen":>8}'
+        )
+        print(header)
+        print('-' * len(header))
         for r in rows:
             print(
                 f'{r["name"]:<{name_w}}  '
                 f'{r["overall_bal_acc"]:>7.4f}  '
                 f'{r["overall_false_recall"]:>9.4f}  '
-                f'{r["austin_false_recall"]:>8.4f}  '
-                f'{r["gap"]:>+7.4f}  '
-                f'{r["n_false_austin"]:>3}'
+                f'{r["train_rec"]:>7.4f}  '
+                f'{r["ho_rec"]:>9.4f}  '
+                f'{r["unseen_rec"]:>8.4f}'
             )
+        print()
+        print('a_train   = Austin FALSE recall on training-set Austin pairs (memorization)')
+        print('a_holdout = Austin FALSE recall on L1-holdout Austin pairs (generalization)')
+        print('a_unseen  = Austin FALSE recall on never-seen Austin pairs (OOD generalization;')
+        print('            value=2 in the corpus → excluded from train + holdout)')
         return 0
 
     if not args.checkpoint:
@@ -247,16 +309,19 @@ def main(argv: list[str] | None = None) -> int:
 
     _print_one(result, threshold, overall)
     if args.detail:
-        order = np.argsort(result['distances'])
-        print()
-        print('per-pair detail (sorted by distance):')
-        for j in order:
-            d = result['distances'][j]
-            label = 'FALSE' if result['labels'][j] == 0 else 'TRUE'
-            pred = 'TRUE' if d < threshold else 'FALSE'
-            mark = '✓' if pred == label else '✗'
-            eq1, eq2 = result['pairs'][j]
-            print(f'  Eq{eq1:>4} → Eq{eq2:<4}  d={d:.4f}  truth={label:<5}  pred={pred:<5}  {mark}')
+        for bucket in ('holdout', 'unseen'):
+            info = result['buckets'][bucket]
+            if info['n'] == 0:
+                continue
+            print()
+            print(f'per-pair detail — {bucket} (sorted by distance):')
+            order = np.argsort(info['distances'])
+            for j in order:
+                d = info['distances'][j]
+                eq1, eq2 = info['pairs'][j]
+                pred = 'TRUE' if d < threshold else 'FALSE'
+                mark = '✓' if pred == 'FALSE' else '✗'
+                print(f'  Eq{eq1:>4} → Eq{eq2:<4}  d={d:.4f}  pred={pred:<5}  {mark}')
     return 0
 
 
