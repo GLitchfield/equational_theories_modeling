@@ -121,9 +121,11 @@ def test_make_loaders_smoke():
         pair_path, cache_path, split_path,
         batch_size=64, num_workers=0, pin_memory=False,
     )
-    # Sizes match expectations (10% held out of 22,027,880 labeled).
-    assert len(val_ds) == 2_202_788
-    assert len(train_ds) == 22_027_880 - 2_202_788
+    # Sizes after the 2026-05-09 cutover to the ETP CSV as ground truth:
+    # all 22,028,942 off-diagonal pairs are labeled (no Vampire timeouts);
+    # 10% holdout at seed=42.
+    assert len(val_ds) == 2_202_894
+    assert len(train_ds) == 22_028_942 - 2_202_894
 
     eq1_batch, eq2_batch, labels = next(iter(train_loader))
     assert eq1_batch.num_graphs == 64

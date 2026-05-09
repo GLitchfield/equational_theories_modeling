@@ -18,7 +18,8 @@ When you deviate from the plan, update the plan to match reality AND add a CHANG
 
 ## Data layout
 
-- `data/raw/etp/` → symlink to the Equational Theories Project's `data/` directory. Source of `equations.txt` and `2025-08-11-vampire.json.gz`.
+- `data/raw/etp/` → symlink to the Equational Theories Project's `data/` directory. Source of `equations.txt`, the `Austin_implications.txt` curated subset, and other ETP artifacts.
+- `data/raw/etp_export/` → exports from the ETP project (not symlinked). Currently holds `export_raw_implications_5_9_2026.csv`, the **authoritative ground truth** for every off-diagonal implication pair (see CHANGELOG 2026-05-09). The pair table is built from this, not from the older `2025-08-11-vampire.json.gz` (which left 1,062 pairs unresolved).
 - `data/raw/invariants/` → symlink to the sibling invariants project's `assembly/output/` directory. Currently empty until that project is run.
-- `data/processed/` → derived caches (parsed-tree PyG `Data` cache, decompressed pair tables). Not committed.
+- `data/processed/` → derived caches (parsed-tree PyG `Data` cache, pair-table parquet). Not committed.
 - `data/splits/` → holdout split index files. Committed, for reproducibility.

@@ -4,6 +4,28 @@ Deviations from `jepa_engineering_plan.md` and other notable project decisions, 
 
 ---
 
+## 2026-05-09 — ETP CSV is now the ground-truth source for implication labels
+
+The pair table at `data/processed/implication_pairs.parquet` was previously built from `data/raw/etp/2025-08-11-vampire.json.gz`. Vampire could not decide 1,062 of the 22M pairs (its fmb mode found no finite counterexample because none exists; its casc mode could not close the proof because the implication is actually FALSE in general); those were marked `value=2` and excluded from training and the L1 holdout. The Austin-implications diagnostic exposed this: of the 820 Austin pairs, 610 were among the unresolved ones, even though all 820 are unambiguously FALSE per the ETP's Lean-verified infinite-counterexample constructions.
+
+The user supplied `data/raw/etp_export/export_raw_implications_5_9_2026.csv` — a 4694×4694 dense int8 matrix with **every off-diagonal pair labeled**, derived from the ETP's authoritative Lean results. Codes:
+
+- `+3`: TRUE (regular)
+- `+4`: TRUE (special / structural; ~10K entries)
+- `-3`: FALSE (regular counterexample)
+- `-4`: FALSE (special; ~590K entries — broader than the 820 curated Austin pairs)
+
+`scripts/build_pair_table.py` was rewritten to read the CSV instead of the Vampire JSON. The output schema gains a `code: int8` column carrying the full ±3/±4 label alongside the binary `value: int8`. The 1,062 previously-unknown pairs are all FALSE under this CSV — confirming the user's clarification that Vampire timeouts are not a separate epistemic state, just an artifact of the prover.
+
+The L1 split was rebuilt at `seed=42`. With no unknowns to exclude, the candidate pool is the full 22,028,942; the random 10% subsample changes:
+
+- holdout: 2,202,894 (was 2,202,788; +106)
+- train  : 19,826,048 (was 19,825,092; +956)
+
+This is bit-for-bit incompatible with the previous split; results from runs trained against the old split remain locked in their existing JSONs and continue to be valid as historical artifacts, but new runs use the new data. CLAUDE.md's "Data layout" section was updated to point at `data/raw/etp_export/` and document the cutover. `tests/test_dataset.py::test_make_loaders_smoke` was updated to assert the new sizes.
+
+---
+
 ## 2026-05-08 — Phase 1 baseline locked
 
 `outputs/results/baseline_phase1_l2norm.json` is the project's reference baseline. It captures `epoch_006.pt` from the `phase1_l2norm_10ep` wandb run, evaluated on all 2,202,788 L1 val pairs (no batch cap):
