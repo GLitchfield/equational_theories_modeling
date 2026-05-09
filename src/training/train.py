@@ -33,7 +33,7 @@ from src.data.dataset import make_loaders
 from src.model.encoder import EquationEncoder
 from src.model.jepa import JEPA
 from src.model.predictor import ImplicationPredictor
-from src.training.losses import contrastive_loss
+from src.training.losses import contrastive_loss, effective_rank, vicreg_terms
 from src.training.scheduler import cosine_tau, cosine_warmup_lr_multiplier
 
 
@@ -291,6 +291,10 @@ def train(config: dict, sanity_check: bool = False) -> dict:
     grad_clip = float(config['training']['grad_clip_norm'])
     margin = float(config['loss']['margin'])
     true_weight = float(config['loss']['true_weight'])
+    vicreg_var_weight = float(config['loss'].get('vicreg_var_weight', 0.0))
+    vicreg_cov_weight = float(config['loss'].get('vicreg_cov_weight', 0.0))
+    vicreg_gamma = float(config['loss'].get('vicreg_gamma', 1.0))
+    vicreg_active = (vicreg_var_weight > 0.0) or (vicreg_cov_weight > 0.0)
     tau_start = float(config['ema']['tau_start'])
     tau_final = float(config['ema']['tau_final'])
     log_every = int(config.get('wandb', {}).get('log_every', 50))
@@ -327,10 +331,30 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             labels = labels.to(device)
 
             optimizer.zero_grad()
-            z_pred, z_tgt = jepa(eq1, eq2)
-            loss = contrastive_loss(
+            if vicreg_active:
+                z_pred, z_tgt, z_pred_raw, z_tgt_raw = jepa(
+                    eq1, eq2, return_pre_norm=True,
+                )
+            else:
+                z_pred, z_tgt = jepa(eq1, eq2)
+            cont_loss = contrastive_loss(
                 z_pred, z_tgt, labels, margin=margin, true_weight=true_weight,
             )
+            loss = cont_loss
+            if vicreg_active:
+                # Average var/cov over the two views; only z_pred_raw
+                # contributes gradient (z_tgt_raw is detached — target encoder
+                # gets diversity through EMA from the gradient-updated
+                # context encoder).
+                var_p, cov_p = vicreg_terms(z_pred_raw, gamma=vicreg_gamma)
+                var_t, cov_t = vicreg_terms(z_tgt_raw, gamma=vicreg_gamma)
+                var_loss = 0.5 * (var_p + var_t)
+                cov_loss = 0.5 * (cov_p + cov_t)
+                loss = (
+                    cont_loss
+                    + vicreg_var_weight * var_loss
+                    + vicreg_cov_weight * cov_loss
+                )
             loss.backward()
             torch.nn.utils.clip_grad_norm_(trainable_params, grad_clip)
 
@@ -346,14 +370,19 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             epoch_batches += 1
 
             if step % log_every == 0:
+                step_metrics = {
+                    'train/loss': loss.item(),
+                    'train/contrastive_loss': cont_loss.item(),
+                    'train/lr': base_lr * lr_mult,
+                    'train/tau': tau,
+                    'train/elapsed_sec': time.perf_counter() - t_start,
+                }
+                if vicreg_active:
+                    step_metrics['train/vicreg_var'] = var_loss.item()
+                    step_metrics['train/vicreg_cov'] = cov_loss.item()
                 log_metrics(
-                    {
-                        'train/loss': loss.item(),
-                        'train/lr': base_lr * lr_mult,
-                        'train/tau': tau,
-                        'train/elapsed_sec': time.perf_counter() - t_start,
-                    },
-                    run, step=step, prefix=f'[ep{epoch} step{step}]',
+                    step_metrics, run, step=step,
+                    prefix=f'[ep{epoch} step{step}]',
                 )
             step += 1
 
@@ -364,6 +393,24 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             margin=margin, true_weight=true_weight,
             max_batches=max_val_batches,
         )
+
+        # Effective-rank probe: one fixed val batch (val_loader has
+        # shuffle=False over the deterministic-shuffled val indices, so
+        # the same equations are used every epoch — clean trend signal).
+        # Cheap (one forward pass on 2048 graphs); tracks whether VICReg
+        # is actually expanding the embedding space's effective rank
+        # over the ~9 baseline measured by the spectrum diagnostic.
+        jepa.eval()
+        with torch.no_grad():
+            eq1_dbg, eq2_dbg, _ = next(iter(val_loader))
+            eq1_dbg = eq1_dbg.to(device)
+            eq2_dbg = eq2_dbg.to(device)
+            zp, zt, zp_raw, zt_raw = jepa(eq1_dbg, eq2_dbg, return_pre_norm=True)
+            eff_rank_pred = effective_rank(zp)
+            eff_rank_pred_raw = effective_rank(zp_raw)
+            eff_rank_tgt = effective_rank(zt)
+            eff_rank_tgt_raw = effective_rank(zt_raw)
+
         epoch_metrics = {
             'epoch': epoch,
             'train/avg_loss': avg_train_loss,
@@ -373,6 +420,10 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'val/false_recall': val['false_recall'],
             'val/threshold': val['threshold'],
             'val/n_evaluated': val['n_evaluated'],
+            'val/eff_rank_pred': eff_rank_pred,
+            'val/eff_rank_pred_raw': eff_rank_pred_raw,
+            'val/eff_rank_tgt': eff_rank_tgt,
+            'val/eff_rank_tgt_raw': eff_rank_tgt_raw,
             'elapsed_sec': time.perf_counter() - t_start,
         }
         log_metrics(epoch_metrics, run, step=step, prefix=f'[ep{epoch} eval]')
