@@ -1,0 +1,108 @@
+# VICReg on the encoder's pre-norm output, weights 0.25 / 0.25.
+#
+# Diagnosis from vicreg_v1c1: applying VICReg only to the predictor's
+# pre-norm tensor expanded the predictor's pre-norm rank 9 → 97 but
+# left the encoder's corpus-wide post-norm rank at 9.73 (vs 9.07
+# baseline). The encoder → predictor L2-normalization fixes total
+# variance at 1 on the unit sphere, so the gradient signal arriving
+# at the encoder from VICReg-via-predictor cannot satisfy gamma=1.0
+# per-dim variance.
+#
+# Fix (this experiment): apply VICReg directly to z_context_raw — the
+# context encoder's pre-normalization output — so the encoder gets a
+# direct gradient signal into the unconstrained pre-norm space. The
+# encoder→predictor F.normalize stays in place (contrastive loss
+# expects unit-sphere geometry); only VICReg sees the raw projections.
+#
+# Coefficients: var=0.25, cov=0.25 (vs 1.0/1.0 in vicreg_v1c1). With
+# the gradient path now shorter and stronger (no normalization
+# bottleneck), the same coefficient is more aggressive — start lower
+# so VICReg guides rather than dominates the contrastive signal.
+#
+# Decision rule:
+#   - corpus_eff_rank_raw ≫ 9 (say 30+) AND bal_acc ≥ 0.85
+#       → VICReg working AND productive; the diagnostic-predicted
+#         capacity unlock is real. Try slightly higher coefficients
+#         in a follow-up to find the knee.
+#   - corpus_eff_rank_raw ≫ 9 AND bal_acc < 0.85
+#       → extra dimensions encoding noise, not useful structure.
+#         Cut coefficients further (0.1/0.1) or reconsider whether
+#         the rank-9 representation was genuinely the bottleneck.
+#   - corpus_eff_rank_raw ≈ 9 → VICReg signal still too weak to lift
+#         the encoder. Try 0.5/0.5.
+#
+# Monitoring: val/corpus_eff_rank (post-L2-norm) and
+# val/corpus_eff_rank_raw (pre-L2-norm) logged each epoch on the full
+# 4,694-equation corpus — directly comparable to
+# scripts/embedding_spectrum.py.
+#
+# Otherwise identical to embed_dim_512.yaml.
+#
+# Result: outputs/results/vicreg_encoder_v0p25c0p25.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/vicreg_encoder_v0p25c0p25.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.7
+  vicreg_var_weight: 0.25
+  vicreg_cov_weight: 0.25
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: vicreg_encoder_v0p25c0p25
+  log_every: 50
