@@ -1,0 +1,121 @@
+# VICReg v1c1: variance + covariance regularization at the locked frame.
+#
+# Diagnostic finding (scripts/embedding_spectrum.py): the locked-in
+# embed_dim_512 reference run uses an effective rank of ~9 out of 512
+# nominal dimensions. Top 10 singular values hold 89% of variance; top
+# 50 hold 99.98%. Effective rank stays at ~9-10 across the whole
+# embed_dim sweep — adding nominal dimensions doesn't make the model
+# use more, it just leaves more wasted. The +0.6 pp gain from 256 → 512
+# came from optimization-landscape effects, not from new dims being
+# utilized.
+#
+# Hypothesis: VICReg's variance term will push small singular values up
+# (more active dimensions) and the covariance term will decorrelate
+# them (so the additional dimensions carry independent information,
+# not just rotated copies of the existing 9). If both bal_acc and
+# effective rank rise, the model genuinely had more geometric capacity
+# locked behind the collapse. If effective rank rises but bal_acc
+# doesn't, the additional dimensions are being filled with noise.
+#
+# Configuration choices (per the user's spec):
+#   - VICReg applied PRE-L2-normalization (the predictor and target
+#     encoder's raw outputs). The unit-sphere constraint fixes total
+#     variance at 1, so VICReg post-norm fights a hard constraint.
+#     The return_pre_norm path on JEPA exposes the raw tensors.
+#   - Coefficients: variance=1.0, covariance=1.0. Original paper used
+#     25 and 1 for 2048-dim image embeddings; for 512 dims with
+#     contrastive on the sphere, lower equal coefficients are a less
+#     aggressive starting point that won't overwhelm the contrastive
+#     signal.
+#   - gamma=1.0 (canonical variance hinge threshold).
+#   - Invariance term omitted; the contrastive loss already provides
+#     it via the TRUE-pair pull.
+#
+# Monitoring (added in this commit cycle):
+#   - val/eff_rank_pred / pred_raw / tgt / tgt_raw logged each epoch
+#     on a fixed val batch. Should climb from ~9 toward 50-100 as
+#     VICReg engages.
+#   - train/contrastive_loss, train/vicreg_var, train/vicreg_cov
+#     logged separately so the relative magnitudes are visible.
+#
+# Decision rule:
+#   - eff_rank rises AND bal_acc rises → VICReg is doing both jobs;
+#     try slightly higher coefficients in a follow-up to find the knee.
+#   - eff_rank rises (50+) but bal_acc drops → coefficients too high,
+#     VICReg is forcing noise. Halve the weights.
+#   - eff_rank barely moves → coefficients too low, double the weights.
+#   - eff_rank rises and bal_acc unchanged → VICReg expands the
+#     unused-dim subspace but doesn't help capability; collapse was
+#     not actually constraining.
+#
+# Otherwise identical to embed_dim_512.yaml. Same encoder frame, same
+# optimization recipe, 10 epochs.
+#
+# Result: outputs/results/vicreg_v1c1.json
+# Reproduce: python scripts/run_experiment.py configs/experiments/vicreg_v1c1.yaml
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pairs_file: data/raw/etp/2025-08-11-vampire.json.gz
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: data/splits/level1_holdout_seed42.parquet
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.7
+  vicreg_var_weight: 1.0
+  vicreg_cov_weight: 1.0
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: vicreg_v1c1
+  log_every: 50
