@@ -101,12 +101,26 @@ def test_evaluate_returns_expected_keys():
     expected_keys = {
         'loss', 'balanced_accuracy', 'true_recall', 'false_recall',
         'threshold', 'n_evaluated',
+        # Per-class distance distribution diagnostics
+        'dist_true_p05', 'dist_true_p25', 'dist_true_p50',
+        'dist_true_p75', 'dist_true_p95',
+        'dist_false_p05', 'dist_false_p25', 'dist_false_p50',
+        'dist_false_p75', 'dist_false_p95',
+        'dist_gap_median',
+        'dist_overlap_true_above_false_med',
+        'dist_overlap_false_below_true_med',
     }
     assert set(metrics) == expected_keys
     assert metrics['n_evaluated'] == 4
     assert 0.0 <= metrics['balanced_accuracy'] <= 1.0
     assert 0.0 <= metrics['true_recall'] <= 1.0
     assert 0.0 <= metrics['false_recall'] <= 1.0
+    # Sanity: per-class percentiles are in the bounded distance range [0, 2].
+    for key in (
+        'dist_true_p05', 'dist_true_p50', 'dist_true_p95',
+        'dist_false_p05', 'dist_false_p50', 'dist_false_p95',
+    ):
+        assert 0.0 <= metrics[key] <= 2.0 + 1e-5, f'{key}={metrics[key]}'
 
 
 def test_evaluate_max_batches_caps_iteration():

@@ -154,6 +154,32 @@ def evaluate(
     sens = tp / n_pos
     spec = tn / n_neg
 
+    # Per-class distance distribution diagnostics. Tracking these lets us
+    # see whether the correct-TRUE / correct-FALSE distance populations
+    # are pulling apart over training (the explicit goal of widening the
+    # contrastive margin) or staying overlapped near the threshold.
+    true_mask = labels == 1
+    false_mask = labels == 0
+    true_d = distances[true_mask]
+    false_d = distances[false_mask]
+    pcts = torch.tensor([0.05, 0.25, 0.50, 0.75, 0.95])
+    if len(true_d) > 0:
+        td_q = torch.quantile(true_d, pcts).tolist()
+    else:
+        td_q = [0.0] * 5
+    if len(false_d) > 0:
+        fd_q = torch.quantile(false_d, pcts).tolist()
+    else:
+        fd_q = [0.0] * 5
+    # Overlap proxy: fraction of TRUE pairs whose distance is above the
+    # FALSE-class median, AND fraction of FALSE pairs below the TRUE-class
+    # median. Both are zero in a perfectly separated geometry; both
+    # approach 0.5 if the classes are indistinguishable.
+    fd_median = fd_q[2] if len(false_d) > 0 else 0.0
+    td_median = td_q[2] if len(true_d) > 0 else 0.0
+    true_above_false_med = float((true_d > fd_median).float().mean().item()) if len(true_d) > 0 else 0.0
+    false_below_true_med = float((false_d < td_median).float().mean().item()) if len(false_d) > 0 else 0.0
+
     return {
         'loss': float(avg_loss),
         'balanced_accuracy': 0.5 * (sens + spec),
@@ -161,6 +187,19 @@ def evaluate(
         'false_recall': spec,
         'threshold': float(threshold),
         'n_evaluated': int(len(distances)),
+        'dist_true_p05': td_q[0],
+        'dist_true_p25': td_q[1],
+        'dist_true_p50': td_q[2],
+        'dist_true_p75': td_q[3],
+        'dist_true_p95': td_q[4],
+        'dist_false_p05': fd_q[0],
+        'dist_false_p25': fd_q[1],
+        'dist_false_p50': fd_q[2],
+        'dist_false_p75': fd_q[3],
+        'dist_false_p95': fd_q[4],
+        'dist_gap_median': fd_median - td_median,
+        'dist_overlap_true_above_false_med': true_above_false_med,
+        'dist_overlap_false_below_true_med': false_below_true_med,
     }
 
 
@@ -358,10 +397,19 @@ def train(config: dict, sanity_check: bool = False) -> dict:
     best_epoch_metrics: dict = {}
     ckpt_dir = _resolve_checkpoint_dir(config)
 
+    # Diagnostics: counters maintained across the epoch and reset each
+    # epoch boundary, used to summarize per-epoch instability.
+    epoch_clipped_steps = 0
+    epoch_grad_norm_sum = 0.0
+    encoder_params = list(jepa.context_encoder.parameters())
+    predictor_params = list(jepa.predictor.parameters())
+
     for epoch in range(epochs):
         jepa.train()
         epoch_loss_sum = 0.0
         epoch_batches = 0
+        epoch_clipped_steps = 0
+        epoch_grad_norm_sum = 0.0
         for batch_idx, (eq1, eq2, labels) in enumerate(train_loader):
             if max_train_batches is not None and batch_idx >= max_train_batches:
                 break
@@ -379,6 +427,17 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             cont_loss = contrastive_loss(
                 z_pred, z_tgt, labels, margin=margin, true_weight=true_weight,
             )
+            # Per-class contrastive components for diagnostics. Recomputes
+            # d / pos / neg cheaply; logs the mean over each class so we
+            # can see which side is destabilizing the loss curve.
+            with torch.no_grad():
+                _d_diag = F.pairwise_distance(z_pred, z_tgt)
+                _pos_per = _d_diag.pow(2)                          # TRUE-pull per pair
+                _neg_per = F.relu(margin - _d_diag).pow(2)         # FALSE-push per pair
+                _n_true = labels.sum().clamp_min(1)
+                _n_false = (1.0 - labels).sum().clamp_min(1)
+                cont_loss_true = float((labels * _pos_per).sum() / _n_true)
+                cont_loss_false = float(((1.0 - labels) * _neg_per).sum() / _n_false)
             loss = cont_loss
             if vicreg_active:
                 # VICReg on the *encoder* pre-norm tensors: gives a direct
@@ -400,7 +459,26 @@ def train(config: dict, sanity_check: bool = False) -> dict:
                     + vicreg_cov_weight * cov_loss
                 )
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(trainable_params, grad_clip)
+
+            # Per-module grad norms BEFORE clipping (clip_grad_norm_ scales
+            # all grads in place). Useful for spotting which side
+            # (encoder vs predictor) is driving spikes.
+            with torch.no_grad():
+                enc_grad_norm = float(torch.norm(torch.stack([
+                    p.grad.detach().data.norm(2)
+                    for p in encoder_params if p.grad is not None
+                ])))
+                pred_grad_norm = float(torch.norm(torch.stack([
+                    p.grad.detach().data.norm(2)
+                    for p in predictor_params if p.grad is not None
+                ])))
+            # clip_grad_norm_ returns the *pre-clip* total norm; capture it
+            # before applying the clip so we can tell when clipping fired.
+            grad_norm_pre = float(torch.nn.utils.clip_grad_norm_(trainable_params, grad_clip))
+            grad_norm_post = min(grad_norm_pre, grad_clip)
+            clipped = grad_norm_pre > grad_clip
+            epoch_clipped_steps += int(clipped)
+            epoch_grad_norm_sum += grad_norm_pre
 
             lr_mult = cosine_warmup_lr_multiplier(step, total_steps, warmup_steps)
             for g in optimizer.param_groups:
@@ -417,6 +495,13 @@ def train(config: dict, sanity_check: bool = False) -> dict:
                 step_metrics = {
                     'train/loss': loss.item(),
                     'train/contrastive_loss': cont_loss.item(),
+                    'train/contrastive_loss_true': cont_loss_true,
+                    'train/contrastive_loss_false': cont_loss_false,
+                    'train/grad_norm_pre_clip': grad_norm_pre,
+                    'train/grad_norm_post_clip': grad_norm_post,
+                    'train/grad_norm_encoder': enc_grad_norm,
+                    'train/grad_norm_predictor': pred_grad_norm,
+                    'train/grad_clipped': float(clipped),
                     'train/lr': base_lr * lr_mult,
                     'train/tau': tau,
                     'train/elapsed_sec': time.perf_counter() - t_start,
@@ -452,6 +537,8 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         epoch_metrics = {
             'epoch': epoch,
             'train/avg_loss': avg_train_loss,
+            'train/avg_grad_norm_pre_clip': epoch_grad_norm_sum / max(epoch_batches, 1),
+            'train/clipped_step_fraction': epoch_clipped_steps / max(epoch_batches, 1),
             'val/loss': val['loss'],
             'val/balanced_accuracy': val['balanced_accuracy'],
             'val/true_recall': val['true_recall'],
@@ -460,6 +547,15 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'val/n_evaluated': val['n_evaluated'],
             'val/corpus_eff_rank': eff_rank_corpus,
             'val/corpus_eff_rank_raw': eff_rank_corpus_raw,
+            'val/dist_true_p05': val['dist_true_p05'],
+            'val/dist_true_p50': val['dist_true_p50'],
+            'val/dist_true_p95': val['dist_true_p95'],
+            'val/dist_false_p05': val['dist_false_p05'],
+            'val/dist_false_p50': val['dist_false_p50'],
+            'val/dist_false_p95': val['dist_false_p95'],
+            'val/dist_gap_median': val['dist_gap_median'],
+            'val/dist_overlap_true_above_false_med': val['dist_overlap_true_above_false_med'],
+            'val/dist_overlap_false_below_true_med': val['dist_overlap_false_below_true_med'],
             'elapsed_sec': time.perf_counter() - t_start,
         }
         log_metrics(epoch_metrics, run, step=step, prefix=f'[ep{epoch} eval]')
