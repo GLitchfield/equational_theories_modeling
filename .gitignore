@@ -44,8 +44,10 @@ outputs/figures/*
 # failure analysis: large parquet + npy artifacts stay out of git
 # (regenerable from checkpoints via scripts/save_predictions.py and
 # scripts/save_embeddings.py); the small JSON summaries are tracked.
-outputs/failure_analysis/*.parquet
-outputs/failure_analysis/*.npy
+# Pattern covers outputs/failure_analysis/ and any sibling
+# outputs/failure_analysis_*/ run directory.
+outputs/failure_analysis*/*.parquet
+outputs/failure_analysis*/*.npy
 
 # wandb local logs
 wandb/
