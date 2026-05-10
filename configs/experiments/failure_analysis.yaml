@@ -1,0 +1,85 @@
+# Failure-analysis training: best model recipe, all 22M pairs, 20 epochs.
+#
+# Per testing_plan_phase2.md (the active plan). Same architecture and
+# loss as vicreg_encoder_v0p25c0p25_tw1p0_v2 (current best at 0.9112);
+# only difference is no holdout — train on every labeled pair — and
+# 2× the epochs for fuller convergence. Per-epoch capped val uses an
+# in-sample 1M-pair monitor subset for threshold calibration only.
+#
+# After training, scripts/save_predictions.py runs the best checkpoint
+# over every off-diagonal pair (~22M) and writes per-pair predictions
+# to outputs/failure_analysis/predictions.parquet for the eight
+# downstream analyses described in the plan.
+#
+# Reproduce:
+#   python scripts/train.py \
+#       --config configs/experiments/failure_analysis.yaml \
+#       --no-holdout \
+#       --name failure_analysis
+#   python scripts/save_predictions.py outputs/checkpoints/failure_analysis/<best>.pt
+#   python scripts/save_embeddings.py  outputs/checkpoints/failure_analysis/<best>.pt
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null      # signals no-holdout to train.py
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 20
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200    # caps the 1M-row monitor eval per epoch
+
+loss:
+  type: contrastive
+  margin: 1.0
+  true_weight: 1.0
+  vicreg_var_weight: 0.25
+  vicreg_cov_weight: 0.25
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: failure_analysis
+  log_every: 50
