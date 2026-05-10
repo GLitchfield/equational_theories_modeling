@@ -88,7 +88,7 @@ def _load_austin_pairs(path: str) -> set[tuple[int, int]]:
 
 def _bucket_austin_pairs(
     pair_table_path: str,
-    holdout_path: str,
+    holdout_path: str | None,
     austin: set[tuple[int, int]],
 ) -> dict[str, list[tuple[int, int, int]]]:
     """Bucket every Austin pair by training visibility.
@@ -97,8 +97,15 @@ def _bucket_austin_pairs(
     each entry is ``(eq1_id, eq2_id, corpus_value)``. All Austin pairs
     are ground-truth FALSE per the ETP's Lean-verified infinite-
     counterexample constructions.
+
+    With ``holdout_path=None`` (no-holdout training mode) the model has
+    seen every labeled pair during training, so every Austin pair lands
+    in the ``train`` bucket — ``holdout`` and ``unseen`` are empty.
     """
-    holdout_idx = set(pq.read_table(holdout_path)['pair_idx'].to_numpy().astype(np.int64).tolist())
+    if holdout_path is None:
+        holdout_idx: set[int] = set()
+    else:
+        holdout_idx = set(pq.read_table(holdout_path)['pair_idx'].to_numpy().astype(np.int64).tolist())
     tbl = pq.read_table(pair_table_path)
     eq1_arr = tbl['eq1_id'].to_numpy()
     eq2_arr = tbl['eq2_id'].to_numpy()
@@ -152,7 +159,10 @@ def _evaluate_checkpoint(ckpt_path: str, austin_pairs: set, device: str = 'cuda'
     jepa.eval()
 
     pair_path = os.path.join(_REPO_ROOT, cfg['data']['pair_table_path'])
-    holdout_path = os.path.join(_REPO_ROOT, cfg['data']['holdout_path'])
+    holdout_raw = cfg['data'].get('holdout_path')
+    holdout_path = (
+        os.path.join(_REPO_ROOT, holdout_raw) if holdout_raw else None
+    )
     cache_path = os.path.join(_REPO_ROOT, cfg['data']['graph_cache_path'])
 
     buckets = _bucket_austin_pairs(pair_path, holdout_path, austin_pairs)
@@ -288,24 +298,40 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     result = _evaluate_checkpoint(args.checkpoint, austin, device=device)
-    # Try to find a sibling result JSON for the threshold + overall recall.
+    # Threshold + overall_false_recall come from a recorded result. For
+    # standard runs that's outputs/results/<name>.json (written by
+    # run_experiment / record_run). For failure-analysis no-holdout
+    # runs that's outputs/failure_analysis/failure_summary.json (written
+    # by save_predictions). Fall back to all-bucket median if neither
+    # exists.
     threshold = None
     overall = None
     name = result['name']
-    record_path = os.path.join(_REPO_ROOT, 'outputs/results', f'{name}.json')
-    if os.path.exists(record_path):
-        with open(record_path) as f:
+    for candidate in (
+        os.path.join(_REPO_ROOT, 'outputs/results', f'{name}.json'),
+        os.path.join(_REPO_ROOT, 'outputs/failure_analysis/failure_summary.json'),
+    ):
+        if not os.path.exists(candidate):
+            continue
+        with open(candidate) as f:
             rec = json.load(f)
-        threshold = float(rec['eval']['threshold'])
-        overall = float(rec['eval']['false_recall'])
+        if 'eval' in rec:
+            threshold = float(rec['eval']['threshold'])
+            overall = float(rec['eval']['false_recall'])
+        else:
+            threshold = float(rec.get('threshold')) if rec.get('threshold') is not None else None
+            overall = float(rec.get('false_recall')) if rec.get('false_recall') is not None else None
+        if threshold is not None:
+            break
 
     if threshold is None:
-        # Fall back to a self-calibrated threshold on these pairs alone —
-        # but warn that the comparison to "overall" recall is then apples-
-        # to-oranges.
-        print('NOTE: no recorded result for this checkpoint; using median '
-              'distance as a placeholder threshold.')
-        threshold = float(np.median(result['distances']))
+        print('NOTE: no recorded threshold for this checkpoint; using median '
+              'distance across Austin pairs as a placeholder.')
+        all_dists = np.concatenate(
+            [result['buckets'][b]['distances'] for b in ('train', 'holdout', 'unseen')
+             if result['buckets'][b]['n'] > 0]
+        )
+        threshold = float(np.median(all_dists)) if len(all_dists) else 1.0
 
     _print_one(result, threshold, overall)
     if args.detail:

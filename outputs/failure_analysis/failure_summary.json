@@ -1,0 +1,15 @@
+{
+  "bal_acc": 0.8910585370289181,
+  "checkpoint": "outputs/checkpoints/failure_analysis/epoch_019.pt",
+  "epoch": 19,
+  "false_recall": 0.831601235536551,
+  "n_false": 13855357,
+  "n_pairs": 22028942,
+  "n_true": 8173585,
+  "n_wrong": 2737688,
+  "n_wrong_false": 2333225,
+  "n_wrong_true": 404463,
+  "name": "failure_analysis",
+  "threshold": 0.7836635112762451,
+  "true_recall": 0.9505158385212853
+}
