@@ -1,0 +1,88 @@
+# Failure-analysis training, attempt to stabilize: margin 1.0 → 1.5
+# and lower VICReg coefficients 0.25 → 0.1.
+#
+# Driving hypotheses (from the failure_analysis analyses):
+#
+# 1. The 2.7M borderline failures are partly geometry: correct TRUE
+#    median distance 0.67, correct FALSE 1.03 — a 0.36 gap with both
+#    populations bleeding into the threshold neighbourhood (where
+#    56% of wrong-TRUE and 32% of wrong-FALSE pairs sit). A larger
+#    contrastive margin pushes those distributions further apart,
+#    shrinking the overlap zone. L2-normalized embeddings max out at
+#    distance 2.0, so margin=1.5 still leaves headroom.
+#
+# 2. The wild per-epoch trajectory (corpus_eff_rank swings 11 → 122 → 12;
+#    bal_acc oscillates 0.66 to 0.89 across the run) suggests VICReg's
+#    full-strength signal is destabilizing the contrastive geometry. The
+#    encoder already escaped the rank-9 collapse — corpus rank is now
+#    ~15-30. A lighter VICReg (0.1 vs 0.25) should keep the rank from
+#    drifting back to 9 while letting the contrastive loss settle into
+#    a clean boundary.
+#
+# Otherwise identical to failure_analysis.yaml (no holdout, 10 epochs,
+# same architecture and locked-in best recipe).
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5             # was 1.0
+  true_weight: 1.0
+  vicreg_var_weight: 0.1  # was 0.25
+  vicreg_cov_weight: 0.1  # was 0.25
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: failure_analysis_m1p5_vic0p1
+  log_every: 50
