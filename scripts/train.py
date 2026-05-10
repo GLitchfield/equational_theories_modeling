@@ -59,6 +59,15 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help='Wandb run name override',
     )
+    parser.add_argument(
+        '--no-holdout',
+        action='store_true',
+        help='Train on every labeled pair (no L1 holdout). Per-epoch eval '
+             'uses an in-sample 1M-pair monitor subset for threshold '
+             'calibration only — generalization estimates from this run '
+             'are biased upward; intended for failure-analysis training '
+             'where every pair will be re-evaluated post hoc.',
+    )
     args = parser.parse_args(argv)
 
     config_path = args.config
@@ -76,6 +85,8 @@ def main(argv: list[str] | None = None) -> int:
         config['training']['max_val_batches'] = args.max_val_batches
     if args.name is not None:
         config.setdefault('wandb', {})['name'] = args.name
+    if args.no_holdout:
+        config['data']['holdout_path'] = None
 
     train(config, sanity_check=args.sanity_check)
     return 0

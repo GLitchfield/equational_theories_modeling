@@ -176,6 +176,47 @@ def test_make_loaders_val_is_shuffled_unbiased():
     )
 
 
+def test_make_loaders_no_holdout_uses_all_pairs_and_subsamples_val():
+    """``holdout_path=None`` mode: train_ds = every labeled row;
+    val_ds = a deterministic random subsample of train_ds for monitoring.
+    This is the failure-analysis training path."""
+    pair_path = os.path.join(_REPO_ROOT, 'data/processed/implication_pairs.parquet')
+    cache_path = os.path.join(_REPO_ROOT, 'data/processed/equation_graphs.pt')
+    if not all(os.path.exists(p) for p in [pair_path, cache_path]):
+        return
+    _, _, train_ds, val_ds = make_loaders(
+        pair_path, cache_path, holdout_path=None,
+        batch_size=2048, num_workers=0, pin_memory=False,
+        no_holdout_val_size=10_000,
+    )
+    # All labeled pairs in training (the post-2026-05-09 data has zero
+    # value=2 unknowns, so this equals the full off-diagonal corpus).
+    assert len(train_ds) == 22_028_942
+    # Val is a fixed random subsample of train.
+    assert len(val_ds) == 10_000
+    val_set = set(int(i) for i in val_ds.indices.tolist())
+    train_set = set(int(i) for i in train_ds.indices.tolist())
+    assert val_set.issubset(train_set), 'no-holdout val must be drawn from train'
+
+
+def test_make_loaders_no_holdout_val_subsample_is_deterministic():
+    pair_path = os.path.join(_REPO_ROOT, 'data/processed/implication_pairs.parquet')
+    cache_path = os.path.join(_REPO_ROOT, 'data/processed/equation_graphs.pt')
+    if not all(os.path.exists(p) for p in [pair_path, cache_path]):
+        return
+    _, _, _, val_ds_a = make_loaders(
+        pair_path, cache_path, holdout_path=None,
+        batch_size=2048, num_workers=0, pin_memory=False,
+        val_shuffle_seed=42, no_holdout_val_size=5_000,
+    )
+    _, _, _, val_ds_b = make_loaders(
+        pair_path, cache_path, holdout_path=None,
+        batch_size=2048, num_workers=0, pin_memory=False,
+        val_shuffle_seed=42, no_holdout_val_size=5_000,
+    )
+    assert np.array_equal(val_ds_a.indices, val_ds_b.indices)
+
+
 def test_make_loaders_val_shuffle_is_deterministic():
     """Same seed → same val ordering → epoch-to-epoch and run-to-run
     capped scores remain comparable."""

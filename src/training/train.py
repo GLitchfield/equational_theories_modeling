@@ -260,16 +260,23 @@ def train(config: dict, sanity_check: bool = False) -> dict:
 
     # --- data ---
     print('loading data ...')
+    holdout_path = config['data'].get('holdout_path')
+    if holdout_path == '' or (isinstance(holdout_path, str) and holdout_path.lower() == 'none'):
+        holdout_path = None
     train_loader, val_loader, train_ds, val_ds = make_loaders(
         pair_table_path=config['data']['pair_table_path'],
         graph_cache_path=config['data']['graph_cache_path'],
-        holdout_path=config['data']['holdout_path'],
+        holdout_path=holdout_path,
         batch_size=int(config['training']['batch_size']),
         num_workers=int(config['data'].get('num_workers', 0)),
         pin_memory=(device == 'cuda'),
     )
     print(f'  train: {len(train_ds):,} samples, {len(train_loader):,} batches')
-    print(f'  val:   {len(val_ds):,} samples, {len(val_loader):,} batches')
+    if holdout_path is None:
+        print(f'  val (no-holdout monitor subset): {len(val_ds):,} samples, '
+              f'{len(val_loader):,} batches')
+    else:
+        print(f'  val:   {len(val_ds):,} samples, {len(val_loader):,} batches')
 
     # --- model ---
     print('building model ...')

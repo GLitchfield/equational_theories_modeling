@@ -136,35 +136,47 @@ def derive_train_indices(values: np.ndarray, holdout_indices: np.ndarray) -> np.
 def make_loaders(
     pair_table_path: str,
     graph_cache_path: str,
-    holdout_path: str,
+    holdout_path: str | None,
     batch_size: int = 2048,
     num_workers: int = 0,
     pin_memory: bool = True,
     shuffle_train: bool = True,
     val_shuffle_seed: int = 0,
+    no_holdout_val_size: int = 1_000_000,
 ) -> tuple[DataLoader, DataLoader, ImplicationPairsDataset, ImplicationPairsDataset]:
-    """Build training and validation DataLoaders from the cache + pair table + holdout.
+    """Build training and validation DataLoaders from the cache + pair table.
 
-    The val dataset's indices are deterministically permuted with
-    ``val_shuffle_seed``. Without this, ``holdout_idx`` is sorted ascending
-    by pair-table row, which correlates with equation ID and thus with
-    equation complexity — so an evaluator using ``max_batches=N`` on the
-    val_loader (i.e. taking the first N batches) reads a biased slice
-    rather than a representative sample. Permuting once means the capped
-    slice is an unbiased random sample, deterministic across epochs and
-    runs.
+    With ``holdout_path`` set (the standard L1/L2/L3 path), train_ds gets
+    every labeled row not in the holdout and val_ds gets the holdout. The
+    val dataset's indices are deterministically permuted with
+    ``val_shuffle_seed`` so that capped-eval slices are unbiased.
+
+    With ``holdout_path=None`` (the failure-analysis "no-holdout" mode),
+    every labeled row goes into train_ds and val_ds is a deterministic
+    random subsample of train (size ``no_holdout_val_size``) used purely
+    for per-epoch threshold calibration and bal_acc monitoring. The
+    monitor accuracy is in-sample so it overestimates generalization, but
+    the alternative — no per-epoch eval at all — gives no signal about
+    whether training is progressing. The plan accepts this bias.
 
     Returns:
         ``(train_loader, val_loader, train_dataset, val_dataset)``.
     """
     eq1_ids, eq2_ids, values = load_pair_arrays(pair_table_path)
     graphs = load_graph_cache(graph_cache_path)
-    holdout_idx = load_holdout_indices(holdout_path)
-    train_idx = derive_train_indices(values, holdout_idx)
 
     rng = np.random.default_rng(val_shuffle_seed)
-    val_idx = holdout_idx.copy()
-    rng.shuffle(val_idx)
+    if holdout_path is None:
+        # No-holdout: train on every labeled row; monitor on a fixed
+        # random subsample of train.
+        train_idx = derive_train_indices(values, np.array([], dtype=np.int64))
+        size = min(no_holdout_val_size, len(train_idx))
+        val_idx = rng.choice(train_idx, size=size, replace=False)
+    else:
+        holdout_idx = load_holdout_indices(holdout_path)
+        train_idx = derive_train_indices(values, holdout_idx)
+        val_idx = holdout_idx.copy()
+        rng.shuffle(val_idx)
 
     train_ds = ImplicationPairsDataset(eq1_ids, eq2_ids, values, graphs, train_idx)
     val_ds = ImplicationPairsDataset(eq1_ids, eq2_ids, values, graphs, val_idx)
