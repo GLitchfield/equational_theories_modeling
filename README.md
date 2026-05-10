@@ -2,7 +2,7 @@
 
 Train a Joint Embedding Predictive Architecture to learn the geometric structure of equational implication over magmas. The 22M Lean-verified implication pairs from the Equational Theories Project are used to learn an embedding space where distance encodes implication relationships; the geometry of that space — what algebraic structure it recovers, what it doesn't, how it generalizes to held-out equations — is the primary research output. Classification accuracy is a validation metric, not the headline.
 
-The full design is in [jepa_engineering_plan.md](jepa_engineering_plan.md). Read that first.
+The current active plan is [testing_plan_phase2.md](testing_plan_phase2.md) — failure analysis on the post-VICReg model. The original engineering plan that set up Phase 1 (architecture + loss sweep) lives at [archive/jepa_engineering_plan.md](archive/jepa_engineering_plan.md); Phase 1 is complete and the current best model (bal_acc 0.9112) reflects that work. Read the active plan first; the archive has the Phase 2–4 ideas that are on hold pending failure-analysis findings.
 
 ## Setup
 
@@ -25,7 +25,8 @@ ln -s /path/to/equational_theories_data/assembly/output  data/raw/invariants
 Files used:
 
 - `data/raw/etp/equations.txt` — 4,694 equations (line N = equation ID N)
-- `data/raw/etp/2025-08-11-vampire.json.gz` — 22M pair labels, keyed `"i_j" -> {value: 0|1|2}` (0=FALSE, 1=TRUE, 2=unknown)
+- `data/raw/etp_export/export_raw_implications_5_9_2026.csv` — authoritative ground-truth label for every off-diagonal pair (4694×4694 int8 matrix, codes ±3/±4 mapping to TRUE/FALSE; see CHANGELOG 2026-05-09)
+- `data/raw/etp/2025-08-11-vampire.json.gz` — *legacy* Vampire-derived labels (left 1,062 pairs unresolved); no longer the source of truth
 - `data/raw/invariants/equation_invariants.parquet` — per-equation invariants (used by Baseline 3 and Phase 4 probing; not needed by the JEPA model itself)
 
 Do not write to `data/raw/`. All processing goes to `data/processed/` (caches) or `data/splits/` (committed split indices).
@@ -43,4 +44,4 @@ Both are deterministic and re-runnable; their outputs are gitignored. See the sc
 
 ## Layout
 
-See [jepa_engineering_plan.md](jepa_engineering_plan.md) §"File Structure".
+See [archive/jepa_engineering_plan.md](archive/jepa_engineering_plan.md) §"File Structure".

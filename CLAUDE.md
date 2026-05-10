@@ -1,8 +1,12 @@
 # CLAUDE.md — JEPA for Equational Implication
 
-The full plan is `jepa_engineering_plan.md`. Read it first when starting a session. `CHANGELOG.md` records deviations from the plan and explains *why* the plan reads the way it does — read it whenever the plan references a CHANGELOG entry.
+The active plan is `testing_plan_phase2.md` — failure analysis on the post-VICReg model (current best `vicreg_encoder_v0p25c0p25_tw1p0_v2` at bal_acc 0.9112). Read it first when starting a session.
 
-When you deviate from the plan, update the plan to match reality AND add a CHANGELOG.md entry explaining why, in the same commit as the deviating code.
+The original Phase 1 → Phase 4 engineering plan is at `archive/jepa_engineering_plan.md`. It set up the architecture sweep that produced the current best model. Phase 1 is complete; Phases 2–4 (level-2/3 holdouts, architecture refinement, probing as a separate phase) are on hold pending the failure analysis. Revisit if the failure analysis points back at any of those threads.
+
+`CHANGELOG.md` records deviations from the plan and explains *why* the plan reads the way it does — read it whenever a plan or commit references a CHANGELOG entry.
+
+When you deviate from the active plan, update it to match reality AND add a CHANGELOG.md entry explaining why, in the same commit as the deviating code.
 
 ## Operational rules
 
@@ -10,7 +14,7 @@ When you deviate from the plan, update the plan to match reality AND add a CHANG
 - Use `wandb` for ALL experiment tracking. Every training run must be logged.
 - Always report metrics per holdout level separately: L1, L2 one-unknown, L2 both-unknown, L3. Never average across levels — the gaps BETWEEN levels are the headline finding.
 - Save holdout split indices to `data/splits/` so experiments are reproducible. Every experiment log must reference which split file was used.
-- Run baselines (1–4 in the plan) before training the JEPA. Without baselines you can't interpret the JEPA results.
+- Run baselines (1–4 in `archive/jepa_engineering_plan.md`) before training the JEPA. Without baselines you can't interpret the JEPA results.
 - The equation parser is the critical path — if parsing is wrong, everything downstream is wrong. Test it thoroughly against known equations before any training.
 - Hardware: RTX 4080, 16 GB VRAM. Monitor and reduce batch size if OOM.
 - Paper figures must be reproducible from notebooks in `notebooks/`. No one-off scripts.

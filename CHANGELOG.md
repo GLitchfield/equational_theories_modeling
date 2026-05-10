@@ -1,6 +1,18 @@
 # Changelog
 
-Deviations from `jepa_engineering_plan.md` and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history.
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `testing_plan_phase2.md`; the original engineering plan that drove Phase 1 is at `archive/jepa_engineering_plan.md`.
+
+---
+
+## 2026-05-09 — Original Phase 2+ archived; new plan is failure analysis
+
+`jepa_engineering_plan.md` was moved to `archive/jepa_engineering_plan.md`. Its Phase 1 (architecture sweep + loss form) is complete and produced the current best model (`vicreg_encoder_v0p25c0p25_tw1p0_v2`, bal_acc 0.9112, near-balanced recall, Austin holdout recall 0.94). The original Phases 2–4 (level-2/3 holdouts, architecture refinement, separate probing phase) are on hold pending a different investigation.
+
+The new active plan is `testing_plan_phase2.md` — a **failure analysis** on the current best model. Train on ALL ~22M pairs (no holdout) for 20 epochs; evaluate on every pair; study what the model gets wrong despite training on it. Eight analyses planned, covering: cross-reference with Austin pairs (does the GNN learn an "Austin-like" syntactic signature?), structural-invariant distribution of failures, magma-signature separability of confidently-wrong FALSE pairs, Vampire-solve-time correlation, distance distribution, equation-level failure concentration, embedding-space UMAP visualization, and linear probing of frozen embeddings against the invariants.
+
+This requires new infrastructure: a `--no-holdout` training mode, a `--save-predictions` flag, a 22M-pair full-eval pass that writes per-pair (eq1_id, eq2_id, ground_truth, predicted, distance) parquet, and several analysis / figure scripts. The CHANGELOG will track those as they're built.
+
+CLAUDE.md and README.md were updated to point at the new active plan and note the archive location.
 
 ---
 
