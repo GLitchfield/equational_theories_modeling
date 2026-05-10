@@ -41,13 +41,15 @@ outputs/figures/*
 !outputs/probing_results/.gitkeep
 !outputs/figures/.gitkeep
 
-# failure analysis: large parquet + npy artifacts stay out of git
-# (regenerable from checkpoints via scripts/save_predictions.py and
-# scripts/save_embeddings.py); the small JSON summaries are tracked.
-# Pattern covers outputs/failure_analysis/ and any sibling
-# outputs/failure_analysis_*/ run directory.
+# per-run artifacts: large parquet + npy stay out of git (regenerable
+# from checkpoints via scripts/save_predictions.py and save_embeddings.py);
+# the small JSON summaries, analysis outputs, and figures are tracked.
+# Patterns cover both layouts: legacy outputs/failure_analysis*/ and
+# the new outputs/runs/<name>/ convention adopted 2026-05-10.
 outputs/failure_analysis*/*.parquet
 outputs/failure_analysis*/*.npy
+outputs/runs/*/*.parquet
+outputs/runs/*/*.npy
 
 # wandb local logs
 wandb/

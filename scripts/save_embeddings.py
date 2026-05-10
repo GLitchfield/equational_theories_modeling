@@ -47,8 +47,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('checkpoint', help='Path to a JEPA checkpoint .pt')
     parser.add_argument(
-        '--output-dir', default='outputs/failure_analysis',
-        help='Directory for the embedding files (default: %(default)s)',
+        '--output-dir', default=None,
+        help='Directory for the embedding files. Defaults to '
+             '``outputs/runs/<wandb.name from checkpoint>/``.',
     )
     parser.add_argument(
         '--batch-size', type=int, default=1024,
@@ -66,6 +67,15 @@ def main(argv: list[str] | None = None) -> int:
         help='Overwrite existing output files',
     )
     args = parser.parse_args(argv)
+
+    if args.output_dir is None:
+        ckpt_peek = torch.load(args.checkpoint, weights_only=False, map_location='cpu')
+        name_hint = (
+            (ckpt_peek.get('config', {}).get('wandb', {}) or {}).get('name')
+            or os.path.splitext(os.path.basename(args.checkpoint))[0]
+        )
+        del ckpt_peek
+        args.output_dir = os.path.join('outputs/runs', name_hint)
 
     out_dir = _abs(args.output_dir)
     os.makedirs(out_dir, exist_ok=True)

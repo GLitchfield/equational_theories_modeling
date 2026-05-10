@@ -1,0 +1,85 @@
+# First "stable_*" run — the stabilization recipe (margin=1.5,
+# VICReg coefficients 0.1/0.1) instrumented with the new diagnostics.
+#
+# Same recipe as the prior failure_analysis_m1p5_vic0p1 run (bal_acc
+# 0.9523 on full eval, stable trajectory across all 10 epochs). That
+# run pre-dated the diagnostic upgrade in 6c40ed2, so we only have the
+# per-epoch monitor trace — no per-step grad norms, no per-class loss
+# split, no per-class distance percentiles. This re-run captures all
+# three, so we have a properly instrumented reference for the next
+# variants to diff against.
+#
+# Naming / output convention adopted here (2026-05-10):
+#   - "stable_*" prefix marks the stability-investigation track
+#   - Run artifacts (predictions, embeddings, analysis JSONs, figures)
+#     land under outputs/runs/<run-name>/ rather than the older
+#     outputs/failure_analysis*/ layout
+#
+# Configuration is identical to failure_analysis_m1p5_vic0p1.yaml
+# except log_every: 50 → 25 (more wandb resolution on the per-step
+# diagnostics without much cost; ~430 logs/epoch).
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.1
+  vicreg_cov_weight: 0.1
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: stable_m1p5_vic0p1_diag
+  log_every: 25

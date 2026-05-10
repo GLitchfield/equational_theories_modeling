@@ -100,8 +100,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('checkpoint', help='Path to a JEPA checkpoint .pt')
     parser.add_argument(
-        '--output-dir', default='outputs/failure_analysis',
-        help='Directory for the predictions parquet (default: %(default)s)',
+        '--output-dir', default=None,
+        help='Directory for the predictions parquet. Defaults to '
+             '``outputs/runs/<wandb.name from checkpoint>/``; pass to '
+             'override (e.g. when comparing two runs side by side).',
     )
     parser.add_argument(
         '--filename', default='predictions.parquet',
@@ -134,6 +136,16 @@ def main(argv: list[str] | None = None) -> int:
         help='Overwrite an existing output file',
     )
     args = parser.parse_args(argv)
+
+    # Peek at the checkpoint config to derive the default output dir.
+    if args.output_dir is None:
+        ckpt_peek = torch.load(args.checkpoint, weights_only=False, map_location='cpu')
+        name_hint = (
+            (ckpt_peek.get('config', {}).get('wandb', {}) or {}).get('name')
+            or os.path.splitext(os.path.basename(args.checkpoint))[0]
+        )
+        del ckpt_peek
+        args.output_dir = os.path.join('outputs/runs', name_hint)
 
     out_dir = _abs(args.output_dir)
     os.makedirs(out_dir, exist_ok=True)
