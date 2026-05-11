@@ -1,0 +1,93 @@
+# stable_h256_m1p5_sigreg_diag — first SIGReg run.
+#
+# Same recipe as stable_h256_m1p5_vic0p1_diag (margin 1.5, no-holdout
+# 22M, 10 epochs, batch 2048, lr 1e-3, encoder hidden_dim=256) but
+# replacing VICReg with SIGReg (LeJEPA Algorithm 1, Balestriero & LeCun
+# 2025).
+#
+# Hypothesis: VICReg fails at h=256 because moment-only matching admits
+# shortcut solutions (LeJEPA Theorem 3) — at width, the wider encoder
+# slides into a TRUE-biased non-Gaussian regime that VICReg can't
+# detect. SIGReg matches the full distribution via the empirical
+# characteristic function, so any deviation from isotropic Gaussian
+# is detected and penalized.
+#
+# Direct comparison targets:
+#   stable_h256_m1p5_vic0p1_diag    best ep0=0.9333  (worst h=256)
+#   stable_h256_m1p5_vic0p05_diag   best ep0=0.9469  (best h=256 so far)
+#   stable_m1p5_vic0p1_diag         best ep6=0.9492  (h=128 reference)
+#
+# Success: bal_acc >= 0.95 SUSTAINED through ep9 (not just ep0), with
+# balanced recall (gap < 5pp). That would mean SIGReg fixed both the
+# h=256 absolute level and the late-training TRUE-bias drift, neither
+# of which VICReg achieves at this width.
+#
+# Single-knob change from stable_h256_m1p5_vic0p1_diag.yaml: regularizer.
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  # SIGReg replaces VICReg. lambda=0.05 is the paper's recommended
+  # default (Figure 8, Section 6.1) — the paper validates this works
+  # across architectures from ResNet-50 to ViT-g (1.8B params), so
+  # there's no width-dependent retuning needed in principle.
+  sigreg_lambda: 0.05
+  sigreg_num_slices: 1024
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: stable_h256_m1p5_sigreg_diag
+  log_every: 25
