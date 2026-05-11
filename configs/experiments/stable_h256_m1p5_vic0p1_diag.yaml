@@ -1,0 +1,75 @@
+# stable_h256_m1p5_vic0p1_diag — same recipe as stable_m1p5_vic0p1_diag
+# but with encoder.hidden_dim=128 -> 256.
+#
+# Prior hidden_dim=256 attempts (Phase 1, before stabilization):
+#   - hidden_dim_256              — went backwards on the embed=512 frame
+#   - hidden_dim_256_vicreg       — wider GAT still went backwards under
+#                                   VICReg-on-encoder regime
+# Both pre-dated the m=1.5/vic=0.1 stabilization recipe. Worth retesting
+# now that the optimization is stable, in case the prior worse-with-width
+# result was an instability artifact rather than a capacity ceiling.
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.1
+  vicreg_cov_weight: 0.1
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: stable_h256_m1p5_vic0p1_diag
+  log_every: 25
