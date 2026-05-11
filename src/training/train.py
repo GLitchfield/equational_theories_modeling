@@ -34,6 +34,7 @@ from src.model.encoder import EquationEncoder
 from src.model.jepa import JEPA
 from src.model.predictor import ImplicationPredictor
 from src.training.losses import contrastive_loss, effective_rank, vicreg_terms
+from src.training.sigreg import sigreg
 from src.training.scheduler import cosine_tau, cosine_warmup_lr_multiplier
 
 
@@ -373,6 +374,15 @@ def train(config: dict, sanity_check: bool = False) -> dict:
     vicreg_cov_weight = float(config['loss'].get('vicreg_cov_weight', 0.0))
     vicreg_gamma = float(config['loss'].get('vicreg_gamma', 1.0))
     vicreg_active = (vicreg_var_weight > 0.0) or (vicreg_cov_weight > 0.0)
+    sigreg_lambda = float(config['loss'].get('sigreg_lambda', 0.0))
+    sigreg_num_slices = int(config['loss'].get('sigreg_num_slices', 1024))
+    sigreg_active = sigreg_lambda > 0.0
+    if vicreg_active and sigreg_active:
+        raise ValueError(
+            'VICReg and SIGReg are both enabled in the loss config; '
+            'pick one regularizer at a time.'
+        )
+    needs_encoder_raw = vicreg_active or sigreg_active
     tau_start = float(config['ema']['tau_start'])
     tau_final = float(config['ema']['tau_final'])
     log_every = int(config.get('wandb', {}).get('log_every', 50))
@@ -418,7 +428,7 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             labels = labels.to(device)
 
             optimizer.zero_grad()
-            if vicreg_active:
+            if needs_encoder_raw:
                 z_pred, z_tgt, z_context_raw, z_tgt_raw = jepa(
                     eq1, eq2, return_encoder_raw=True,
                 )
@@ -458,6 +468,18 @@ def train(config: dict, sanity_check: bool = False) -> dict:
                     + vicreg_var_weight * var_loss
                     + vicreg_cov_weight * cov_loss
                 )
+            elif sigreg_active:
+                # SIGReg on the context encoder pre-norm only (target
+                # picks up diversity via EMA from the gradient-updated
+                # context encoder, same rationale as VICReg). Per-step
+                # direction sampling is seeded on `step` for
+                # reproducibility — see src/training/sigreg.py.
+                sigreg_per_slice = sigreg(
+                    z_context_raw, global_step=step,
+                    num_slices=sigreg_num_slices,
+                )
+                sigreg_loss = sigreg_per_slice.mean()
+                loss = cont_loss + sigreg_lambda * sigreg_loss
             loss.backward()
 
             # Per-module grad norms BEFORE clipping (clip_grad_norm_ scales
@@ -509,6 +531,8 @@ def train(config: dict, sanity_check: bool = False) -> dict:
                 if vicreg_active:
                     step_metrics['train/vicreg_var'] = var_loss.item()
                     step_metrics['train/vicreg_cov'] = cov_loss.item()
+                if sigreg_active:
+                    step_metrics['train/sigreg_loss'] = sigreg_loss.item()
                 log_metrics(
                     step_metrics, run, step=step,
                     prefix=f'[ep{epoch} step{step}]',
