@@ -1,0 +1,80 @@
+# stable_h256_m1p5_vic0p05_diag — variant A from the h=256 follow-up.
+#
+# Same recipe as stable_h256_m1p5_vic0p1_diag (margin 1.5, no-holdout,
+# 10 epochs, batch 2048, lr 1e-3, encoder hidden_dim=256) but VICReg
+# weights halved (0.1 -> 0.05 on both var and cov).
+#
+# Hypothesis: at h=256, the 0.1/0.1 VICReg recipe over-regularizes the
+# wider encoder — var loss saturates the gamma=1 hinge (0.04, was 0.40
+# at h=128), cov term doubles (0.22 vs 0.105). Net effect is that the
+# cov decorrelation pressure fights the contrastive pull and TRUE pairs
+# can't tighten (TRUE p50 = 1.27 vs 1.18 at h=128). Halving VICReg should
+# release that pressure and let the contrastive force concentrate TRUE
+# clusters.
+#
+# Single-knob change from stable_h256_m1p5_vic0p1_diag.yaml.
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.05
+  vicreg_cov_weight: 0.05
+  vicreg_gamma: 1.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: stable_h256_m1p5_vic0p05_diag
+  log_every: 25
