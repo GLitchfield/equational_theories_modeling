@@ -6,6 +6,7 @@ import os
 import sys
 
 import numpy as np
+import pytest
 import torch
 from torch_geometric.data import Batch
 
@@ -14,6 +15,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from src.data.dataset import (  # noqa: E402
+    AUX_HEAD_NAMES,
     ImplicationPairsDataset,
     collate_pairs,
     derive_train_indices,
@@ -79,6 +81,85 @@ def test_collate_yields_two_batches_and_float_labels():
     assert eq2_batch.x.shape[1] == NODE_FEATURE_DIM
     assert labels.shape == (3,)
     assert labels.dtype == torch.float
+
+
+# --- aux labels path --------------------------------------------------------
+
+def _aux_for_synthetic(n_eq: int = 4) -> np.ndarray:
+    """Synthetic [n_eq, len(AUX_HEAD_NAMES)] aux-label table.
+
+    Indexed by ``eq_id - 1``. Column k of row e is ``(e * 7 + k) % 6``
+    so values land in 0-5 (compatible with the largest head's 6 classes;
+    binary heads will receive 0 or 1 values too because the modulo
+    cycles through them)."""
+    return np.stack([
+        [(e * 7 + k) % 6 for k in range(len(AUX_HEAD_NAMES))]
+        for e in range(n_eq)
+    ]).astype(np.int64)
+
+
+def test_dataset_with_aux_labels_returns_5_tuple():
+    graphs, e1, e2, v, idx = _synthetic()
+    aux = _aux_for_synthetic()
+    ds = ImplicationPairsDataset(e1, e2, v, graphs, idx, aux_labels=aux)
+    item = ds[0]
+    assert len(item) == 5, f"expected 5-tuple with aux, got {len(item)}-tuple"
+    g1, g2, label, eq1_aux, eq2_aux = item
+    row = int(idx[0])
+    eq1_id = int(e1[row]); eq2_id = int(e2[row])
+    np.testing.assert_array_equal(eq1_aux, aux[eq1_id - 1])
+    np.testing.assert_array_equal(eq2_aux, aux[eq2_id - 1])
+
+
+def test_dataset_without_aux_labels_returns_3_tuple_unchanged():
+    """Backward compatibility: aux_labels=None preserves the existing 3-tuple."""
+    graphs, e1, e2, v, idx = _synthetic()
+    ds = ImplicationPairsDataset(e1, e2, v, graphs, idx)
+    item = ds[0]
+    assert len(item) == 3
+
+
+def test_dataset_aux_labels_wrong_shape_raises():
+    graphs, e1, e2, v, idx = _synthetic()
+    with pytest.raises(ValueError, match="aux_labels must be"):
+        ImplicationPairsDataset(
+            e1, e2, v, graphs, idx,
+            aux_labels=np.zeros((4, 3), dtype=np.int64),  # wrong width
+        )
+
+
+def test_collate_with_aux_yields_5_tuple_with_per_head_dicts():
+    graphs, e1, e2, v, idx = _synthetic()
+    aux = _aux_for_synthetic()
+    ds = ImplicationPairsDataset(e1, e2, v, graphs, idx, aux_labels=aux)
+    items = [ds[i] for i in range(3)]
+    out = collate_pairs(items)
+    assert len(out) == 5
+    eq1_batch, eq2_batch, labels, eq1_aux, eq2_aux = out
+    assert isinstance(eq1_batch, Batch)
+    assert eq1_batch.num_graphs == 3 and eq2_batch.num_graphs == 3
+    assert labels.shape == (3,)
+    assert set(eq1_aux.keys()) == set(AUX_HEAD_NAMES)
+    assert set(eq2_aux.keys()) == set(AUX_HEAD_NAMES)
+    for name in AUX_HEAD_NAMES:
+        assert eq1_aux[name].shape == (3,)
+        assert eq1_aux[name].dtype == torch.int64
+        assert eq2_aux[name].shape == (3,)
+        assert eq2_aux[name].dtype == torch.int64
+
+
+def test_collate_aux_values_match_per_equation_lookup():
+    """Each batch element's aux values come from the right eq_id row."""
+    graphs, e1, e2, v, idx = _synthetic()
+    aux = _aux_for_synthetic()
+    ds = ImplicationPairsDataset(e1, e2, v, graphs, idx, aux_labels=aux)
+    items = [ds[i] for i in range(3)]
+    _, _, _, eq1_aux, eq2_aux = collate_pairs(items)
+    for k, item in enumerate(items):
+        _, _, _, item_eq1_aux, item_eq2_aux = item
+        for j, name in enumerate(AUX_HEAD_NAMES):
+            assert int(eq1_aux[name][k]) == int(item_eq1_aux[j])
+            assert int(eq2_aux[name][k]) == int(item_eq2_aux[j])
 
 
 # --- index derivation -------------------------------------------------------
