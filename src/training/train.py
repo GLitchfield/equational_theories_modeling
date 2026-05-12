@@ -29,7 +29,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from src.data.dataset import make_loaders
+from src.data.dataset import AUX_HEAD_NAMES, make_loaders
+from src.model.aux_heads import (
+    AuxiliaryHeads,
+    HEAD_SPECS as AUX_HEAD_SPECS,
+    auxiliary_accuracy,
+    auxiliary_loss,
+)
 from src.model.encoder import EquationEncoder
 from src.model.jepa import JEPA
 from src.model.predictor import ImplicationPredictor
@@ -100,27 +106,52 @@ def evaluate(
     true_weight: float = 1.0,
     threshold: float | None = None,
     max_batches: int | None = None,
+    aux_heads_module: AuxiliaryHeads | None = None,
 ) -> dict:
     """Evaluate a JEPA on a DataLoader.
 
     Returns a dict of metrics: loss, balanced_accuracy, true_recall,
     false_recall, threshold (calibrated if not provided), n_evaluated.
+
+    If ``aux_heads_module`` is provided, also computes per-head argmax
+    accuracy on eq1 (sufficient for per-epoch monitoring; eq2 would be
+    redundant since both are processed by the same encoder). The
+    loader must be aux-active for this to work — i.e. yielding 5-tuples.
     """
     was_training = jepa.training
     jepa.eval()
+    if aux_heads_module is not None:
+        aux_was_training = aux_heads_module.training
+        aux_heads_module.eval()
     all_d: list[torch.Tensor] = []
     all_l: list[torch.Tensor] = []
     total_loss = 0.0
     n_batches = 0
+    # For per-head accuracy: stash predictions and labels per head.
+    aux_preds: dict[str, list[torch.Tensor]] = {n: [] for n in AUX_HEAD_NAMES} \
+        if aux_heads_module is not None else {}
+    aux_labels: dict[str, list[torch.Tensor]] = {n: [] for n in AUX_HEAD_NAMES} \
+        if aux_heads_module is not None else {}
 
     with torch.no_grad():
-        for batch_idx, (eq1, eq2, labels) in enumerate(loader):
+        for batch_idx, batch in enumerate(loader):
             if max_batches is not None and batch_idx >= max_batches:
                 break
+            if aux_heads_module is not None and len(batch) == 5:
+                eq1, eq2, labels, eq1_aux, _eq2_aux = batch
+            else:
+                eq1, eq2, labels = batch[:3]
             eq1 = eq1.to(device)
             eq2 = eq2.to(device)
             labels = labels.to(device)
-            z_pred, z_tgt = jepa(eq1, eq2)
+            if aux_heads_module is not None:
+                z_pred, z_tgt, pooled_eq1, _ = jepa(eq1, eq2, return_pooled=True)
+                logits_e1 = aux_heads_module(pooled_eq1)
+                for name in AUX_HEAD_NAMES:
+                    aux_preds[name].append(logits_e1[name].argmax(dim=-1).cpu())
+                    aux_labels[name].append(eq1_aux[name].cpu())
+            else:
+                z_pred, z_tgt = jepa(eq1, eq2)
             loss = contrastive_loss(
                 z_pred, z_tgt, labels, margin=margin, true_weight=true_weight,
             )
@@ -132,6 +163,8 @@ def evaluate(
 
     if was_training:
         jepa.train()
+    if aux_heads_module is not None and aux_was_training:
+        aux_heads_module.train()
 
     if n_batches == 0:
         return {
@@ -181,7 +214,7 @@ def evaluate(
     true_above_false_med = float((true_d > fd_median).float().mean().item()) if len(true_d) > 0 else 0.0
     false_below_true_med = float((false_d < td_median).float().mean().item()) if len(false_d) > 0 else 0.0
 
-    return {
+    metrics = {
         'loss': float(avg_loss),
         'balanced_accuracy': 0.5 * (sens + spec),
         'true_recall': sens,
@@ -202,6 +235,15 @@ def evaluate(
         'dist_overlap_true_above_false_med': true_above_false_med,
         'dist_overlap_false_below_true_med': false_below_true_med,
     }
+    # Per-head argmax accuracy on the eq1 side of every val batch.
+    # Logged as 'aux_acc_<head_name>' so it sits alongside the val/dist_*
+    # diagnostics in the per-epoch eval line.
+    if aux_heads_module is not None and aux_preds:
+        for name in AUX_HEAD_NAMES:
+            preds_cat = torch.cat(aux_preds[name])
+            labels_cat = torch.cat(aux_labels[name])
+            metrics[f'aux_acc_{name}'] = float((preds_cat == labels_cat).float().mean())
+    return metrics
 
 
 # --- logging --------------------------------------------------------------
@@ -303,6 +345,15 @@ def train(config: dict, sanity_check: bool = False) -> dict:
     holdout_path = config['data'].get('holdout_path')
     if holdout_path == '' or (isinstance(holdout_path, str) and holdout_path.lower() == 'none'):
         holdout_path = None
+    aux_labels_path = config['data'].get('aux_labels_path') or None
+    aux_weight = float(config['loss'].get('aux_weight', 0.0))
+    aux_active = aux_weight > 0.0
+    if aux_active and not aux_labels_path:
+        raise ValueError(
+            'loss.aux_weight > 0 but data.aux_labels_path is unset; '
+            'aux heads need a label parquet (build with '
+            'scripts/build_equation_invariants.py).'
+        )
     train_loader, val_loader, train_ds, val_ds = make_loaders(
         pair_table_path=config['data']['pair_table_path'],
         graph_cache_path=config['data']['graph_cache_path'],
@@ -310,6 +361,7 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         batch_size=int(config['training']['batch_size']),
         num_workers=int(config['data'].get('num_workers', 0)),
         pin_memory=(device == 'cuda'),
+        aux_labels_path=aux_labels_path if aux_active else None,
     )
     print(f'  train: {len(train_ds):,} samples, {len(train_loader):,} batches')
     if holdout_path is None:
@@ -339,11 +391,23 @@ def train(config: dict, sanity_check: bool = False) -> dict:
     print(f'  encoder:   {encoder.num_parameters():,} params')
     print(f'  predictor: {predictor.num_parameters():,} params')
 
+    # Auxiliary heads probe the encoder's pooled (mean+max) representation,
+    # which is 2 * hidden_dim wide. Built only when aux_active so unset
+    # configs cost nothing.
+    aux_heads_module: AuxiliaryHeads | None = None
+    if aux_active:
+        pool_dim = 2 * int(enc_cfg['hidden_dim'])
+        aux_heads_module = AuxiliaryHeads(pool_dim=pool_dim).to(device)
+        print(f'  aux_heads: {sum(p.numel() for p in aux_heads_module.parameters()):,} params '
+              f'({len(AUX_HEAD_SPECS)} heads, pool_dim={pool_dim})')
+
     # --- optimizer (target encoder is frozen, exclude it) ---
     trainable_params = (
         list(jepa.context_encoder.parameters())
         + list(jepa.predictor.parameters())
     )
+    if aux_heads_module is not None:
+        trainable_params = trainable_params + list(aux_heads_module.parameters())
     optimizer = torch.optim.AdamW(
         trainable_params,
         lr=float(config['training']['learning_rate']),
@@ -383,6 +447,7 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'pick one regularizer at a time.'
         )
     needs_encoder_raw = vicreg_active or sigreg_active
+    needs_pooled = aux_active
     # When the contrastive loss should operate on unnormalized
     # encoder/predictor outputs (LeJEPA-style: SIGReg shapes the raw
     # distribution, contrastive operates in unconstrained R^embed_dim).
@@ -425,18 +490,39 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         epoch_batches = 0
         epoch_clipped_steps = 0
         epoch_grad_norm_sum = 0.0
-        for batch_idx, (eq1, eq2, labels) in enumerate(train_loader):
+        for batch_idx, batch in enumerate(train_loader):
             if max_train_batches is not None and batch_idx >= max_train_batches:
                 break
+            # Aux-active loaders yield 5-tuples; otherwise 3-tuples.
+            if aux_active:
+                eq1, eq2, labels, eq1_aux, eq2_aux = batch
+                eq1_aux = {k: v.to(device) for k, v in eq1_aux.items()}
+                eq2_aux = {k: v.to(device) for k, v in eq2_aux.items()}
+            else:
+                eq1, eq2, labels = batch
             eq1 = eq1.to(device)
             eq2 = eq2.to(device)
             labels = labels.to(device)
 
             optimizer.zero_grad()
-            if needs_encoder_raw:
+            pooled_eq1 = pooled_eq2 = None
+            if needs_encoder_raw and needs_pooled:
+                z_pred, z_tgt, z_context_raw, z_tgt_raw, pooled_eq1, pooled_eq2 = jepa(
+                    eq1, eq2,
+                    return_encoder_raw=True,
+                    return_pooled=True,
+                    normalize_outputs=normalize_outputs,
+                )
+            elif needs_encoder_raw:
                 z_pred, z_tgt, z_context_raw, z_tgt_raw = jepa(
                     eq1, eq2,
                     return_encoder_raw=True,
+                    normalize_outputs=normalize_outputs,
+                )
+            elif needs_pooled:
+                z_pred, z_tgt, pooled_eq1, pooled_eq2 = jepa(
+                    eq1, eq2,
+                    return_pooled=True,
                     normalize_outputs=normalize_outputs,
                 )
             else:
@@ -487,6 +573,20 @@ def train(config: dict, sanity_check: bool = False) -> dict:
                 )
                 sigreg_loss = sigreg_per_slice.mean()
                 loss = cont_loss + sigreg_lambda * sigreg_loss
+            # Auxiliary anchor heads (additive on top of any regularizer
+            # path). Logits come from the CONTEXT encoder's pooled
+            # representation for both eq1 and eq2 — gradient flows back
+            # through the encoder for both sides, anchoring structural
+            # features (spine, lhs, num_vars, magma bits) so the
+            # contrastive force can't suppress them during the late-
+            # training simplicity-bias drift.
+            if aux_active:
+                aux_logits_e1 = aux_heads_module(pooled_eq1)
+                aux_logits_e2 = aux_heads_module(pooled_eq2)
+                aux_loss_e1, aux_per_head_e1 = auxiliary_loss(aux_logits_e1, eq1_aux)
+                aux_loss_e2, aux_per_head_e2 = auxiliary_loss(aux_logits_e2, eq2_aux)
+                aux_loss_total = 0.5 * (aux_loss_e1 + aux_loss_e2)
+                loss = loss + aux_weight * aux_loss_total
             loss.backward()
 
             # Per-module grad norms BEFORE clipping (clip_grad_norm_ scales
@@ -540,6 +640,14 @@ def train(config: dict, sanity_check: bool = False) -> dict:
                     step_metrics['train/vicreg_cov'] = cov_loss.item()
                 if sigreg_active:
                     step_metrics['train/sigreg_loss'] = sigreg_loss.item()
+                if aux_active:
+                    step_metrics['train/aux_loss'] = aux_loss_total.item()
+                    # Average per-head loss across eq1+eq2 for trace logs
+                    # (matches the auxiliary_loss aggregation).
+                    for name in AUX_HEAD_NAMES:
+                        step_metrics[f'train/aux_{name}_loss'] = (
+                            0.5 * (aux_per_head_e1[name] + aux_per_head_e2[name])
+                        )
                 log_metrics(
                     step_metrics, run, step=step,
                     prefix=f'[ep{epoch} step{step}]',
@@ -552,6 +660,7 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             jepa, val_loader, device,
             margin=margin, true_weight=true_weight,
             max_batches=max_val_batches,
+            aux_heads_module=aux_heads_module,
         )
 
         # Corpus-wide effective rank: encode every unique equation in the
@@ -589,6 +698,11 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'val/dist_overlap_false_below_true_med': val['dist_overlap_false_below_true_med'],
             'elapsed_sec': time.perf_counter() - t_start,
         }
+        if aux_active:
+            for name in AUX_HEAD_NAMES:
+                key = f'aux_acc_{name}'
+                if key in val:
+                    epoch_metrics[f'val/{key}'] = val[key]
         log_metrics(epoch_metrics, run, step=step, prefix=f'[ep{epoch} eval]')
         last_metrics = epoch_metrics
 

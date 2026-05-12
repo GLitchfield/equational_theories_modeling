@@ -12,8 +12,15 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.data.dataset import collate_pairs  # noqa: E402
+import numpy as np  # noqa: E402
+
+from src.data.dataset import (  # noqa: E402
+    AUX_HEAD_NAMES,
+    ImplicationPairsDataset,
+    collate_pairs,
+)
 from src.data.parser import equation_to_pyg  # noqa: E402
+from src.model.aux_heads import AuxiliaryHeads  # noqa: E402
 from src.model.encoder import EquationEncoder  # noqa: E402
 from src.model.jepa import JEPA  # noqa: E402
 from src.model.predictor import ImplicationPredictor  # noqa: E402
@@ -134,6 +141,40 @@ def test_evaluate_max_batches_caps_iteration():
     )
     # 3 batches * 2 = 6 samples evaluated
     assert metrics['n_evaluated'] == 6
+
+
+def test_evaluate_with_aux_heads_returns_per_head_accuracy():
+    """When aux_heads_module is provided, evaluate() also computes
+    per-head argmax accuracy on the eq1 side and exposes it as
+    ``aux_acc_<head_name>`` keys. The loader must yield 5-tuples (aux-active)
+    for this to work."""
+    g_a = equation_to_pyg('x = x ◇ y')
+    g_b = equation_to_pyg('x ◇ x = x ◇ y')
+    # Tiny aux table for 2 equations — same shape as the real one.
+    aux = np.zeros((2, len(AUX_HEAD_NAMES)), dtype=np.int64)
+    # Build a synthetic ImplicationPairsDataset with aux_labels active.
+    eq1_ids = np.array([1, 1, 2, 2], dtype=np.int32)
+    eq2_ids = np.array([2, 2, 1, 1], dtype=np.int32)
+    values = np.array([1, 0, 1, 0], dtype=np.int8)
+    indices = np.arange(4, dtype=np.int64)
+    graphs = {1: g_a, 2: g_b}
+    ds = ImplicationPairsDataset(
+        eq1_ids, eq2_ids, values, graphs, indices, aux_labels=aux,
+    )
+    loader = DataLoader(ds, batch_size=2, collate_fn=collate_pairs)
+
+    encoder = EquationEncoder(hidden_dim=64, embed_dim=32)
+    jepa = JEPA(encoder, ImplicationPredictor(embed_dim=32, hidden_dim=32))
+    aux_heads = AuxiliaryHeads(pool_dim=2 * 64)
+
+    metrics = evaluate(
+        jepa, loader, device='cpu', margin=1.0, true_weight=1.0,
+        aux_heads_module=aux_heads,
+    )
+    for name in AUX_HEAD_NAMES:
+        key = f'aux_acc_{name}'
+        assert key in metrics, f"missing {key} in evaluate output"
+        assert 0.0 <= metrics[key] <= 1.0
 
 
 def test_evaluate_does_not_change_train_mode_state():
