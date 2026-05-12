@@ -73,7 +73,12 @@ class EquationEncoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.proj = nn.Linear(2 * hidden_dim, embed_dim)
 
-    def forward(self, batch: Any, normalize: bool = True) -> torch.Tensor:
+    def forward(
+        self,
+        batch: Any,
+        normalize: bool = True,
+        return_pooled: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Encode a PyG ``Batch`` of equation graphs.
 
         Returns a tensor of shape ``(batch.num_graphs, embed_dim)``.
@@ -88,6 +93,13 @@ class EquationEncoder(nn.Module):
         embedding space, since enforcing variance/decorrelation on
         already-unit-norm vectors fights a hard constraint (total
         variance is fixed at 1 by the L2 projection).
+
+        When ``return_pooled=True``, also returns the pre-projection
+        pooled representation ``(mean_pool || max_pool)`` of shape
+        ``(batch.num_graphs, 2 * hidden_dim)``. Used by the auxiliary
+        prediction heads (``src/model/aux_heads.py``), which probe the
+        pooled representation directly — the richest internal feature
+        space, before the output projection compresses it down.
         """
         x, edge_index, edge_attr, b = (
             batch.x,
@@ -106,7 +118,10 @@ class EquationEncoder(nn.Module):
         max_pool = global_max_pool(h, b)
         pooled = torch.cat([mean_pool, max_pool], dim=-1)
         out = self.proj(pooled)
-        return F.normalize(out, dim=-1) if normalize else out
+        out = F.normalize(out, dim=-1) if normalize else out
+        if return_pooled:
+            return out, pooled
+        return out
 
     def num_parameters(self) -> int:
         """Count of learnable parameters."""

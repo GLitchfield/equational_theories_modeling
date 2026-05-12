@@ -62,6 +62,7 @@ class JEPA(nn.Module):
         eq2_batch,
         return_encoder_raw: bool = False,
         normalize_outputs: bool = True,
+        return_pooled: bool = False,
     ):
         """Run the JEPA forward pass.
 
@@ -93,9 +94,33 @@ class JEPA(nn.Module):
         In that mode, ``z_predicted`` and ``z_target`` are the raw
         encoder/predictor outputs (and ``z_context_raw == z_predicted``
         upstream of the predictor when ``return_encoder_raw=True``).
+
+        With ``return_pooled=True``, also returns the encoder's pooled
+        pre-projection representations for both equations (each of
+        shape ``[batch, 2 * hidden_dim]``). Used by the auxiliary
+        prediction heads (``src/model/aux_heads.py``). Both pooled
+        tensors come from the *context* encoder so that gradients flow
+        back through both eq1 and eq2's auxiliary losses; the target
+        encoder's pooled output isn't useful for aux training because
+        the target encoder is frozen + EMA-updated. Note this means a
+        second forward of eq2 through the context encoder when aux
+        heads are active.
         """
+        # Aux-head path: compute pooled representations from context
+        # encoder for both eq1 and eq2 (gradients flow through both).
+        pooled_eq1 = pooled_eq2 = None
+        if return_pooled:
+            _, pooled_eq2 = self.context_encoder(
+                eq2_batch, normalize=False, return_pooled=True,
+            )
+
         if return_encoder_raw:
-            z_context_raw = self.context_encoder(eq1_batch, normalize=False)
+            if return_pooled:
+                z_context_raw, pooled_eq1 = self.context_encoder(
+                    eq1_batch, normalize=False, return_pooled=True,
+                )
+            else:
+                z_context_raw = self.context_encoder(eq1_batch, normalize=False)
             with torch.no_grad():
                 z_target_raw = self.target_encoder(eq2_batch, normalize=False)
             if normalize_outputs:
@@ -105,12 +130,21 @@ class JEPA(nn.Module):
             else:
                 z_target = z_target_raw
                 z_predicted = self.predictor(z_context_raw, normalize=False)
+            if return_pooled:
+                return z_predicted, z_target, z_context_raw, z_target_raw, pooled_eq1, pooled_eq2
             return z_predicted, z_target, z_context_raw, z_target_raw
 
-        z_context = self.context_encoder(eq1_batch, normalize=normalize_outputs)
+        if return_pooled:
+            z_context, pooled_eq1 = self.context_encoder(
+                eq1_batch, normalize=normalize_outputs, return_pooled=True,
+            )
+        else:
+            z_context = self.context_encoder(eq1_batch, normalize=normalize_outputs)
         with torch.no_grad():
             z_target = self.target_encoder(eq2_batch, normalize=normalize_outputs)
         z_predicted = self.predictor(z_context, normalize=normalize_outputs)
+        if return_pooled:
+            return z_predicted, z_target, pooled_eq1, pooled_eq2
         return z_predicted, z_target
 
     @torch.no_grad()

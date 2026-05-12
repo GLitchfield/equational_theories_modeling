@@ -42,6 +42,22 @@ def test_encoder_forward_shape():
     assert torch.isfinite(out).all()
 
 
+def test_encoder_return_pooled_returns_pooled_alongside_embedding():
+    """``return_pooled=True`` exposes the pre-projection
+    (mean_pool || max_pool) representation for the auxiliary heads.
+    Pool dim = 2 * hidden_dim."""
+    enc = EquationEncoder(hidden_dim=128, embed_dim=64)
+    batch = _example_batch()
+    out, pooled = enc(batch, return_pooled=True)
+    assert out.shape == (3, 64)
+    assert pooled.shape == (3, 256)  # 2 * hidden_dim
+    assert torch.isfinite(pooled).all()
+    # The L2-normalized output should still be unit-norm — return_pooled
+    # is purely additive, doesn't change the embedding path.
+    norms = out.norm(dim=-1)
+    assert torch.allclose(norms, torch.ones_like(norms), atol=1e-5)
+
+
 def test_encoder_output_is_unit_norm():
     """Encoder output is L2-normalized: every embedding lives on the unit
     sphere. Bounds the contrastive loss's distance space."""

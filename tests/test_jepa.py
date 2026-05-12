@@ -94,6 +94,55 @@ def test_forward_return_encoder_raw_returns_four_tensors():
     assert z_tgt_raw.shape == (3, 64)
 
 
+def test_forward_return_pooled_returns_pooled_for_both_equations():
+    """``return_pooled=True`` returns context-encoder pooled
+    representations for eq1 AND eq2 (both flow through context, not
+    target, so aux-head gradients reach the encoder for both sides).
+    Pool dim = 2 * hidden_dim."""
+    jepa = _make_jepa()  # default hidden_dim=128 -> pool_dim=256
+    eq1, eq2 = _example_pair_batch()
+    z_pred, z_tgt, pooled_eq1, pooled_eq2 = jepa(eq1, eq2, return_pooled=True)
+    assert z_pred.shape == (3, 64)
+    assert z_tgt.shape == (3, 64)
+    assert pooled_eq1.shape == (3, 256)
+    assert pooled_eq2.shape == (3, 256)
+    assert torch.isfinite(pooled_eq1).all()
+    assert torch.isfinite(pooled_eq2).all()
+
+
+def test_forward_return_pooled_with_encoder_raw_returns_six_tensors():
+    """Compatible with ``return_encoder_raw=True``: returns six tensors
+    (pred, tgt, context_raw, target_raw, pooled_eq1, pooled_eq2)."""
+    jepa = _make_jepa()
+    eq1, eq2 = _example_pair_batch()
+    out = jepa(eq1, eq2, return_encoder_raw=True, return_pooled=True)
+    assert len(out) == 6
+    z_pred, z_tgt, z_context_raw, z_tgt_raw, pooled_eq1, pooled_eq2 = out
+    assert z_pred.shape == (3, 64) and z_tgt.shape == (3, 64)
+    assert z_context_raw.shape == (3, 64) and z_tgt_raw.shape == (3, 64)
+    assert pooled_eq1.shape == (3, 256) and pooled_eq2.shape == (3, 256)
+
+
+def test_forward_return_pooled_eq2_grads_flow_through_context_encoder():
+    """The whole point of routing eq2's pooled through the context
+    encoder (not target) is so aux-head losses on eq2 backprop into
+    the trainable encoder. Verify gradient connectivity."""
+    jepa = _make_jepa()
+    eq1, eq2 = _example_pair_batch()
+    _, _, pooled_eq1, pooled_eq2 = jepa(eq1, eq2, return_pooled=True)
+    # A scalar derived from pooled_eq2 should produce gradients on the
+    # context encoder's parameters.
+    loss = pooled_eq2.pow(2).mean()
+    loss.backward()
+    grad_norms = [
+        p.grad.norm().item()
+        for p in jepa.context_encoder.parameters()
+        if p.grad is not None
+    ]
+    assert any(g > 0 for g in grad_norms), \
+        "expected non-zero gradients in context encoder from eq2 pooled"
+
+
 def test_forward_encoder_raw_directions_match_post_norm():
     """``encoder_raw / ||encoder_raw|| == post_norm_for_predictor``. The
     raw output of the context encoder, divided by its norm, equals the
