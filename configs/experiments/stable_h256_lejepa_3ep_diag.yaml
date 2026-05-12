@@ -1,0 +1,102 @@
+# stable_h256_lejepa_3ep_diag — LeJEPA-style: SIGReg + no L2-norm.
+#
+# Substantial architectural change vs prior SIGReg runs. Removes the
+# L2-normalization on encoder and predictor outputs to match the LeJEPA
+# paper's setup, where SIGReg shapes the unconstrained encoder output
+# distribution toward N(0, I) and the contrastive loss operates in
+# unconstrained R^embed_dim.
+#
+# Prior diagnosis (from stable_h256_m1p5_sigreg_lam0p005_diag): SIGReg
+# pre-norm Gaussian + L2-norm post-encoder = uniform on unit sphere,
+# which directly conflicts with contrastive's "TRUE pairs clustered"
+# requirement. cl_TRUE got pinned at 1.97 (random unit-sphere distance
+# squared) regardless of lambda. Removing L2-norm should resolve the
+# conflict.
+#
+# Hypothesis: SIGReg shapes encoder output to N(0, I) in R^512.
+# Typical pairwise distance for two such samples is sqrt(2*K) =
+# sqrt(1024) = 32. TRUE pairs (semantically related) should be pulled
+# below typical, FALSE pairs sit at typical. New margin=25 (~75% of
+# typical FALSE distance, mirroring the relationship VICReg/contrastive
+# settled into on unit sphere where margin=1.5 ~ FALSE p50).
+#
+# 3 epochs because:
+#   - Both prior SIGReg runs collapsed by ep1 (failure mode caught fast)
+#   - All h=256 runs (with various regularizers) peak at ep0
+#   - 30 min sanity check before committing to a 95-min full run
+# If 3-ep results look promising, extend to 10 epochs.
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+
+model:
+  # NEW: drop L2-normalization on encoder + predictor outputs. SIGReg
+  # becomes the sole anti-collapse mechanism (its purpose). Default
+  # is true (preserves all VICReg recipes); only LeJEPA-style runs
+  # set this to false.
+  l2_normalize_outputs: false
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 3
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  # Margin rescaled for unnormalized features. Typical pairwise distance
+  # for two N(0, I)-distributed K=512 vectors is sqrt(2*K) ~= 32.
+  # margin=25 mirrors the unit-sphere recipe's "margin ~ 75% of typical
+  # FALSE distance" relationship.
+  margin: 25.0
+  true_weight: 1.0
+  sigreg_lambda: 0.05
+  sigreg_num_slices: 1024
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: stable_h256_lejepa_3ep_diag
+  log_every: 25

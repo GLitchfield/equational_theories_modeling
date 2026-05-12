@@ -1,0 +1,4 @@
+elapsed_sec,epoch,train/avg_grad_norm_pre_clip,train/avg_loss,train/clipped_step_fraction,val/balanced_accuracy,val/corpus_eff_rank,val/corpus_eff_rank_raw,val/dist_false_p05,val/dist_false_p50,val/dist_false_p95,val/dist_gap_median,val/dist_overlap_false_below_true_med,val/dist_overlap_true_above_false_med,val/dist_true_p05,val/dist_true_p50,val/dist_true_p95,val/false_recall,val/loss,val/n_evaluated,val/threshold,val/true_recall
+588.4316,0.0,12.0439,181.9305,1.0,0.5241,73.979,73.4363,1.2663,1.3966,1.5743,0.0076,0.4661,0.4693,1.2612,1.389,1.5852,0.7221,351.2962,409600.0,1.3463,0.3261
+1137.7891,1.0,4.4967,191.1273,1.0,0.545,87.5907,87.1513,1.2873,1.4252,1.5406,0.0179,0.4115,0.4124,1.2814,1.4072,1.5465,0.5603,350.8945,409600.0,1.4133,0.5298
+1750.3823,2.0,3.9013,190.9007,1.0,0.5545,91.2026,90.8803,1.2951,1.4447,1.5279,0.0228,0.3916,0.4066,1.2888,1.4219,1.5291,0.613,350.6884,409600.0,1.4208,0.4959
