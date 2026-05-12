@@ -1,0 +1,84 @@
+# stable_h256_m1p5_sigreg_lam0p005_diag — SIGReg with lambda dropped 10x.
+#
+# Same recipe as stable_h256_m1p5_sigreg_diag (margin 1.5, h=256,
+# no-holdout 22M, 10 epochs) but sigreg_lambda 0.05 -> 0.005.
+#
+# Hypothesis: lambda=0.05 (paper default) was 10x too high for our
+# small-GAT random-init regime. At init, SIGReg loss = 1400; with
+# lambda=0.05 that's 70 units of loss vs 0.84 contrastive (80x
+# imbalance), driving 127-norm encoder gradients that yanked the model
+# into a Gaussian-but-uninformative attractor before contrastive could
+# shape geometry. TRUE-pair contrastive loss got stuck at 1.97 the
+# entire run (random unit-sphere distance).
+#
+# At lambda=0.005:
+#   - Warmup contribution: 0.005 * 1400 = 7 (vs 0.84 contrastive ~ 8x).
+#     Still bad but recoverable; contrastive can establish some pull.
+#   - Steady-state contribution: 0.005 * 4.5 = 0.022 (3% of contrastive).
+#     SIGReg becomes a gentle regularizer, not a dominant force.
+#
+# Single-knob change from stable_h256_m1p5_sigreg_diag.yaml.
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  sigreg_lambda: 0.005
+  sigreg_num_slices: 1024
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: stable_h256_m1p5_sigreg_lam0p005_diag
+  log_every: 25
