@@ -61,6 +61,7 @@ class JEPA(nn.Module):
         eq1_batch,
         eq2_batch,
         return_encoder_raw: bool = False,
+        normalize_outputs: bool = True,
     ):
         """Run the JEPA forward pass.
 
@@ -84,20 +85,32 @@ class JEPA(nn.Module):
         only a logged value, not a training signal. The target encoder
         still picks up the diversity benefit through the EMA update
         from the gradient-updated context encoder.
+
+        With ``normalize_outputs=False``, the L2 normalizations on
+        encoder and predictor outputs are dropped — used in the LeJEPA-
+        style setup where SIGReg is the sole anti-collapse mechanism
+        and the contrastive loss operates in unconstrained R^embed_dim.
+        In that mode, ``z_predicted`` and ``z_target`` are the raw
+        encoder/predictor outputs (and ``z_context_raw == z_predicted``
+        upstream of the predictor when ``return_encoder_raw=True``).
         """
         if return_encoder_raw:
             z_context_raw = self.context_encoder(eq1_batch, normalize=False)
-            z_context = F.normalize(z_context_raw, dim=-1)
             with torch.no_grad():
                 z_target_raw = self.target_encoder(eq2_batch, normalize=False)
+            if normalize_outputs:
+                z_context = F.normalize(z_context_raw, dim=-1)
                 z_target = F.normalize(z_target_raw, dim=-1)
-            z_predicted = self.predictor(z_context)
+                z_predicted = self.predictor(z_context, normalize=True)
+            else:
+                z_target = z_target_raw
+                z_predicted = self.predictor(z_context_raw, normalize=False)
             return z_predicted, z_target, z_context_raw, z_target_raw
 
-        z_context = self.context_encoder(eq1_batch)
+        z_context = self.context_encoder(eq1_batch, normalize=normalize_outputs)
         with torch.no_grad():
-            z_target = self.target_encoder(eq2_batch)
-        z_predicted = self.predictor(z_context)
+            z_target = self.target_encoder(eq2_batch, normalize=normalize_outputs)
+        z_predicted = self.predictor(z_context, normalize=normalize_outputs)
         return z_predicted, z_target
 
     @torch.no_grad()

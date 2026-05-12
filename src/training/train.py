@@ -383,6 +383,11 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'pick one regularizer at a time.'
         )
     needs_encoder_raw = vicreg_active or sigreg_active
+    # When the contrastive loss should operate on unnormalized
+    # encoder/predictor outputs (LeJEPA-style: SIGReg shapes the raw
+    # distribution, contrastive operates in unconstrained R^embed_dim).
+    # Default True preserves existing VICReg/contrastive behavior.
+    normalize_outputs = bool(config.get('model', {}).get('l2_normalize_outputs', True))
     tau_start = float(config['ema']['tau_start'])
     tau_final = float(config['ema']['tau_final'])
     log_every = int(config.get('wandb', {}).get('log_every', 50))
@@ -430,10 +435,12 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             optimizer.zero_grad()
             if needs_encoder_raw:
                 z_pred, z_tgt, z_context_raw, z_tgt_raw = jepa(
-                    eq1, eq2, return_encoder_raw=True,
+                    eq1, eq2,
+                    return_encoder_raw=True,
+                    normalize_outputs=normalize_outputs,
                 )
             else:
-                z_pred, z_tgt = jepa(eq1, eq2)
+                z_pred, z_tgt = jepa(eq1, eq2, normalize_outputs=normalize_outputs)
             cont_loss = contrastive_loss(
                 z_pred, z_tgt, labels, margin=margin, true_weight=true_weight,
             )
