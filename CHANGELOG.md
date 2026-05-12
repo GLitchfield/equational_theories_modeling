@@ -1,6 +1,24 @@
 # Changelog
 
-Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `testing_plan_phase2.md`; the original engineering plan that drove Phase 1 is at `archive/jepa_engineering_plan.md`.
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `aux_heads_implementation_plan.md`; the original engineering plan that drove Phase 1 is at `archive/jepa_engineering_plan.md`. The prior failure-analysis plan is at `trash/testing_plan_phase2.md` (its findings produced the `stable_*` run series and informed the current plan).
+
+---
+
+## 2026-05-12 — SIGReg shelved; pivot to auxiliary prediction heads
+
+The `testing_plan_phase2.md` failure analysis ran to completion and surfaced a clear pattern at h=256: VICReg-trained encoders peak at ep0 (best `stable_h256_m1p5_vic0p05_diag` at 0.9469) then degrade into TRUE-bias drift (TRUE recall climbs to 0.99, FALSE recall falls to 0.87). The h=128 baseline (`stable_m1p5_vic0p1_diag` at 0.9492 ep6) doesn't show this drift; the wider encoder finds a shortcut.
+
+We tested SIGReg (LeJEPA, Balestriero & LeCun 2025, `arXiv:2511.08544`) as a more principled anti-collapse regularizer. Three variants run at h=256, all failing the same way:
+
+  - `stable_h256_m1p5_sigreg_diag` (λ=0.05, L2-norm on): bal_acc 0.6095 ep1; cl_TRUE pinned at 1.97 = random unit-sphere distance²
+  - `stable_h256_m1p5_sigreg_lam0p005_diag` (λ=0.005, L2-norm on): bal_acc 0.6891 ep1; same cl_TRUE pin, stability fixed
+  - `stable_h256_lejepa_3ep_diag` (λ=0.05, L2-norm off, margin=25): bal_acc 0.5545 ep2; cl_TRUE = K = R^512 Gaussian random-pair distance, clip fires 100% of steps
+
+Diagnosis: SIGReg's target distribution (isotropic Gaussian) and our contrastive loss's geometric requirement (TRUE pairs clustered) are incompatible at h=256 in our small-batch / random-init regime. With L2-norm, the conflict is structural (sphere-uniform vs sphere-clustered). Without L2-norm, the conflict is dynamical (clip rate-limits contrastive while SIGReg's globally-coherent direction wins). The pattern is consistent enough across variants that further hyperparameter sweeps are unlikely to help. SIGReg is the right idea for image-SSL setups where the prediction loss is MSE between same-instance views; ours is contrastive-with-margin between paired instances with TRUE/FALSE labels — a different signal that doesn't balance against SIGReg the same way. The src/training/sigreg.py implementation stays in the codebase (9 unit tests pass; correct against Algorithm 1 from the paper), available if the task setup ever changes. The `model.l2_normalize_outputs` flag also stays — defaults to `true` so VICReg recipes are unchanged.
+
+The new active plan is `aux_heads_implementation_plan.md`. Auxiliary prediction heads (single-layer linear probes from the pooled encoder representation) predict per-equation structural invariants (spine type, balance, singleton-forcing, variable count). The hypothesis: anchor known-useful features so the encoder can't suppress them during the late-training drift. Unlike SIGReg, the aux heads operate per-equation in the feature space the encoder ALREADY produces — no global distributional pressure that fights the per-pair contrastive force. They serve as a floor (must-keep features) without imposing a ceiling (other dims still free for the contrastive signal). Test 2 in the plan is the headline: does h=256 sustain bal_acc above 0.94 through 10 epochs instead of degrading after ep0?
+
+`testing_plan_phase2.md` is moved to `trash/` since its findings are now subsumed by the run record (`outputs/runs/stable_*/diagnostics_report.md`) and CLAUDE.md's pointer chain. The `SIGReg/` paper-and-plan folder is also in `trash/`. Neither is committed (per `.gitignore`). CLAUDE.md's "Regularization options" section now documents which regularizers are in the codebase and which are shelved.
 
 ---
 
