@@ -42,6 +42,14 @@ AUX_HEAD_NAMES = (
     "magma_bit_4",
     "magma_bit_6",
     "magma_bit_7",
+    "cohom_count_2",
+    "cohom_count_3",
+    "cohom_count_5",
+    "cohom_count_7",
+    "cohom_mean_h2_2",
+    "cohom_mean_h2_3",
+    "cohom_mean_h2_5",
+    "cohom_mean_h2_7",
 )
 
 

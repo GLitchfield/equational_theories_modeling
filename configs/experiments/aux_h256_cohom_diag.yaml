@@ -1,0 +1,94 @@
+# aux_h256_cohom_diag — cohomology aux heads on top of aux_h256_diag.
+#
+# Comparison point: aux_h256_diag (current best, bal_acc 0.9635 at ep7
+# via late-training phase transition; seed 42). That run uses 10 aux
+# heads anchoring syntactic structural invariants (spine, lhs, num_vars,
+# magma bits 0/1/2/3/4/6/7).
+#
+# This run extends to 18 aux heads by adding 8 cohomology summary heads
+# per the user's "Per-prime summary statistics" plan:
+#   - cohom_count_{2,3,5,7}     binned counts of (a,b) pairs satisfying
+#                               the equation over F_p (5/5/6/6 classes)
+#   - cohom_mean_h2_{2,3,5,7}   binned mean dim H² across satisfying
+#                               pairs, with a "null" bin for count==0
+#                               (5/6/6/6 classes)
+# Bin edges live in scripts/build_equation_invariants.py.
+#
+# Hypothesis: cohomology-anchored features (which capture structural
+# information orthogonal to syntactic spine/magma signature) provide
+# additional anchoring against simplicity-bias drift at h=256, either
+# (a) raising peak bal_acc above 0.9635, (b) making the regime-B
+# transition more reliable across seeds, or (c) both. If neither, the
+# cohomology summaries don't add training signal beyond the syntactic
+# anchors and we revert.
+#
+# Single-knob change vs aux_h256_diag.yaml: 8 new aux heads activated
+# implicitly via the rebuilt equation_invariants.parquet + the extended
+# HEAD_SPECS / AUX_HEAD_NAMES. All other hyperparameters identical.
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.05
+  vicreg_cov_weight: 0.05
+  vicreg_gamma: 1.0
+  aux_weight: 0.1
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: aux_h256_cohom_diag
+  log_every: 25

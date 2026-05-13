@@ -8,13 +8,21 @@ can't suppress features that the auxiliary loss requires it to keep
 linearly separable.
 
 Heads (all single ``nn.Linear``, no hidden, no activation):
-  - ``spine_type``     : 6-class
-  - ``lhs_structure``  : 2-class
-  - ``num_variables``  : 6-class
-  - ``magma_bit_{0,1,2,3,4,6,7}`` : 7 × 2-class
+  - ``spine_type``                          : 6-class
+  - ``lhs_structure``                       : 2-class
+  - ``num_variables``                       : 6-class
+  - ``magma_bit_{0,1,2,3,4,6,7}``           : 7 × 2-class
+  - ``cohom_count_{2,3,5,7}``               : 5/5/6/6-class (binned counts)
+  - ``cohom_mean_h2_{2,3,5,7}``             : 5/6/6/6-class (binned mean dim H², null bin for count==0)
 
 The 5 sparse magma bits (5, 8, 9, 10, 11) are dropped at the
 data-pipeline stage; see ``scripts/build_equation_invariants.py``.
+
+The cohomology summary heads were added in a follow-up to test whether
+per-prime cohomological structure (count of satisfying (a,b) pairs over
+F_p, mean dim H² across satisfying pairs) provides additional anchoring
+beyond syntactic structural invariants. Bin edges and class names live in
+``scripts/build_equation_invariants.py::COHOM_COUNT_BINS / COHOM_MEAN_BINS``.
 
 The heads are training-time-only anchors. They do NOT participate in
 inference (the contrastive distance still drives prediction).
@@ -43,6 +51,14 @@ HEAD_SPECS: dict[str, int] = {
     "magma_bit_4": 2,
     "magma_bit_6": 2,
     "magma_bit_7": 2,
+    "cohom_count_2": 5,
+    "cohom_count_3": 5,
+    "cohom_count_5": 6,
+    "cohom_count_7": 6,
+    "cohom_mean_h2_2": 5,
+    "cohom_mean_h2_3": 6,
+    "cohom_mean_h2_5": 6,
+    "cohom_mean_h2_7": 6,
 }
 
 

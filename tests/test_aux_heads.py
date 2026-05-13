@@ -24,7 +24,8 @@ def _make_random_labels(batch: int) -> dict[str, torch.Tensor]:
 
 
 def test_head_specs_match_plan():
-    """The 10 heads from aux_heads_implementation_plan.md."""
+    """The 10 structural heads from aux_heads_implementation_plan.md
+    plus the 8 cohomology summary heads added in the cohom-aux follow-up."""
     assert HEAD_SPECS == {
         "spine_type": 6,
         "lhs_structure": 2,
@@ -36,6 +37,14 @@ def test_head_specs_match_plan():
         "magma_bit_4": 2,
         "magma_bit_6": 2,
         "magma_bit_7": 2,
+        "cohom_count_2": 5,
+        "cohom_count_3": 5,
+        "cohom_count_5": 6,
+        "cohom_count_7": 6,
+        "cohom_mean_h2_2": 5,
+        "cohom_mean_h2_3": 6,
+        "cohom_mean_h2_5": 6,
+        "cohom_mean_h2_7": 6,
     }
 
 
@@ -49,14 +58,15 @@ def test_forward_returns_per_head_logits_with_correct_shapes():
 
 
 def test_param_count_is_minimal():
-    """Plan expectation: ~2K params for h=256 (pool_dim=512). Should
-    be 'training signal, not model capacity'."""
+    """Heads should remain small relative to the encoder backbone
+    (training signal, not model capacity)."""
     heads = AuxiliaryHeads(pool_dim=512)
     n_params = sum(p.numel() for p in heads.parameters())
-    # Per head: pool_dim * num_classes + num_classes (weight + bias)
-    # 6 + 2 + 6 + 2*7 = 28 total output units, weights = 28*512 = 14336
-    # plus 28 bias = 14364
-    assert n_params == 14364, f"unexpected aux head param count: {n_params}"
+    # Per head: pool_dim * num_classes + num_classes (weight + bias).
+    # Structural heads: 6 + 2 + 6 + 2*7 = 28 output units.
+    # Cohom heads: 5 + 5 + 6 + 6 + 5 + 6 + 6 + 6 = 45 output units.
+    # Total = 73 output units, params = 73 * 512 + 73 = 37449.
+    assert n_params == 37449, f"unexpected aux head param count: {n_params}"
 
 
 def test_gradient_flows_through_pooled_input():
