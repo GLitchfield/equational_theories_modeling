@@ -1,0 +1,86 @@
+# aux_h256_diag — Test 2 from aux_heads_implementation_plan.md.
+#
+# THE headline experiment for the aux-heads pivot. Auxiliary heads at
+# h=256 paired with the recipe that produced the best h=256 baseline
+# so far (margin 1.5, VICReg 0.05/0.05, tw 1.0). The corresponding
+# baseline run is stable_h256_m1p5_vic0p05_diag — best ep0 0.9469,
+# degrades to 0.9284 by ep9 with TRUE recall climbing 0.94 -> 0.99
+# and FALSE recall falling 0.95 -> 0.87 (the simplicity-bias drift).
+#
+# Hypothesis: aux-anchored structural features prevent the late-
+# training TRUE-bias drift. Specifically, anchoring spine + lhs +
+# magma bits (which are FALSE-detection features at the per-pair
+# level) should keep FALSE recall in the 0.93+ range through ep9.
+# If FALSE recall holds, bal_acc holds, and h=256's superior ep0
+# starting point (0.9469 vs h=128's 0.9299) translates into a
+# sustained advantage instead of an immediate degradation.
+#
+# Single-knob change vs stable_h256_m1p5_vic0p05_diag.yaml: aux heads
+# enabled.
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.05
+  vicreg_cov_weight: 0.05
+  vicreg_gamma: 1.0
+  aux_weight: 0.1
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: aux_h256_diag
+  log_every: 25
