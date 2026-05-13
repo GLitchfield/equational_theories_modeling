@@ -8,13 +8,20 @@ hyperparameters identical (h=256, margin 1.5, VICReg 0.05/0.05, aux_weight 0.1,
 seed 42).
 
 **Headline result: peak bal_acc 0.9491 at ep6, −1.44pp vs the no-cohom
-reference's record 0.9635.** The phase transition into regime B fired one
-epoch *earlier* than the reference (ep6 vs ep7) but did NOT persist —
-the encoder reverted to regime A by ep7 and stayed there for ep7-9.
+reference's record 0.9635.** A partial regime-B phase transition fired
+one epoch earlier than the reference (ep6 vs ep7) but reverted to regime
+A by ep7 and stayed there for ep7-9.
 
-The cohom-augmented configuration appears to make the regime-A → regime-B
-basin shallower, not deeper. The transition mechanism still fires, but the
-basin can no longer hold the encoder.
+**This run does NOT confirm or refute the simplicity-bias-anchoring
+hypothesis** — see the Conclusion. The cohom heads stayed unsaturated
+and contributed persistent gradient (the theory's prescription), but at
+aux_weight=0.1 their share of total loss was only ~0.08%, too small to
+plausibly fight the contrastive simplicity bias. The drift in regime A
+was identical to the structural-only run (which had no anti-drift
+contribution at all once structural heads saturated by ep1). The
+reference's 0.9635 came from a separate, unrelated regime-B phase
+transition that happened to fire and stick under seed 42 — not from
+aux anchoring suppressing drift.
 
 ---
 
@@ -117,79 +124,93 @@ contribution at ep5: ~0.5 × (0 + 0.085 × 8 / 18) × 0.1 ≈ 0.002 (negligible
 relative to contrastive loss ~0.6, but always pointing the same direction:
 "keep the cohomology classes linearly separable").
 
-The hypothesis that this anchoring would *prevent* drift turned out to
-backfire: the constant cohom pressure may have *destabilized* regime B
-once entered, by demanding the encoder maintain certain class boundaries
-that conflict with regime B's tighter clustering geometry.
+The structural heads' silence means they exerted essentially zero
+gradient pressure for 9 of 10 epochs — they could not have prevented
+simplicity-bias drift even in principle. The cohom heads stayed
+unsaturated but at aux_weight=0.1 their loss contribution was
+
+  aux_weight × 0.5 × per_head_mean × n_heads
+   = 0.1 × 0.5 × ((10 × 0.0001) + (8 × 0.011)) / 18
+   ≈ 5×10⁻⁴
+
+vs contrastive ≈ 0.6 → **~0.08% of total loss**. That magnitude is
+rounding error relative to the simplicity-bias signal it would need to
+fight. So the persistent-gradient property was satisfied in form but
+not in magnitude.
 
 ---
 
-## Mechanism interpretation
+## What this run does (and does not) tell us
 
-Comparing all three known h=256 trajectories to date:
+**What it tells us:**
+
+- The h=256 simplicity-bias drift in regime A (TRUE recall climbing,
+  FALSE recall dropping, eff_rank inflating) is **identical** between
+  the structural-only run and the cohom run through ep5. Both plateau
+  at ~0.93 with the same TRUE-bias signature. No version of aux-anchoring
+  tested so far has changed regime-A drift behavior.
+- The phase transition timing isn't intrinsically locked to a specific
+  epoch — adding the cohom heads moved it from ep7 to ep6 in seed-42.
+  Some perturbation of the loss landscape suffices to shift it. This is
+  a useful side observation, not the headline.
+- Basin depth at h=256 is shallow without help. Three of four h=256 runs
+  to date hit only partial transitions that reverted; only the
+  reference seed-42 run produced a sustained basin (3 epochs).
+
+**What it does NOT tell us:**
+
+- Whether persistent aux gradient *can* prevent simplicity-bias drift.
+  The cohom heads were configured at aux_weight=0.1, where total cohom
+  contribution is ~0.08% of loss. That's too weak for the comparison to
+  test the theory. A meaningful test requires aux_weight high enough
+  that the cohom contribution is ~1-5% of loss — i.e., aux_weight in the
+  1.0-5.0 range.
+- Whether basin depth at h=256 has a fix that doesn't require
+  fundamentally redesigning the loss. All four h=256 runs to date used
+  the same recipe up to aux composition; we haven't varied the
+  contrastive recipe itself.
+
+Comparing all four known h=256 trajectories:
 
 | Run | Seed | ep0 | best | best ep | regime B duration |
 |---|---:|---:|---:|---:|---|
-| `stable_h256_m1p5_vic0p05_diag` | 42 | 0.9469 | 0.9469 | 0 | never entered |
-| `aux_h256_diag` | 42 | 0.9546 | **0.9635** | 7 | 3 ep (7-9) |
-| `aux_h256_seed1_diag` | 1 | 0.9492 | 0.9492 | 0 | partial transition at ep7 (bal_acc 0.9364, eff_rank 200, gap 0.42) then reverted |
-| `aux_h256_cohom_diag` | 42 | 0.9353 | 0.9491 | 6 | partial transition at ep6 (bal_acc 0.9491, eff_rank 141, gap 0.50) then reverted |
+| `stable_h256_m1p5_vic0p05_diag` | 42 | 0.9469 | 0.9469 | 0 | never entered (no aux) |
+| `aux_h256_diag` | 42 | 0.9546 | **0.9635** | 7 | 3 ep (7-9) sustained |
+| `aux_h256_seed1_diag` | 1 | 0.9492 | 0.9492 | 0 | partial ep7 (bal_acc 0.9364), reverted |
+| `aux_h256_cohom_diag` | 42 | 0.9353 | 0.9491 | 6 | partial ep6 (bal_acc 0.9491), reverted |
 
-Two new data points that the cohom run contributes:
-
-1. **Earlier transition is possible.** The transition timing isn't
-   intrinsically locked to ep7. Adding the cohom aux heads moved it forward
-   by one epoch (the LR is in the same cosine-decay range so the
-   "low-LR triggers transition" intuition still holds — ep6 LR ≈ 0.0003
-   isn't dramatically lower than ep7's 0.0001 in seed-42, just a slightly
-   different operating point that suffices given the perturbed loss
-   landscape).
-
-2. **Basin depth depends on aux configuration, not just LR.** The reference
-   recipe (10 structural heads, all silent by ep1) lets regime B persist
-   for 3 epochs once entered. The cohom recipe (18 heads, 8 still
-   non-saturated and exerting ~0.002 of gradient) cannot hold the encoder
-   in regime B for even one full additional epoch. This is consistent with
-   the antagonism hypothesis: regime B's tight FALSE clustering and
-   collapsed effective rank conflicts with the cohom heads' demand for
-   linear separability across 5-6 classes per prime.
-
-The seed-1 reproducibility check showed that even without cohom, basin depth
-is fragile and seed-dependent — seed=1 hit only a partial transition at
-ep7 (bal_acc 0.9364, eff_rank 200, gap 0.42) that then reverted by ep8,
-nowhere near seed=42's record-territory regime B. The cohom variant
-exhibits the same partial-then-reverted pattern (cohom seed=42 ep6:
-bal_acc 0.9491, eff_rank 141, gap 0.50, reverted by ep7), confirming
-that basin depth depends on more than just seed — the loss landscape
-that the cohom heads create is closer to seed=1's shallow-basin regime
-than seed=42's deep-basin regime.
+The aux_h256_diag basin holding for 3 epochs is the outlier, not the
+rule — cohom seed=42 looks like seed=1 (partial then reverted), which
+is the more typical h=256 behavior.
 
 ---
 
 ## Conclusion
 
-Per-prime cohomology summary statistics, configured as 8 binned classification
-aux heads, do NOT improve on the structural-only aux baseline at h=256 with
-seed 42. Net effect: peak bal_acc drops from 0.9635 to 0.9491 (−1.44pp).
+Per-prime cohomology summary statistics as aux heads at **aux_weight=0.1**
+do not improve on the structural-only aux baseline at h=256. Peak bal_acc
+0.9491 vs reference 0.9635 (−1.44pp). But this is **not** evidence that
+cohom anchoring is wrong-headed; it's evidence that the test was not
+sized correctly to evaluate the anchoring hypothesis.
 
-The mechanism is not "cohom features carry no signal" — they're learned to
-1.000 val accuracy and continue to exert non-zero CE pressure throughout
-training. The mechanism is "their continued pressure conflicts with regime
-B's representational geometry, destabilizing the basin once entered."
+The right next test is **aux_weight=5.0** (50× the current setting),
+which pushes cohom contribution from ~0.08% to ~4% of total loss — the
+range where aux signal can plausibly compete with the contrastive
+simplicity bias. The structural heads are saturated regardless of weight
+multiplier, so this is functionally equivalent to "cohom-specific weight
+bump" with no code change. Risk: the same SIGReg-style instability
+where aux signal overwhelms contrastive — but cohom magnitudes are an
+order smaller than SIGReg's, so headroom exists.
 
-**Implications for next steps:**
+If aux_weight=5.0 prevents the regime-A drift (FALSE recall stays in
+the 0.93+ range through ep5), the anchoring theory is confirmed and the
+basin question becomes secondary. If it still drifts, then either the
+cohom features carry no useful signal beyond what's already in the
+contrastive loss, or aux-head anchoring at this scale needs a different
+form entirely (e.g., contrastive between same-cohom-class equation
+pairs rather than per-equation classification).
 
-- Per-prime *summary* statistics aren't useful in this configuration.
-  Cell-level (87-head) or richer encodings would face the same antagonism.
-- A "decay aux_weight on entry to regime B" schedule could in principle
-  rescue this — but the operationally cleaner question is whether
-  cohomology should be on the aux path at all, vs. the input-feature path
-  (which would expose the information without ongoing gradient pressure).
-- The shallow-basin reversion from ep6 → ep7 mirrors the seed-1 reversion
-  signature from `aux_h256_seed1_diag`. The basin-depth problem at h=256
-  remains the active blocker, and adding more aux heads makes it worse,
-  not better.
-
-Recommend **not** integrating cohom summaries as aux heads; revisit the
-"input feature" or "per-pair feature" alternatives if the cohomology data
-is going to be used at all.
+Implications for the basin-depth question (h=256 regime-B fragility):
+that's a separate phenomenon from the drift question, and this run
+didn't move the needle on it. Future work on basin depth should be
+labeled as such and not conflated with anti-drift evidence.
