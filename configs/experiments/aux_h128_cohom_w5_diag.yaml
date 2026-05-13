@@ -1,0 +1,92 @@
+# aux_h128_cohom_w5_diag — same test as aux_h256_cohom_w5_diag but at h=128.
+#
+# Question: does the cohom-at-aux_weight=5 result transfer down to h=128?
+# At h=256 we got peak 0.9329 at ep0 with no anti-drift effect and no
+# regime-B transition (the 50x aux pressure suppressed it). At h=128 the
+# baseline (aux_h128_diag, structural-only aux at w=0.1) was already
+# stable at 0.9582 with little drift to prevent — so the cohom heads
+# could either:
+#
+#   (a) Help: at smaller capacity (128 dim narrower than 256), the encoder
+#       may not be able to satisfy aux + drift in orthogonal subspaces;
+#       cohom anchoring may actually constrain the geometry usefully.
+#   (b) Hurt: same aux-overwhelms-contrastive failure as h=256 but with
+#       even less compute headroom, dropping below the 0.9582 baseline.
+#   (c) No-op: cohom features still trivially representable, encoder
+#       routes them through and ignores their gradient pressure.
+#
+# Comparison points:
+#   - aux_h128_diag (structural-only aux at w=0.1, peak 0.9582 ep3)
+#   - aux_h256_cohom_w5_diag (same test at h=256, peak 0.9329 ep0)
+#
+# Two changes vs aux_h256_cohom_w5_diag.yaml: hidden_dim 256 -> 128,
+# VICReg weights 0.05 -> 0.1 (h=128's tuned regularization, matching
+# the aux_h128_diag baseline so this test isn't conflated with a
+# regularizer mismatch).
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.1
+  vicreg_cov_weight: 0.1
+  vicreg_gamma: 1.0
+  aux_weight: 5.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: aux_h128_cohom_w5_diag
+  log_every: 25
