@@ -1,0 +1,93 @@
+# aux_h256_cohom_w5_diag — aux_weight=5.0 to actually test the
+# anti-drift anchoring hypothesis with cohom heads.
+#
+# Comparison point: aux_h256_cohom_diag (peak 0.9491 at ep6).
+# Single-knob change: aux_weight 0.1 -> 5.0 (50x).
+#
+# Why: at aux_weight=0.1, cohom heads contributed ~0.08% of total loss
+# (math in outputs/runs/aux_h256_cohom_diag/diagnostics_report.md).
+# That's rounding error relative to the contrastive simplicity-bias
+# signal it would need to fight, so the "did aux prevent drift" question
+# was not actually tested. At aux_weight=5.0, cohom contribution becomes
+# ~4% of total loss — the range where aux signal can plausibly compete.
+#
+# Risk: SIGReg-style instability (aux signal overwhelming contrastive),
+# leading to no contrastive separation and bal_acc <= 0.5. Unlike SIGReg,
+# cohom CE magnitudes are an order smaller, so there's headroom. Still
+# worth watching FALSE recall and dist_gap_median through ep0-2 to flag
+# instability early.
+#
+# Theory test (the actual hypothesis):
+#   - If FALSE recall stays at 0.93+ through ep5 (instead of dropping
+#     to 0.87 like every other h=256 run), persistent cohom anchoring
+#     prevents drift. Anchoring hypothesis confirmed.
+#   - If FALSE recall still drops to 0.87, anchoring at this scale
+#     either doesn't carry useful signal beyond contrastive, or
+#     requires a different mechanism (e.g., cohom-class contrastive).
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.05
+  vicreg_cov_weight: 0.05
+  vicreg_gamma: 1.0
+  aux_weight: 5.0
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: aux_h256_cohom_w5_diag
+  log_every: 25
