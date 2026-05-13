@@ -1,0 +1,80 @@
+# aux_h256_seed1_diag — reproducibility check on the aux_h256_diag
+# late-training phase transition.
+#
+# Identical to aux_h256_diag.yaml in every respect EXCEPT seed (42 -> 1).
+# The aux_h256_diag run produced new project record bal_acc 0.9635 at
+# ep7 via a sudden phase transition between ep6 and ep7: bal_acc jumped
+# +3.3 pp, eff_rank crashed 324 -> 58, TRUE p50 dropped 1.28 -> 0.85,
+# recall reversed from TRUE-biased to FALSE-biased.
+#
+# Question: is regime B reachable reliably or was the original a
+# single-seed lucky basin escape? With a different seed, does training
+# (a) follow the same A->B transition late, (b) stay stuck in regime A,
+# (c) hit regime B at a different epoch, or (d) something else entirely?
+
+seed: 1
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 256
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.05
+  vicreg_cov_weight: 0.05
+  vicreg_gamma: 1.0
+  aux_weight: 0.1
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 1
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: aux_h256_seed1_diag
+  log_every: 25
