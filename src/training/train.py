@@ -29,10 +29,11 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from src.data.dataset import AUX_HEAD_NAMES, make_loaders
+from src.data.dataset import make_loaders
 from src.model.aux_heads import (
     AuxiliaryHeads,
     HEAD_SPECS as AUX_HEAD_SPECS,
+    resolve_head_names,
     auxiliary_accuracy,
     auxiliary_loss,
 )
@@ -127,11 +128,12 @@ def evaluate(
     all_l: list[torch.Tensor] = []
     total_loss = 0.0
     n_batches = 0
-    # For per-head accuracy: stash predictions and labels per head.
-    aux_preds: dict[str, list[torch.Tensor]] = {n: [] for n in AUX_HEAD_NAMES} \
-        if aux_heads_module is not None else {}
-    aux_labels: dict[str, list[torch.Tensor]] = {n: [] for n in AUX_HEAD_NAMES} \
-        if aux_heads_module is not None else {}
+    # For per-head accuracy: stash predictions and labels per ACTIVE head
+    # (the loader provides labels for all 18 heads regardless; we only
+    # log accuracy for the heads being trained).
+    active_head_names = aux_heads_module.head_names if aux_heads_module is not None else []
+    aux_preds: dict[str, list[torch.Tensor]] = {n: [] for n in active_head_names}
+    aux_labels: dict[str, list[torch.Tensor]] = {n: [] for n in active_head_names}
 
     with torch.no_grad():
         for batch_idx, batch in enumerate(loader):
@@ -147,7 +149,7 @@ def evaluate(
             if aux_heads_module is not None:
                 z_pred, z_tgt, pooled_eq1, _ = jepa(eq1, eq2, return_pooled=True)
                 logits_e1 = aux_heads_module(pooled_eq1)
-                for name in AUX_HEAD_NAMES:
+                for name in active_head_names:
                     aux_preds[name].append(logits_e1[name].argmax(dim=-1).cpu())
                     aux_labels[name].append(eq1_aux[name].cpu())
             else:
@@ -237,9 +239,10 @@ def evaluate(
     }
     # Per-head argmax accuracy on the eq1 side of every val batch.
     # Logged as 'aux_acc_<head_name>' so it sits alongside the val/dist_*
-    # diagnostics in the per-epoch eval line.
+    # diagnostics in the per-epoch eval line. Only the active heads
+    # (the ones the model was trained on) are reported.
     if aux_heads_module is not None and aux_preds:
-        for name in AUX_HEAD_NAMES:
+        for name in aux_preds:
             preds_cat = torch.cat(aux_preds[name])
             labels_cat = torch.cat(aux_labels[name])
             metrics[f'aux_acc_{name}'] = float((preds_cat == labels_cat).float().mean())
@@ -354,6 +357,11 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'aux heads need a label parquet (build with '
             'scripts/build_equation_invariants.py).'
         )
+    # Optional subset of HEAD_SPECS to actually train. Accepts a string
+    # (named subset like "structural" / "cohom" / "all") or an explicit
+    # list of head names. Defaults to all heads (backward compatible).
+    aux_heads_spec = config['loss'].get('aux_heads', None)
+    aux_head_names = resolve_head_names(aux_heads_spec) if aux_active else []
     train_loader, val_loader, train_ds, val_ds = make_loaders(
         pair_table_path=config['data']['pair_table_path'],
         graph_cache_path=config['data']['graph_cache_path'],
@@ -397,9 +405,12 @@ def train(config: dict, sanity_check: bool = False) -> dict:
     aux_heads_module: AuxiliaryHeads | None = None
     if aux_active:
         pool_dim = 2 * int(enc_cfg['hidden_dim'])
-        aux_heads_module = AuxiliaryHeads(pool_dim=pool_dim).to(device)
+        aux_heads_module = AuxiliaryHeads(
+            pool_dim=pool_dim, head_names=aux_head_names,
+        ).to(device)
         print(f'  aux_heads: {sum(p.numel() for p in aux_heads_module.parameters()):,} params '
-              f'({len(AUX_HEAD_SPECS)} heads, pool_dim={pool_dim})')
+              f'({len(aux_heads_module.head_names)} heads of {len(AUX_HEAD_SPECS)} available, '
+              f'pool_dim={pool_dim})')
 
     # --- optimizer (target encoder is frozen, exclude it) ---
     trainable_params = (
@@ -643,8 +654,9 @@ def train(config: dict, sanity_check: bool = False) -> dict:
                 if aux_active:
                     step_metrics['train/aux_loss'] = aux_loss_total.item()
                     # Average per-head loss across eq1+eq2 for trace logs
-                    # (matches the auxiliary_loss aggregation).
-                    for name in AUX_HEAD_NAMES:
+                    # (matches the auxiliary_loss aggregation). Only
+                    # active heads are present in the per-head dicts.
+                    for name in aux_per_head_e1:
                         step_metrics[f'train/aux_{name}_loss'] = (
                             0.5 * (aux_per_head_e1[name] + aux_per_head_e2[name])
                         )
@@ -699,7 +711,7 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'elapsed_sec': time.perf_counter() - t_start,
         }
         if aux_active:
-            for name in AUX_HEAD_NAMES:
+            for name in aux_heads_module.head_names:
                 key = f'aux_acc_{name}'
                 if key in val:
                     epoch_metrics[f'val/{key}'] = val[key]

@@ -1,0 +1,95 @@
+# aux_h128_seed1_diag — reproducibility check on aux_h128_diag (peak 0.9582 ep3).
+#
+# Two changes vs aux_h128_diag.yaml:
+#   1. seed: 42 -> 1 (the actual reproducibility variable)
+#   2. loss.aux_heads: structural (locks the head set to the same
+#      10 structural heads aux_h128_diag was trained with, even though
+#      HEAD_SPECS now contains 18 entries after the cohom additions).
+#      Without this, the run would train all 18 heads and not be a
+#      clean reproduction of the 0.9582 result.
+#
+# Question: does the project-wide best stable result reproduce under a
+# different seed? aux_h128_diag with seed=42 produced bal_acc 0.9582 at
+# ep3 with structural-only aux heads (no cohom). It's the actually-stable
+# h=128 best (h=256 has been unreliable across seeds — only one of four
+# h=256 runs found regime B). With another seed at the same recipe:
+#
+#   (a) ~0.9582 again -> result is recipe-driven, robust headline.
+#   (b) substantially different (e.g., 0.9450 or 0.9650) -> seed
+#       sensitivity is a confounder; the 0.9582 headline is partly luck.
+#   (c) different shape entirely -> investigate.
+#
+# Mirrors the seed-1 check we ran on aux_h256_diag (which showed h=256
+# basin entry IS seed-dependent). h=128's mechanism should be more
+# stable since it never relied on a phase transition.
+
+seed: 1
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 512
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+
+predictor:
+  embed_dim: 512
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.1
+  vicreg_cov_weight: 0.1
+  vicreg_gamma: 1.0
+  aux_weight: 0.1
+  # Lock to the 10 structural heads (spine, lhs, num_vars, magma bits)
+  # so the run reproduces aux_h128_diag's exact training setup despite
+  # HEAD_SPECS now containing 18 entries (cohom heads were added later).
+  aux_heads: structural
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 1
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: aux_h128_seed1_diag
+  log_every: 25

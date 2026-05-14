@@ -10,9 +10,11 @@ import torch
 
 from src.model.aux_heads import (
     HEAD_SPECS,
+    HEAD_SUBSETS,
     AuxiliaryHeads,
     auxiliary_accuracy,
     auxiliary_loss,
+    resolve_head_names,
 )
 
 
@@ -162,3 +164,88 @@ def test_works_on_cuda_if_available():
     loss, _ = auxiliary_loss(out, labels)
     assert loss.device.type == "cuda"
     assert torch.isfinite(loss)
+
+
+# --- head subset behavior -------------------------------------------------
+
+def test_resolve_head_names_default_returns_all():
+    assert resolve_head_names(None) == list(HEAD_SPECS.keys())
+
+
+def test_resolve_head_names_named_subsets():
+    structural = resolve_head_names("structural")
+    assert structural == HEAD_SUBSETS["structural"]
+    assert "spine_type" in structural
+    assert "cohom_count_2" not in structural
+
+    cohom = resolve_head_names("cohom")
+    assert cohom == HEAD_SUBSETS["cohom"]
+    assert "cohom_count_2" in cohom
+    assert "spine_type" not in cohom
+
+    all_heads = resolve_head_names("all")
+    assert all_heads == list(HEAD_SPECS.keys())
+
+
+def test_resolve_head_names_explicit_list():
+    spec = ["spine_type", "magma_bit_3"]
+    assert resolve_head_names(spec) == spec
+
+
+def test_resolve_head_names_unknown_subset_raises():
+    with pytest.raises(ValueError, match="unknown head subset"):
+        resolve_head_names("not_a_subset")
+
+
+def test_resolve_head_names_unknown_head_in_list_raises():
+    with pytest.raises(ValueError, match="unknown head names"):
+        resolve_head_names(["spine_type", "not_a_head"])
+
+
+def test_resolve_head_names_empty_list_raises():
+    with pytest.raises(ValueError, match="empty"):
+        resolve_head_names([])
+
+
+def test_aux_heads_subset_only_creates_active_heads():
+    heads = AuxiliaryHeads(pool_dim=32, head_names=HEAD_SUBSETS["structural"])
+    assert set(heads.heads.keys()) == set(HEAD_SUBSETS["structural"])
+    assert heads.head_names == HEAD_SUBSETS["structural"]
+    pooled = torch.randn(4, 32)
+    out = heads(pooled)
+    assert set(out.keys()) == set(HEAD_SUBSETS["structural"])
+    # Param count: only structural heads, not all 18.
+    n_params = sum(p.numel() for p in heads.parameters())
+    # Structural: 6 + 2 + 6 + 2*7 = 28 output units * (32+1) = 924
+    assert n_params == 924
+
+
+def test_auxiliary_loss_with_subset_heads():
+    """Loss should only use the heads present in logits, ignoring extra
+    labels (this is how the train loop calls it: dataset always loads
+    all 18 head labels, but logits only contains active heads)."""
+    structural_names = HEAD_SUBSETS["structural"]
+    heads = AuxiliaryHeads(pool_dim=32, head_names=structural_names)
+    out = heads(torch.randn(8, 32))
+    # Labels dict contains ALL 18 heads (extra ones are ignored).
+    labels = {
+        name: torch.randint(0, n, (8,), dtype=torch.long)
+        for name, n in HEAD_SPECS.items()
+    }
+    total, per_head = auxiliary_loss(out, labels)
+    assert torch.isfinite(total)
+    # Per-head dict has only the active subset.
+    assert set(per_head.keys()) == set(structural_names)
+
+
+def test_auxiliary_loss_raises_when_label_missing_for_active_head():
+    heads = AuxiliaryHeads(pool_dim=32, head_names=["spine_type", "magma_bit_0"])
+    out = heads(torch.randn(4, 32))
+    labels = {"spine_type": torch.zeros(4, dtype=torch.long)}  # missing magma_bit_0
+    with pytest.raises(ValueError, match="missing aux labels"):
+        auxiliary_loss(out, labels)
+
+
+def test_aux_heads_unknown_name_raises():
+    with pytest.raises(ValueError, match="unknown head names"):
+        AuxiliaryHeads(pool_dim=32, head_names=["spine_type", "not_a_head"])

@@ -61,6 +61,48 @@ HEAD_SPECS: dict[str, int] = {
     "cohom_mean_h2_7": 6,
 }
 
+# Pre-defined head subsets for common configurations. Train configs can
+# either reference these by name (e.g. ``loss.aux_heads: structural``)
+# or pass an explicit list (``loss.aux_heads: [spine_type, ...]``).
+HEAD_SUBSETS: dict[str, list[str]] = {
+    "structural": [
+        "spine_type", "lhs_structure", "num_variables",
+        "magma_bit_0", "magma_bit_1", "magma_bit_2",
+        "magma_bit_3", "magma_bit_4", "magma_bit_6", "magma_bit_7",
+    ],
+    "cohom": [
+        "cohom_count_2", "cohom_count_3", "cohom_count_5", "cohom_count_7",
+        "cohom_mean_h2_2", "cohom_mean_h2_3", "cohom_mean_h2_5", "cohom_mean_h2_7",
+    ],
+    "all": list(HEAD_SPECS.keys()),
+}
+
+
+def resolve_head_names(spec: str | list[str] | None) -> list[str]:
+    """Convert a config-side spec to a concrete list of head names.
+
+    Args:
+        spec: ``None`` -> all heads; a string -> one of the named subsets
+            in ``HEAD_SUBSETS``; a list -> taken verbatim (validated
+            against ``HEAD_SPECS``).
+    """
+    if spec is None:
+        return list(HEAD_SPECS.keys())
+    if isinstance(spec, str):
+        if spec not in HEAD_SUBSETS:
+            raise ValueError(
+                f"unknown head subset {spec!r}; valid: {sorted(HEAD_SUBSETS)}"
+            )
+        return list(HEAD_SUBSETS[spec])
+    if isinstance(spec, list):
+        bad = [n for n in spec if n not in HEAD_SPECS]
+        if bad:
+            raise ValueError(f"unknown head names {bad}; valid: {sorted(HEAD_SPECS)}")
+        if len(spec) == 0:
+            raise ValueError("aux_heads list is empty; either omit the key or set aux_weight=0")
+        return list(spec)
+    raise TypeError(f"aux_heads spec must be None, str, or list[str]; got {type(spec).__name__}")
+
 
 class AuxiliaryHeads(nn.Module):
     """Bank of single-layer linear probes from a pooled encoder representation.
@@ -71,54 +113,65 @@ class AuxiliaryHeads(nn.Module):
     Args:
         pool_dim: dimensionality of the encoder's pooled representation
             (mean+max concat = 2 × hidden_dim).
+        head_names: optional subset of ``HEAD_SPECS`` keys to instantiate.
+            If ``None``, all heads in ``HEAD_SPECS`` are created (back-
+            compatible default). Order is preserved for canonical
+            iteration in ``forward`` and ``auxiliary_loss``.
     """
 
-    def __init__(self, pool_dim: int) -> None:
+    def __init__(self, pool_dim: int, head_names: list[str] | None = None) -> None:
         super().__init__()
         self.pool_dim = pool_dim
+        if head_names is None:
+            head_names = list(HEAD_SPECS.keys())
+        bad = [n for n in head_names if n not in HEAD_SPECS]
+        if bad:
+            raise ValueError(f"unknown head names: {bad}")
+        self.head_names = list(head_names)
         self.heads = nn.ModuleDict({
-            name: nn.Linear(pool_dim, num_classes)
-            for name, num_classes in HEAD_SPECS.items()
+            name: nn.Linear(pool_dim, HEAD_SPECS[name])
+            for name in self.head_names
         })
 
     def forward(self, pooled: torch.Tensor) -> Dict[str, torch.Tensor]:
-        """Compute logits for each head.
+        """Compute logits for each active head.
 
         Args:
             pooled: ``[batch, pool_dim]`` — encoder output BEFORE the
                 output projection and L2 normalization.
         Returns:
-            Dict of ``{head_name: logits[batch, num_classes]}``.
+            Dict of ``{head_name: logits[batch, num_classes]}`` for
+            heads in ``self.head_names`` (in iteration order).
         """
-        return {name: head(pooled) for name, head in self.heads.items()}
+        return {name: self.heads[name](pooled) for name in self.head_names}
 
 
 def auxiliary_loss(
     logits: Dict[str, torch.Tensor],
     labels: Dict[str, torch.Tensor],
 ) -> tuple[torch.Tensor, dict[str, float]]:
-    """Average cross-entropy across all heads.
+    """Average cross-entropy across all active heads.
 
     Args:
         logits: dict of ``{head_name: logits[batch, num_classes]}`` from
-            ``AuxiliaryHeads.forward``.
-        labels: dict of ``{head_name: int64_labels[batch]}`` for each head.
+            ``AuxiliaryHeads.forward``. The set of heads to apply loss
+            over is taken from ``logits.keys()``.
+        labels: dict of ``{head_name: int64_labels[batch]}`` — must
+            include every key that appears in ``logits``.
     Returns:
         ``(scalar_loss, per_head_loss_dict)`` — the scalar mean loss
         across heads (for backprop) and a dict of per-head loss values
         (floats, for logging).
     """
-    if set(logits.keys()) != set(HEAD_SPECS.keys()):
-        raise ValueError(
-            f"logits keys {sorted(logits.keys())} do not match HEAD_SPECS "
-            f"{sorted(HEAD_SPECS.keys())}"
-        )
-    if set(labels.keys()) != set(HEAD_SPECS.keys()):
-        missing = set(HEAD_SPECS.keys()) - set(labels.keys())
+    bad = [n for n in logits if n not in HEAD_SPECS]
+    if bad:
+        raise ValueError(f"logits contain unknown heads: {bad}")
+    missing = [n for n in logits if n not in labels]
+    if missing:
         raise ValueError(f"missing aux labels: {sorted(missing)}")
 
     per_head: dict[str, torch.Tensor] = {}
-    for name in HEAD_SPECS:
+    for name in logits:
         per_head[name] = F.cross_entropy(logits[name], labels[name])
     total = torch.stack(list(per_head.values())).mean()
     return total, {name: float(v.detach()) for name, v in per_head.items()}
@@ -128,9 +181,9 @@ def auxiliary_accuracy(
     logits: Dict[str, torch.Tensor],
     labels: Dict[str, torch.Tensor],
 ) -> dict[str, float]:
-    """Per-head argmax accuracy. Used for monitoring, not training."""
+    """Per-head argmax accuracy over the active heads. For monitoring."""
     out: dict[str, float] = {}
-    for name in HEAD_SPECS:
+    for name in logits:
         preds = logits[name].argmax(dim=-1)
         out[name] = float((preds == labels[name]).float().mean())
     return out
