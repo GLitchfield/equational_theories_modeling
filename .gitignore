@@ -51,6 +51,11 @@ outputs/failure_analysis*/*.npy
 outputs/runs/*/*.parquet
 outputs/runs/*/*.npy
 
+# Probing embeddings — large (~55 MB), regenerable from
+# scripts/extract_probe_embeddings.py. Probe-result JSONs in
+# outputs/probing/results/ ARE committed (small, the actual deliverable).
+outputs/probing/embeddings/*.npy
+
 # wandb local logs
 wandb/
 
