@@ -2,7 +2,7 @@
 
 The active plan is `aux_heads_implementation_plan.md` — adding auxiliary prediction heads (spine type, balance, singleton-forcing, variable count) to the encoder to anchor structural features against the simplicity-bias drift that surfaced at h=256. Read it first when starting a session.
 
-Current best is `stable_m1p5_vic0p1_diag` at bal_acc 0.9492 (h=128, VICReg 0.1/0.1, ep6 monitor). The h=256 width sweep showed `stable_h256_m1p5_vic0p05_diag` reaching 0.9469 at ep0 then degrading to 0.93 — TRUE-recall climbs to 0.99, FALSE-recall drops to 0.87. That late-training TRUE-bias drift is the active problem the aux-heads plan is designed to address.
+**Current stable best is `aux_h128_seed1_diag` at bal_acc 0.9621 (h=128, 10 structural aux heads, VICReg 0.1/0.1, margin 1.5, ep6 monitor).** The seed=42 version `aux_h128_diag` peaked at 0.9582 ep3; both seeds tracked within 1.2pp at every epoch — the h=128 recipe is reproducible. The h=256 single-seed `aux_h256_diag` hit 0.9635 via a regime-B phase transition that did NOT reproduce under seed=1 (which reverted to 0.9492); h=256 is now considered an unreliable recipe and future experiments should default to h=128. The original h=256 simplicity-bias drift problem (TRUE-recall → 0.99, FALSE-recall → 0.87) is unresolved on the aux-head path: structural-only aux heads saturated within 1 epoch, and 4 cohomology aux-head experiments (`aux_h256_cohom_diag`, `aux_h256_cohom_w5_diag`, `aux_h128_cohom_w5_diag`, plus the structural-only baselines) confirmed that per-equation classification aux heads do not constrain pair-level contrastive geometry at any tested aux_weight (0.1, 5.0).
 
 The original Phase 1 → Phase 4 engineering plan is at `archive/jepa_engineering_plan.md`. Phase 1 (architecture sweep + loss form) is complete. The original "failure analysis" plan (`trash/testing_plan_phase2.md`) is also complete — it produced the diagnostic infrastructure (per-step grad/loss/distance instrumentation, no-holdout training mode) and the run records under `outputs/runs/stable_*` that the current aux-heads plan builds on.
 
@@ -25,11 +25,13 @@ When you deviate from the active plan, update it to match reality AND add a CHAN
 
 ## Regularization options
 
-VICReg (`src/training/losses.py::vicreg_terms`) is the production regularizer. Active via `loss.vicreg_var_weight` and `loss.vicreg_cov_weight` in any config. Works at h=128 (0.9492 bal_acc), degrades into TRUE-bias drift at h=256.
+VICReg (`src/training/losses.py::vicreg_terms`) is the production regularizer. Active via `loss.vicreg_var_weight` and `loss.vicreg_cov_weight` in any config. Works robustly at h=128 (0.9621 bal_acc with structural aux heads, 0.9582 stable from prior seed); degrades into TRUE-bias drift at h=256.
 
 SIGReg (`src/training/sigreg.py`) is implemented and verified (9 unit tests pass) but **shelved as not-a-fit for our task**. Three variants tested at h=256 — see commits `4fec7a3` → `cf5e00a` and `outputs/runs/stable_h256_*sigreg*/`, `outputs/runs/stable_h256_lejepa_3ep_diag/`. Failure modes: with L2-norm, SIGReg's pre-norm Gaussian target → uniform on sphere, conflicts with contrastive's TRUE-clustering need (cl_TRUE pinned at 1.97 = random unit-sphere distance²); without L2-norm, SIGReg's globally-coherent spread direction beats contrastive in clip-saturated steps (cl_TRUE = K = orthogonal-pair distance). Code stays in repo as a known-correct implementation for future setups where the prediction loss isn't margin-based contrastive. Don't re-attempt without revisiting the linked diagnostics_report.md files.
 
 The `model.l2_normalize_outputs` config flag (default `true`) routes through `JEPA.forward(normalize_outputs=...)` to drop the L2-norm on encoder/predictor outputs — added for the SIGReg LeJEPA-style attempt; safe to leave at default for any contrastive-with-margin recipe.
+
+Auxiliary heads (`src/model/aux_heads.py`) attach single-layer linear probes to the encoder's pooled rep. Active when `loss.aux_weight > 0` and `data.aux_labels_path` is set. `HEAD_SPECS` defines all 18 heads (10 structural + 8 cohomology); `loss.aux_heads` selects the active subset — accepts `"structural"`, `"cohom"`, `"all"` (named subsets in `HEAD_SUBSETS`), or an explicit list of head names. Defaults to all heads when omitted. Reproducing pre-cohom runs requires `loss.aux_heads: structural`.
 
 ## Data layout
 
