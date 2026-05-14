@@ -1,0 +1,85 @@
+# skip_h128_seed42_20ep_diag — extension of skip_h128_seed42_diag to 20 epochs.
+#
+# Test 3 from skip_connection_plan.md (informally — added after the
+# Test 2 reproducibility check showed seed=42 climbing monotonically
+# through ep9 with no drift, suggesting more headroom).
+#
+# Single change vs skip_h128_seed42_diag.yaml: training.epochs 10 -> 20.
+#
+# Caveat: the cosine LR scheduler normalizes over `epochs`, so the
+# per-step LR trajectory in ep0-9 will NOT match the 10-epoch run
+# exactly (LR decays slower over 20 epochs, staying higher longer).
+# So ep0-9 here aren't directly comparable to the prior run's ep0-9.
+# What matters is ep15-19: do they continue climbing past 0.984, or
+# does the model plateau / drift?
+#
+# Wall-clock estimate: ~3.5 hours (vs 104 min for 10 epochs).
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 768
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+  skip_pooled: true
+
+predictor:
+  embed_dim: 768
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 20            # was 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.1
+  vicreg_cov_weight: 0.1
+  vicreg_gamma: 1.0
+  aux_weight: 0.1
+  aux_heads: structural
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: skip_h128_seed42_20ep_diag
+  log_every: 25
