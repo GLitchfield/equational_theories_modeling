@@ -1,0 +1,90 @@
+# skip_h128_seed42_diag — reproducibility check on skip_h128_seed1_diag
+# (peak bal_acc 0.9775 at ep5, +1.54pp over the prior stable best).
+#
+# Identical to skip_h128_seed1_diag.yaml in every respect EXCEPT the
+# random seed (1 -> 42).
+#
+# Question: does the skip-connection result reproduce under a different
+# seed? skip_h128_seed1_diag won at every single training epoch by
+# 1-4pp over its no-skip counterpart aux_h128_seed1_diag, suggesting
+# the gain is recipe-driven not seed-lucky. With another seed at the
+# same recipe:
+#
+#   (a) ~0.97-0.98 again -> result is robust, skip is real win
+#   (b) substantially different (e.g., ~0.96 only) -> seed sensitivity
+#       larger than expected, treat 0.9775 as a noisy estimate
+#   (c) different shape entirely -> investigate the architecture
+#
+# Mirrors the seed-1 check we ran on aux_h128 (which showed h=128
+# recipe-driven; both seeds within 1.2pp at every epoch). h=128 with
+# skip should behave similarly given how stable seed=1's trajectory was
+# (bal_acc band 0.9699-0.9775 across all 10 epochs).
+
+seed: 42
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 768
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+  skip_pooled: true
+
+predictor:
+  embed_dim: 768
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.1
+  vicreg_cov_weight: 0.1
+  vicreg_gamma: 1.0
+  aux_weight: 0.1
+  aux_heads: structural
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 42
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: skip_h128_seed42_diag
+  log_every: 25
