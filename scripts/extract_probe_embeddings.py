@@ -63,6 +63,8 @@ def build_encoder(config: dict, seed: int | None = None) -> EquationEncoder:
         num_layers=enc_cfg["num_layers"],
         num_heads=enc_cfg["num_heads"],
         dropout=enc_cfg["dropout"],
+        skip_pooled=enc_cfg.get("skip_pooled", False),
+        proj_dim=enc_cfg.get("proj_dim", None),
     )
 
 
