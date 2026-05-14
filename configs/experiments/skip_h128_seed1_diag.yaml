@@ -1,0 +1,102 @@
+# skip_h128_seed1_diag — Test 1 from skip_connection_plan.md.
+#
+# Adds a parameter-free skip connection from the GNN's pooled rep to
+# the embedding output, bypassing the projection bottleneck. Both
+# halves are LayerNorm'd before concat (see plan resolution #1) so
+# neither dominates the unit vector at init.
+#
+# Two changes vs aux_h128_seed1_diag.yaml (the current stable best
+# at bal_acc 0.9621 ep6):
+#   1. encoder.skip_pooled: true     — enable the skip path
+#   2. encoder.embed_dim: 768        — was 512; widens to
+#                                       proj_dim (512) + 2*hidden_dim (256)
+#
+# proj_dim is implicit (embed_dim - 2*hidden_dim = 768-256 = 512), so
+# the projection's full 512 capacity is preserved and the skip adds
+# 256 dims of layered-norm pooled features.
+#
+# Predictor inherits embed_dim 768 -> input/output Linear's widen to
+# 768; hidden_dim stays at 128. ~+50% predictor params (197K vs 131K).
+#
+# VICReg slices to the projection half only (first 512 dims of the
+# 768-dim raw embedding); the skip half is deterministic and would
+# fight VICReg's decorrelation pressure.
+#
+# Primary success criterion: cohomology probe accuracy on the new
+# 768-dim L2-norm output >= 95% (up from ~88% on the 512-dim baseline).
+# Secondary: bal_acc >= 96.0% (no regression). +0.3pp gain would be
+# meaningful but expect seed noise to dominate.
+
+seed: 1
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  equations_file: data/raw/etp/equations.txt
+  pair_table_path: data/processed/implication_pairs.parquet
+  graph_cache_path: data/processed/equation_graphs.pt
+  holdout_path: null
+  num_workers: 4
+  aux_labels_path: data/processed/equation_invariants.parquet
+
+encoder:
+  node_features: 9
+  edge_features: 4
+  hidden_dim: 128
+  embed_dim: 768           # widened from 512 for the skip concat
+  num_layers: 4
+  num_heads: 4
+  dropout: 0.1
+  skip_pooled: true        # enable skip connection + per-channel LayerNorms
+  # proj_dim defaults to embed_dim - 2*hidden_dim = 768 - 256 = 512.
+  # Could be set explicitly here for clarity; omitted to keep the
+  # constraint embed_dim = proj_dim + pool_dim implicit and centralized
+  # in the encoder.
+
+predictor:
+  embed_dim: 768           # matches encoder embed_dim
+  hidden_dim: 128
+  num_layers: 2
+
+ema:
+  tau_start: 0.996
+  tau_final: 0.999
+  schedule: cosine
+
+training:
+  batch_size: 2048
+  learning_rate: 1.0e-3
+  weight_decay: 0.05
+  optimizer: adamw
+  scheduler: cosine_warmup
+  warmup_steps: 1000
+  epochs: 10
+  grad_clip_norm: 1.0
+  checkpoint_dir: outputs/checkpoints
+  max_val_batches: 200
+
+loss:
+  type: contrastive
+  margin: 1.5
+  true_weight: 1.0
+  vicreg_var_weight: 0.1
+  vicreg_cov_weight: 0.1
+  vicreg_gamma: 1.0
+  aux_weight: 0.1
+  # Same 10 structural heads as aux_h128_seed1_diag.
+  aux_heads: structural
+
+holdout:
+  level: 1
+  level1_ratio: 0.10
+  level2_num_equations: 500
+  level3_num_equiv_classes: 150
+  seed: 1
+
+wandb:
+  enabled: true
+  project: jepa-equational-implication
+  entity: null
+  name: skip_h128_seed1_diag
+  log_every: 25

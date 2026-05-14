@@ -173,6 +173,119 @@ def test_encoder_cuda_forward():
     assert torch.isfinite(out).all()
 
 
+# --- skip-connection tests ------------------------------------------------
+
+def test_skip_pooled_init_dims():
+    """skip_pooled=True derives proj_dim from embed_dim - 2*hidden_dim
+    when proj_dim is not given."""
+    enc = EquationEncoder(hidden_dim=128, embed_dim=768, skip_pooled=True)
+    assert enc.skip_pooled is True
+    assert enc.embed_dim == 768
+    assert enc.proj_dim == 512  # 768 - 2*128
+    assert enc.pool_dim == 256
+    assert enc.proj.out_features == 512
+    assert enc.proj_norm is not None
+    assert enc.skip_norm is not None
+    assert enc.proj_norm.normalized_shape == (512,)
+    assert enc.skip_norm.normalized_shape == (256,)
+
+
+def test_skip_pooled_explicit_proj_dim():
+    """proj_dim can be specified explicitly; embed_dim must equal proj_dim + pool_dim."""
+    enc = EquationEncoder(hidden_dim=128, embed_dim=768, proj_dim=512, skip_pooled=True)
+    assert enc.proj_dim == 512
+    assert enc.embed_dim == 768
+
+
+def test_skip_pooled_invalid_dim_combo_raises():
+    """proj_dim + 2*hidden_dim must equal embed_dim under skip_pooled."""
+    try:
+        EquationEncoder(hidden_dim=128, embed_dim=600, proj_dim=512, skip_pooled=True)
+    except ValueError as e:
+        assert "proj_dim + 2*hidden_dim == embed_dim" in str(e)
+        return
+    raise AssertionError("expected ValueError on mismatched skip dims")
+
+
+def test_skip_pooled_forward_unit_norm():
+    """The full 768-dim output should be L2-normalized."""
+    enc = EquationEncoder(hidden_dim=128, embed_dim=768, skip_pooled=True).eval()
+    batch = _example_batch()
+    out = enc(batch)
+    assert out.shape == (3, 768)
+    norms = out.norm(dim=-1)
+    assert torch.allclose(norms, torch.ones_like(norms), atol=1e-5)
+
+
+def test_skip_pooled_unnormalized_concat_layout():
+    """In skip mode, normalize=False returns the un-normalized concat;
+    the first proj_dim slots are the LayerNorm'd projection, the
+    remaining pool_dim slots are the LayerNorm'd pooled rep."""
+    enc = EquationEncoder(hidden_dim=128, embed_dim=768, skip_pooled=True).eval()
+    batch = _example_batch()
+    raw = enc(batch, normalize=False)
+    assert raw.shape == (3, 768)
+    z_proj = raw[:, :512]
+    z_skip = raw[:, 512:]
+    # LayerNorm'd outputs have ~zero mean and ~unit variance per row.
+    assert z_proj.mean(dim=-1).abs().max() < 1e-4
+    assert z_skip.mean(dim=-1).abs().max() < 1e-4
+
+
+def test_skip_pooled_init_balances_channels():
+    """The point of the LayerNorms: at init, neither half should
+    dominate the pre-normalize embedding by more than ~2x in mean
+    per-dim magnitude. Without LayerNorm, the skip channel (LayerNorm'd
+    GNN output post-pool) would dwarf the random Linear's output."""
+    torch.manual_seed(0)
+    enc = EquationEncoder(hidden_dim=128, embed_dim=768, skip_pooled=True).eval()
+    batch = _example_batch()
+    raw = enc(batch, normalize=False)
+    z_proj_mean_abs = raw[:, :512].abs().mean()
+    z_skip_mean_abs = raw[:, 512:].abs().mean()
+    ratio = max(z_proj_mean_abs, z_skip_mean_abs) / min(z_proj_mean_abs, z_skip_mean_abs)
+    assert ratio < 3.0, (
+        f"channel magnitudes diverge ({z_proj_mean_abs:.4f} vs "
+        f"{z_skip_mean_abs:.4f}, ratio {ratio:.2f}); LayerNorm should "
+        f"keep them comparable at init"
+    )
+
+
+def test_skip_pooled_return_pooled():
+    """return_pooled still works in skip mode and exposes the raw pooled
+    rep (not the LayerNorm'd one) for the aux heads."""
+    enc = EquationEncoder(hidden_dim=128, embed_dim=768, skip_pooled=True).eval()
+    batch = _example_batch()
+    out, pooled = enc(batch, return_pooled=True)
+    assert out.shape == (3, 768)
+    assert pooled.shape == (3, 256)
+
+
+def test_skip_pooled_param_count_increase():
+    """Adding LayerNorm to both halves should add ~1.5K params at the
+    canonical 512+256 split (LayerNorm has 2*dim params)."""
+    base = EquationEncoder(hidden_dim=128, embed_dim=512)
+    skip = EquationEncoder(hidden_dim=128, embed_dim=768, skip_pooled=True)
+    base_n = base.num_parameters()
+    skip_n = skip.num_parameters()
+    # Skip adds: nothing to GNN backbone; proj is now 512 instead of 512
+    # (same), proj_norm = 2*512 = 1024 params, skip_norm = 2*256 = 512
+    # params. Total +1536 over the same proj_dim baseline.
+    delta = skip_n - base_n
+    assert 1500 <= delta <= 1600, f"unexpected param delta: {delta}"
+
+
+def test_skip_pooled_cuda_forward():
+    if not torch.cuda.is_available():
+        return
+    enc = EquationEncoder(hidden_dim=128, embed_dim=768, skip_pooled=True).cuda()
+    batch = _example_batch().to('cuda')
+    out = enc(batch)
+    assert out.shape == (3, 768)
+    assert out.device.type == 'cuda'
+    assert torch.isfinite(out).all()
+
+
 def test_bidirectional_edges_propagate_root_from_leaf_in_one_layer():
     """With bidirectional edges, a single message-passing step is enough for
     the root node to receive information from a leaf. This is the entire

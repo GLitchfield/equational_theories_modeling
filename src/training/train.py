@@ -288,14 +288,109 @@ def _resolve_device(device_cfg: str) -> str:
     return device_cfg
 
 
+def _evaluate_channel_mask(
+    jepa: JEPA,
+    loader,
+    device: str,
+    mask: str,
+    threshold: float,
+    margin: float,
+    true_weight: float,
+    max_batches: int | None = 50,
+) -> dict:
+    """Skip-pooled eval with one channel zeroed out and re-normalized.
+
+    For diagnostic only — the renorm puts the kept half on a different
+    unit sphere than the full embedding, so the bal_acc here is NOT
+    directly comparable to the main eval. Track per-epoch trends, not
+    absolute values.
+
+    Args:
+        mask: ``"proj_only"`` (zero the skip half) or ``"skip_only"``
+            (zero the proj half).
+        threshold: distance threshold from the main eval (so we use a
+            consistent decision boundary, not a re-calibrated one).
+        max_batches: cap (default 50) — diagnostic only, no need to run
+            the full val set.
+    """
+    encoder = jepa.context_encoder
+    target_encoder = jepa.target_encoder
+    if not encoder.skip_pooled:
+        raise ValueError('channel_mask eval only valid for skip_pooled encoders')
+    proj_d = encoder.proj_dim
+    pool_d = encoder.pool_dim
+
+    def _mask_and_renorm(z_raw: torch.Tensor) -> torch.Tensor:
+        z = z_raw.clone()
+        if mask == 'proj_only':
+            z[:, proj_d:] = 0
+        elif mask == 'skip_only':
+            z[:, :proj_d] = 0
+        else:
+            raise ValueError(f'unknown mask {mask!r}')
+        return F.normalize(z, dim=-1)
+
+    was_training = jepa.training
+    jepa.eval()
+    all_d: list[torch.Tensor] = []
+    all_l: list[torch.Tensor] = []
+    n_batches = 0
+    with torch.no_grad():
+        for batch_idx, batch in enumerate(loader):
+            if max_batches is not None and batch_idx >= max_batches:
+                break
+            eq1, eq2, labels = batch[:3]
+            eq1 = eq1.to(device)
+            eq2 = eq2.to(device)
+            labels = labels.to(device)
+            z_ctx_raw = encoder(eq1, normalize=False)
+            z_tgt_raw = target_encoder(eq2, normalize=False)
+            z_ctx = _mask_and_renorm(z_ctx_raw)
+            z_tgt = _mask_and_renorm(z_tgt_raw)
+            z_pred = jepa.predictor(z_ctx)
+            d = F.pairwise_distance(z_pred, z_tgt)
+            all_d.append(d.cpu())
+            all_l.append(labels.cpu())
+            n_batches += 1
+    if was_training:
+        jepa.train()
+
+    if n_batches == 0:
+        return {'balanced_accuracy': 0.0, 'true_recall': 0.0, 'false_recall': 0.0,
+                'n_evaluated': 0}
+
+    distances = torch.cat(all_d)
+    labels = torch.cat(all_l)
+    preds = (distances < threshold).float()
+    n_pos = max(int((labels == 1).sum().item()), 1)
+    n_neg = max(int((labels == 0).sum().item()), 1)
+    tp = int(((preds == 1) & (labels == 1)).sum().item())
+    tn = int(((preds == 0) & (labels == 0)).sum().item())
+    sens = tp / n_pos
+    spec = tn / n_neg
+    return {
+        'balanced_accuracy': 0.5 * (sens + spec),
+        'true_recall': sens,
+        'false_recall': spec,
+        'n_evaluated': int(len(distances)),
+    }
+
+
 def _corpus_effective_ranks(
     context_encoder,
     graphs: dict,
     device: str,
     batch_size: int = 1024,
-) -> tuple[float, float]:
+) -> dict[str, float]:
     """Encode every unique equation through the context encoder and
-    return ``(post_norm_eff_rank, pre_norm_eff_rank)`` over the corpus.
+    return effective-rank metrics over the corpus.
+
+    Always returns ``post_norm`` (the L2-normalized full embedding's
+    rank, matching what the contrastive loss sees) and ``pre_norm``
+    (the un-normalized full embedding's rank). When the encoder is in
+    skip-pooled mode, also returns per-channel ranks ``proj`` and
+    ``skip`` (slices of the pre-norm embedding) so we can detect
+    one-channel collapse.
 
     Mirrors ``scripts/embedding_spectrum.py`` so the per-epoch metric is
     directly comparable to the offline diagnostic. Eval mode + no_grad
@@ -317,7 +412,15 @@ def _corpus_effective_ranks(
         context_encoder.train()
     z_raw = torch.cat(raw_chunks, dim=0)
     z_post = F.normalize(z_raw, dim=-1)
-    return effective_rank(z_post), effective_rank(z_raw)
+    out = {
+        'post_norm': float(effective_rank(z_post)),
+        'pre_norm': float(effective_rank(z_raw)),
+    }
+    if getattr(context_encoder, 'skip_pooled', False):
+        proj_d = context_encoder.proj_dim
+        out['proj'] = float(effective_rank(z_raw[:, :proj_d]))
+        out['skip'] = float(effective_rank(z_raw[:, proj_d:]))
+    return out
 
 
 def _resolve_checkpoint_dir(config: dict) -> str:
@@ -390,6 +493,8 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         num_layers=enc_cfg['num_layers'],
         num_heads=enc_cfg['num_heads'],
         dropout=enc_cfg['dropout'],
+        skip_pooled=enc_cfg.get('skip_pooled', False),
+        proj_dim=enc_cfg.get('proj_dim', None),
     )
     predictor = ImplicationPredictor(
         embed_dim=pred_cfg.get('embed_dim', enc_cfg['embed_dim']),
@@ -563,8 +668,23 @@ def train(config: dict, sanity_check: bool = False) -> dict:
                 # gradient (z_tgt_raw is detached — target encoder picks
                 # up diversity via EMA from the gradient-updated context
                 # encoder).
-                var_c, cov_c = vicreg_terms(z_context_raw, gamma=vicreg_gamma)
-                var_t, cov_t = vicreg_terms(z_tgt_raw, gamma=vicreg_gamma)
+                #
+                # In skip-pooled mode, slice to the projection half only.
+                # The skip half is a deterministic LayerNorm(pooled) with
+                # no trainable interaction with VICReg's covariance
+                # objective (skip values are determined by the GNN
+                # backbone, which the aux heads anchor); applying VICReg
+                # there would push for decorrelation against the natural
+                # cohom covariance structure of the pooled rep.
+                if jepa.context_encoder.skip_pooled:
+                    proj_d = jepa.context_encoder.proj_dim
+                    z_ctx_for_vicreg = z_context_raw[:, :proj_d]
+                    z_tgt_for_vicreg = z_tgt_raw[:, :proj_d]
+                else:
+                    z_ctx_for_vicreg = z_context_raw
+                    z_tgt_for_vicreg = z_tgt_raw
+                var_c, cov_c = vicreg_terms(z_ctx_for_vicreg, gamma=vicreg_gamma)
+                var_t, cov_t = vicreg_terms(z_tgt_for_vicreg, gamma=vicreg_gamma)
                 var_loss = 0.5 * (var_c + var_t)
                 cov_loss = 0.5 * (cov_c + cov_t)
                 loss = (
@@ -680,9 +800,10 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         # compute Roy-Vetterli effective rank on the resulting [N, embed_dim]
         # matrix for both pre- and post-L2-normalization. This is the
         # diagnostic from scripts/embedding_spectrum.py, run per epoch so
-        # the collapse-resolve trajectory is visible in real time. Cheap
+        # the collapse-resolve trajectory is visible in real time. In
+        # skip-pooled mode, also report per-channel ranks. Cheap
         # (~5 forward passes on 1024 graphs each on a 4080).
-        eff_rank_corpus, eff_rank_corpus_raw = _corpus_effective_ranks(
+        rank_metrics = _corpus_effective_ranks(
             jepa.context_encoder, val_ds.graphs, device,
         )
 
@@ -697,8 +818,8 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'val/false_recall': val['false_recall'],
             'val/threshold': val['threshold'],
             'val/n_evaluated': val['n_evaluated'],
-            'val/corpus_eff_rank': eff_rank_corpus,
-            'val/corpus_eff_rank_raw': eff_rank_corpus_raw,
+            'val/corpus_eff_rank': rank_metrics['post_norm'],
+            'val/corpus_eff_rank_raw': rank_metrics['pre_norm'],
             'val/dist_true_p05': val['dist_true_p05'],
             'val/dist_true_p50': val['dist_true_p50'],
             'val/dist_true_p95': val['dist_true_p95'],
@@ -710,6 +831,29 @@ def train(config: dict, sanity_check: bool = False) -> dict:
             'val/dist_overlap_false_below_true_med': val['dist_overlap_false_below_true_med'],
             'elapsed_sec': time.perf_counter() - t_start,
         }
+        # Skip-pooled mode: per-channel effective rank so we can detect
+        # one-channel collapse (skip-channel locked at LayerNorm output =
+        # high rank by construction; proj-channel could collapse if the
+        # contrastive loss finds the skip alone sufficient).
+        if 'proj' in rank_metrics:
+            epoch_metrics['val/corpus_eff_rank_proj'] = rank_metrics['proj']
+            epoch_metrics['val/corpus_eff_rank_skip'] = rank_metrics['skip']
+
+            # Channel-ablation eval (zero one half, re-normalize, measure
+            # bal_acc on a 50-batch subset using the main eval's threshold).
+            # Diagnostic only — re-normalization changes the unit sphere,
+            # so bal_acc here is NOT directly comparable to val['balanced_accuracy'].
+            # Track per-epoch trends to see whether the model is increasingly
+            # using each channel.
+            for mask, label in [('proj_only', 'proj'), ('skip_only', 'skip')]:
+                m = _evaluate_channel_mask(
+                    jepa, val_loader, device, mask=mask,
+                    threshold=val['threshold'], margin=margin,
+                    true_weight=true_weight, max_batches=50,
+                )
+                epoch_metrics[f'val/bal_acc_{label}_only'] = m['balanced_accuracy']
+                epoch_metrics[f'val/true_recall_{label}_only'] = m['true_recall']
+                epoch_metrics[f'val/false_recall_{label}_only'] = m['false_recall']
         if aux_active:
             for name in aux_heads_module.head_names:
                 key = f'aux_acc_{name}'
