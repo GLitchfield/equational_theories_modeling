@@ -10,6 +10,8 @@ The original Phase 1 → Phase 4 engineering plan is at `archive/jepa_engineerin
 
 When you deviate from the active plan, update it to match reality AND add a CHANGELOG.md entry explaining why, in the same commit as the deviating code.
 
+**Always read planning markdown files critically before implementing.** When the user adds a plan or experiment-design `.md`, scrutinize it like a code reviewer scrutinizes a PR: look for broken methodology (missing baselines, class-imbalance metrics, ill-defined CV), inconsistencies with existing code (wrong constants, paths, function signatures), and ambiguities a reasonable implementer could get wrong. Raise concerns ranked by severity BEFORE starting implementation; wait for the user's resolution on criticals at minimum. Don't be performatively skeptical — only flag issues that would actually change the implementation or interpretation.
+
 ## Operational rules
 
 - Do NOT modify files in `data/raw/`. All processing goes to `data/processed/` or `data/splits/`.
