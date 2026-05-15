@@ -1,0 +1,15 @@
+{
+  "bal_acc": 0.948652139121875,
+  "checkpoint": "outputs/checkpoints/stable_m1p5_vic0p1_diag/epoch_006.pt",
+  "epoch": 6,
+  "false_recall": 0.947743100376266,
+  "n_false": 13855357,
+  "n_pairs": 22028942,
+  "n_true": 8173585,
+  "n_wrong": 1136304,
+  "n_wrong_false": 724038,
+  "n_wrong_true": 412266,
+  "name": "stable_m1p5_vic0p1_diag",
+  "threshold": 1.2340675592422485,
+  "true_recall": 0.9495611778674841
+}

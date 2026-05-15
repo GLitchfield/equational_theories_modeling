@@ -1,0 +1,15 @@
+{
+  "bal_acc": 0.9489679125045504,
+  "checkpoint": "outputs/checkpoints/aux_h256_cohom_diag/epoch_006.pt",
+  "epoch": 6,
+  "false_recall": 0.9761067867107286,
+  "n_false": 13855357,
+  "n_pairs": 22028942,
+  "n_true": 8173585,
+  "n_wrong": 969986,
+  "n_wrong_false": 331049,
+  "n_wrong_true": 638937,
+  "name": "aux_h256_cohom_diag",
+  "threshold": 1.0775835514068604,
+  "true_recall": 0.9218290382983721
+}

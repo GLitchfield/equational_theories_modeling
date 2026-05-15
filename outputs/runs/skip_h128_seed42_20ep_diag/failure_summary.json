@@ -1,0 +1,15 @@
+{
+  "bal_acc": 0.9776965865616647,
+  "checkpoint": "outputs/checkpoints/skip_h128_seed42_20ep_diag/epoch_015.pt",
+  "epoch": 15,
+  "false_recall": 0.9814816031084583,
+  "n_false": 13855357,
+  "n_pairs": 22028942,
+  "n_true": 8173585,
+  "n_wrong": 469815,
+  "n_wrong_false": 256579,
+  "n_wrong_true": 213236,
+  "name": "skip_h128_seed42_20ep_diag",
+  "threshold": 1.2726409435272217,
+  "true_recall": 0.973911570014871
+}

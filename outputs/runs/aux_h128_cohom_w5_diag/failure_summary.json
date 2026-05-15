@@ -1,0 +1,15 @@
+{
+  "bal_acc": 0.9362300838167734,
+  "checkpoint": "outputs/checkpoints/aux_h128_cohom_w5_diag/epoch_000.pt",
+  "epoch": 0,
+  "false_recall": 0.8921290155136385,
+  "n_false": 13855357,
+  "n_pairs": 22028942,
+  "n_true": 8173585,
+  "n_wrong": 1655356,
+  "n_wrong_false": 1494591,
+  "n_wrong_true": 160765,
+  "name": "aux_h128_cohom_w5_diag",
+  "threshold": 1.2734508514404297,
+  "true_recall": 0.9803311521199082
+}

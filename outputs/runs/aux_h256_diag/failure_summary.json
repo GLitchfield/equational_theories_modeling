@@ -1,0 +1,15 @@
+{
+  "bal_acc": 0.9635725449467418,
+  "checkpoint": "outputs/checkpoints/aux_h256_diag/epoch_007.pt",
+  "epoch": 7,
+  "false_recall": 0.9933624229242163,
+  "n_false": 13855357,
+  "n_pairs": 22028942,
+  "n_true": 8173585,
+  "n_wrong": 633199,
+  "n_wrong_false": 91966,
+  "n_wrong_true": 541233,
+  "name": "aux_h256_diag",
+  "threshold": 1.0513463020324707,
+  "true_recall": 0.9337826669692675
+}

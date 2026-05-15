@@ -60,6 +60,8 @@ def _build_jepa(config: dict) -> JEPA:
         num_layers=config['encoder']['num_layers'],
         num_heads=config['encoder']['num_heads'],
         dropout=config['encoder']['dropout'],
+        skip_pooled=config['encoder'].get('skip_pooled', False),
+        proj_dim=config['encoder'].get('proj_dim', None),
     )
     pred = ImplicationPredictor(
         embed_dim=config['predictor']['embed_dim'],
