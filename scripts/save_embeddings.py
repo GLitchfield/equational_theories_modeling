@@ -101,6 +101,8 @@ def main(argv: list[str] | None = None) -> int:
         num_layers=cfg['encoder']['num_layers'],
         num_heads=cfg['encoder']['num_heads'],
         dropout=cfg['encoder']['dropout'],
+        skip_pooled=cfg['encoder'].get('skip_pooled', False),
+        proj_dim=cfg['encoder'].get('proj_dim', None),
     )
     # Pull just the context encoder's weights out of the JEPA state dict.
     state = {
