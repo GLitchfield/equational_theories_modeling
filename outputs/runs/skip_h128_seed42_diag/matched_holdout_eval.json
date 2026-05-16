@@ -1,0 +1,32 @@
+{
+  "holdout": {
+    "bal_acc": 0.98409735771873,
+    "false_recall": 0.9889716440505035,
+    "n_correct": 2170635,
+    "n_false": 1385882,
+    "n_pairs": 2202894,
+    "n_true": 817012,
+    "n_wrong": 32259,
+    "n_wrong_false": 15284,
+    "n_wrong_true": 16975,
+    "true_recall": 0.9792230713869564
+  },
+  "n_pairs_holdout": 2202894,
+  "n_pairs_total": 22028942,
+  "n_pairs_train": 19826048,
+  "predictions_path": "outputs/runs/skip_h128_seed42_diag/predictions.parquet",
+  "split_path": "data/splits/level1_holdout_seed42.parquet",
+  "threshold": 1.2521193027496338,
+  "train": {
+    "bal_acc": 0.984036443545397,
+    "false_recall": 0.9889198222058266,
+    "n_correct": 19534522,
+    "n_false": 12469475,
+    "n_pairs": 19826048,
+    "n_true": 7356573,
+    "n_wrong": 291526,
+    "n_wrong_false": 138164,
+    "n_wrong_true": 153362,
+    "true_recall": 0.9791530648849675
+  }
+}
