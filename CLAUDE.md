@@ -27,7 +27,8 @@ When you deviate from the active plan, update it to match reality AND add a CHAN
 - Run baselines (1–4 in `archive/jepa_engineering_plan.md`) before training the JEPA. Without baselines you can't interpret the JEPA results.
 - The equation parser is the critical path — if parsing is wrong, everything downstream is wrong. Test it thoroughly against known equations before any training.
 - Hardware: RTX 4080, 16 GB VRAM. Monitor and reduce batch size if OOM.
-- Paper figures must be reproducible from notebooks in `notebooks/`. No one-off scripts.
+- Any committed analysis output (parquet, CSV, summary markdown, figure) must be reproducible from committed code in the same commit — a script in `scripts/` or a notebook in `notebooks/`. README prose describing the methodology doesn't count as a reproducer. If the analysis was ad-hoc, write the script first, then commit script + outputs together.
+- README.md and CLAUDE.md must stay in sync. When CLAUDE.md changes the active plan, the current stable best, or other project-state facts, update README.md in the same commit. The two should never disagree on what the active plan is or which run holds the current best.
 - Keep checkpoints small — encoder weights + full JEPA state, skip optimizer state unless resuming from a crash.
 - Every completed training run gets recorded artifacts (`outputs/runs/<name>/` with `diagnostics_report.md`, `diagnostic_extract.json`, `per_step_trace.csv`, `per_epoch_eval.csv`) AND a commit with the message pattern `Phase N: record <run_name> — <one-line takeaway>`. Run records are part of the run's deliverable, not a separate request.
 
