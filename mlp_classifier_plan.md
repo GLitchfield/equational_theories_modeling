@@ -48,6 +48,17 @@ canonical record.
    (skip_h128_seed1, 0.9779). Run a logistic regression on the
    skip_h128_seed42 ep9 concat embeddings, same train/test split, so
    the linear-probe-vs-MLP comparison is apples-to-apples.
+   **Implementation: torch `Linear(1536, 1)` trained with
+   `BCEWithLogitsLoss(pos_weight=...)` on GPU, NOT sklearn
+   LogisticRegression.** Sklearn would OOM at this data scale in
+   WSL (CPU-only, ~25 GB working set for lbfgs on 1M-pair × 1536-dim
+   features); torch on GPU runs in seconds and uses the same
+   training loop as the MLP variants. Methodologically equivalent —
+   both minimize logistic loss on the same data, and lbfgs vs SGD
+   converge to the same global optimum on a convex objective. See
+   CHANGELOG 2026-05-16. Ablation #2 from the original draft
+   ("verify torch single-layer matches sklearn") is dropped — they
+   are now the same experiment.
 7. **Class imbalance handling.** Use `pos_weight=n_FALSE/n_TRUE` (≈63/37 ≈ 1.70)
    in `BCEWithLogitsLoss`. Without it the MLP may bias toward FALSE.
 8. **Split seed: 42.** Matches other splits in the project. The split file `data/splits/level1_holdout_seed42.parquet` already exists from `scripts/build_splits.py` (built with seed 42, 10% holdout ratio, sourced from the current pair table); reuse it rather than create a redundant `mlp_pair_split_seed42.parquet`. Its schema is a single `pair_idx: int32` column listing the holdout row indices into the pair table; the train set is everything else.
@@ -217,9 +228,9 @@ For each equation as E2, compute: what fraction of pairs where this equation is 
 
 Compare PairClassifier (1536-dim input, concat only) vs PairClassifierWithFeatures (3072-dim input, concat + absdiff + hadamard). If absdiff/hadamard help, the MLP is using relational features beyond what concatenation provides.
 
-### 2. Smaller MLP
+### 2. ~~Smaller MLP~~ — merged into the Phase 2 linear baseline
 
-Try a single-layer classifier: Linear(1536, 1). This is a linear probe with both embeddings. Compare to the sklearn LogisticRegression probe from the probing experiments. Should match within noise — if it doesn't, the training setup has a bug.
+Per Methodology Resolution 6 (updated 2026-05-16), the linear probe is itself a torch `Linear(1536, 1)` trained on the same data and loss as the MLP variants. The sklearn-vs-torch sanity check this ablation was designed to perform is now redundant — the linear probe IS the torch single-layer model. See `CHANGELOG.md` 2026-05-16.
 
 ### 3. Skip channel only vs proj channel only
 

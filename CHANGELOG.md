@@ -4,6 +4,18 @@ Deviations from the active plan and other notable project decisions, in reverse-
 
 ---
 
+## 2026-05-16 — MLP-classifier Phase 2: torch+GPU linear probe instead of sklearn
+
+The plan's Phase 2 called for `sklearn.linear_model.LogisticRegression` on `concat(z_e1, z_e2)`. First-pass implementation OOM'd in WSL — sklearn is CPU-only and lbfgs needs to materialize ~6 GB of train features + ~13.5 GB of holdout features in RAM, plus several internal copies for the optimizer state (~25+ GB working set). WSL caps at ~half host RAM by default.
+
+Switching to a torch `Linear(1536, 1)` trained with `BCEWithLogitsLoss(pos_weight=n_FALSE/n_TRUE)` on GPU. Methodologically equivalent to sklearn's `LogisticRegression(class_weight='balanced')` — both minimize logistic loss on the same data; lbfgs vs SGD converge to the same global optimum on a convex objective. Side benefits: reuses the same training infrastructure as the MLP variants (Phase 3.2), runs in seconds on the 4080 instead of minutes on CPU, no awkward feature subsampling.
+
+The plan's Ablation #2 (verify torch single-layer matches sklearn) is now redundant — the linear probe IS the torch single-layer. Dropping that sub-experiment.
+
+The failed sklearn script is preserved at `trash/mlp_classifier_sklearn_attempt/run_linear_probe_pair.py` (no committed code path, just for posterity if a CPU fallback is ever needed).
+
+---
+
 ## 2026-05-16 — MLP-classifier plan: reuse `level1_holdout_seed42.parquet` instead of creating a new split file
 
 The `mlp_classifier_plan.md` originally specified creating `data/splits/mlp_pair_split_seed42.parquet`. At Phase 1.2 (build the split) we found `data/splits/level1_holdout_seed42.parquet` already exists and is bit-for-bit equivalent — built by `scripts/build_splits.py` with seed 42, 10% holdout, sourced from the current `implication_pairs.parquet` (22,028,942 rows; 2,202,894 holdout). Reusing it instead of creating a redundant file. Plan updated to reference the existing path. No new code or data; just a name change.
