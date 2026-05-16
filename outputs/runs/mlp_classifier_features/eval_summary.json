@@ -1,0 +1,32 @@
+{
+  "best_epoch": 9,
+  "best_holdout_bal_acc": 0.9996181407977514,
+  "best_holdout_false_recall": 0.9997221985710183,
+  "best_holdout_true_recall": 0.9995140830244843,
+  "best_threshold": 0.46904730796813965,
+  "best_train_bal_acc": 0.9999556892528749,
+  "checkpoint_path": "outputs/runs/mlp_classifier_features/best_checkpoint.pt",
+  "config": {
+    "batch_size": 8192,
+    "dropout": 0.1,
+    "embeddings_path": "outputs/runs/skip_h128_seed42_diag/equation_embeddings.npy",
+    "epochs": 10,
+    "eval_chunk": 131072,
+    "force": true,
+    "ids_path": "outputs/runs/skip_h128_seed42_diag/equation_embeddings_ids.npy",
+    "lr": 0.001,
+    "model": "mlp_features",
+    "output_dir": "outputs/runs/mlp_classifier_features",
+    "pair_table": "data/processed/implication_pairs.parquet",
+    "seed": 42,
+    "split_path": "data/splits/level1_holdout_seed42.parquet",
+    "wandb": false,
+    "wandb_name": null,
+    "weight_decay": 0.0
+  },
+  "embed_dim": 768,
+  "model": "mlp_features",
+  "n_pairs_holdout": 2202894,
+  "n_pairs_train": 19826048,
+  "pos_weight": 1.6950113773345947
+}
