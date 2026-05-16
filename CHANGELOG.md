@@ -1,6 +1,12 @@
 # Changelog
 
-Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `aux_heads_implementation_plan.md`; the original engineering plan that drove Phase 1 is at `archive/jepa_engineering_plan.md`. The prior failure-analysis plan is at `trash/testing_plan_phase2.md` (its findings produced the `stable_*` run series and informed the current plan).
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `mlp_classifier_plan.md`; prior plans are in `archive/`, and the failure-analysis plan that informed the current diagnostic infrastructure is in `trash/testing_plan_phase2.md`.
+
+---
+
+## 2026-05-16 — MLP-classifier plan: reuse `level1_holdout_seed42.parquet` instead of creating a new split file
+
+The `mlp_classifier_plan.md` originally specified creating `data/splits/mlp_pair_split_seed42.parquet`. At Phase 1.2 (build the split) we found `data/splits/level1_holdout_seed42.parquet` already exists and is bit-for-bit equivalent — built by `scripts/build_splits.py` with seed 42, 10% holdout, sourced from the current `implication_pairs.parquet` (22,028,942 rows; 2,202,894 holdout). Reusing it instead of creating a redundant file. Plan updated to reference the existing path. No new code or data; just a name change.
 
 ---
 

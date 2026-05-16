@@ -50,7 +50,7 @@ canonical record.
    the linear-probe-vs-MLP comparison is apples-to-apples.
 7. **Class imbalance handling.** Use `pos_weight=n_FALSE/n_TRUE` (≈63/37 ≈ 1.70)
    in `BCEWithLogitsLoss`. Without it the MLP may bias toward FALSE.
-8. **Split seed: 42.** Matches other splits in the project.
+8. **Split seed: 42.** Matches other splits in the project. The split file `data/splits/level1_holdout_seed42.parquet` already exists from `scripts/build_splits.py` (built with seed 42, 10% holdout ratio, sourced from the current pair table); reuse it rather than create a redundant `mlp_pair_split_seed42.parquet`. Its schema is a single `pair_idx: int32` column listing the holdout row indices into the pair table; the train set is everything else.
 
 ## Architecture
 
@@ -135,7 +135,7 @@ All 22M pairs from the ETP canonical CSV. For each pair, look up z_e1 and z_e2 f
 
 ### Split
 
-Use a 90/10 random PAIR split, **seed 42** (not equation holdout — this measures what the embeddings can predict on known equations). The 10% holdout (~2.2M pairs) is for evaluation. Save the split indices to `data/splits/mlp_pair_split_seed42.parquet` so the linear-probe baseline and all MLP variants train and evaluate on identical sets.
+Use a 90/10 random PAIR split, **seed 42** (not equation holdout — this measures what the embeddings can predict on known equations). The 10% holdout (~2.2M pairs) is for evaluation. Save the split indices to `data/splits/level1_holdout_seed42.parquet` so the linear-probe baseline and all MLP variants train and evaluate on identical sets.
 
 The **frozen JEPA's distance metric is also re-evaluated on the same 10% holdout** (not the full 22M) — the 0.9840 number cited elsewhere is from the full corpus, which the JEPA trained on; the matched-holdout number is the apples-to-apples baseline for the MLP. Threshold is re-calibrated on the 90% training portion to maximize bal_acc, then frozen for the 10% test.
 
@@ -240,7 +240,7 @@ Train the MLP on just the skip half (256-dim × 2 = 512-dim input) vs just the p
 - The embeddings are FROZEN. No gradient flows to the encoder. The only trainable parameters are the MLP's weights.
 - Use the skip_h128_seed42_diag epoch 9 checkpoint (the 98.40% model). Extract embeddings via `model.context_encoder` (NOT target encoder, NOT predictor — per Methodology Resolution 5) once, save to `outputs/mlp_classifier/embeddings_skip42_ctx_ep9.npy`, reuse across all experiments.
 - The embedding lookup should use integer indexing into the numpy array, not dictionary lookup. Build a mapping eq_id → array_index once and save it alongside the embeddings.
-- The 90/10 split index file (seed 42) is saved to `data/splits/mlp_pair_split_seed42.parquet` so the linear probe, all MLP variants, and the matched-holdout JEPA evaluation use identical sets. Commit it.
+- The 90/10 split index file (seed 42) is saved to `data/splits/level1_holdout_seed42.parquet` so the linear probe, all MLP variants, and the matched-holdout JEPA evaluation use identical sets. Commit it.
 - For the 22M pair training, use a PyTorch DataLoader with num_workers > 0. The pair table fits in memory; the bottleneck is the DataLoader's batch construction.
 - Log to wandb under group "mlp_classifier".
 - Save the best MLP checkpoint — this is a deployable artifact.
