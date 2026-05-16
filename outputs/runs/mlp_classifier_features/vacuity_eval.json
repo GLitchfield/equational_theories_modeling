@@ -1,0 +1,58 @@
+{
+  "always_wrong_path": "outputs/analyses/failure_overlap/always_wrong_trained.parquet",
+  "checkpoint": "outputs/runs/mlp_classifier_features/best_checkpoint.pt",
+  "jepa_on_aw_holdout_accuracy": 0.0,
+  "mlp_on_aw_holdout": {
+    "accuracy": 0.9114989093175444,
+    "false_recall": 1.0,
+    "mean_predicted_prob": 0.8996337056159973,
+    "n_correct": 2925,
+    "n_false": 1,
+    "n_pairs": 3209,
+    "n_true": 3208,
+    "true_recall": 0.9114713216957606
+  },
+  "model": "mlp_features",
+  "n_always_wrong_holdout": 3209,
+  "n_always_wrong_total": 32496,
+  "per_spine": [
+    {
+      "accuracy": 0.9242336610757663,
+      "mean_score": 0.91153484582901,
+      "n_correct": 1598,
+      "n_pairs": 1729,
+      "spine": "family_c"
+    },
+    {
+      "accuracy": 0.8641221374045801,
+      "mean_score": 0.8535151481628418,
+      "n_correct": 566,
+      "n_pairs": 655,
+      "spine": "left"
+    },
+    {
+      "accuracy": 0.871900826446281,
+      "mean_score": 0.8629383444786072,
+      "n_correct": 422,
+      "n_pairs": 484,
+      "spine": "mixed"
+    },
+    {
+      "accuracy": 1.0,
+      "mean_score": 1.0,
+      "n_correct": 179,
+      "n_pairs": 179,
+      "spine": "trivial"
+    },
+    {
+      "accuracy": 0.9876543209876543,
+      "mean_score": 0.9578167796134949,
+      "n_correct": 160,
+      "n_pairs": 162,
+      "spine": "right"
+    }
+  ],
+  "predictions_path": "outputs/runs/skip_h128_seed42_diag/predictions.parquet",
+  "split_path": "data/splits/level1_holdout_seed42.parquet",
+  "threshold": 0.46904730796813965
+}
