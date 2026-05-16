@@ -123,6 +123,33 @@ architecture.
 
 ---
 
+## Limitations — the schedule hypothesis was not directly tested
+
+The cosine-LR-scaling story above is a plausible mechanism and the
+trajectory shape (uniformly behind by 0.6-1.4pp at every comparable
+epoch ep0-9; FALSE recall continues rising past ep10 while bal_acc
+plateaus) is consistent with it. But the experiment itself doesn't
+isolate the schedule from other things that change with more epochs
+(more EMA target updates, different cumulative VICReg pressure, more
+opportunities for the aux heads to saturate, etc.). The mechanism
+is a hypothesis, not a finding.
+
+A clean isolation experiment would run 10 epochs while the cosine
+scheduler plans for 20 — i.e., truncate the 20-ep recipe at ep10.
+If the model lands at the 20-ep ep10 number (≈0.9735), schedule is
+confirmed as the explanation. If it lands at ~0.98, schedule isn't
+the explanation and one of the other "more-epochs" effects is
+responsible.
+
+Not run yet — the project best remains `skip_h128_seed42_diag`
+either way, so isolating the mechanism doesn't change the
+recommendation to use the 10-epoch budget. Worth revisiting if a
+future training run needs to motivate a different schedule shape
+(constant LR + late decay, multi-cycle cosine restart, etc.) or if
+the dual-encoder / ensemble work surfaces it as relevant.
+
+---
+
 ## Conclusion
 
 The "extra headroom past ep9" hypothesis is refuted. The 10-ep run
