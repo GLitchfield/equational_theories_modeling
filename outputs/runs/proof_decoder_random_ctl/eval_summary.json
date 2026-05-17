@@ -1,0 +1,160 @@
+{
+  "config": {
+    "embedding_source": "random",
+    "embeddings_path": "outputs/embeddings/v1.0/embeddings.npy",
+    "dataset": "data/processed/proof_corpus/decoder_phase1_dataset.parquet",
+    "matcher_proofs": "data/processed/proof_corpus/matcher_proofs.parquet",
+    "output_dir": "outputs/runs/proof_decoder_random_ctl",
+    "epochs": 30,
+    "batch_size": 256,
+    "lr": 0.0003,
+    "weight_decay": 0.0,
+    "dropout": 0.1,
+    "max_token_len": 20,
+    "max_new_tokens": 20,
+    "seed": 42,
+    "eval_every": 1,
+    "wandb": false,
+    "wandb_name": null,
+    "force": true
+  },
+  "best_epoch": 0,
+  "best_both_novel_sigma": 0.05606617647058824,
+  "best_one_novel_sigma": 0.062258409408668475,
+  "best_train_sigma": 0.08398690112551253,
+  "best_avg_loss": 0.49134162739968634,
+  "final_metrics": {
+    "train": {
+      "n": 36339,
+      "n_parsed": 36339,
+      "n_arity_correct": 6763,
+      "n_sigma_exact": 3052,
+      "parse_rate": 1.0,
+      "arity_rate": 0.18610858856875534,
+      "sigma_rate": 0.08398690112551253,
+      "per_arity": {
+        "2": {
+          "n": 626,
+          "parsed": 626,
+          "arity": 0,
+          "sigma": 0,
+          "sigma_rate": 0.0
+        },
+        "3": {
+          "n": 6207,
+          "parsed": 6207,
+          "arity": 5691,
+          "sigma": 2878,
+          "sigma_rate": 0.46367004994361205
+        },
+        "4": {
+          "n": 14488,
+          "parsed": 14488,
+          "arity": 1072,
+          "sigma": 174,
+          "sigma_rate": 0.012009939260077306
+        },
+        "5": {
+          "n": 11735,
+          "parsed": 11735,
+          "arity": 0,
+          "sigma": 0,
+          "sigma_rate": 0.0
+        },
+        "6": {
+          "n": 3283,
+          "parsed": 3283,
+          "arity": 0,
+          "sigma": 0,
+          "sigma_rate": 0.0
+        }
+      }
+    },
+    "test_one_novel": {
+      "n": 12159,
+      "n_parsed": 12159,
+      "n_arity_correct": 2000,
+      "n_sigma_exact": 757,
+      "parse_rate": 1.0,
+      "arity_rate": 0.16448721111933548,
+      "sigma_rate": 0.062258409408668475,
+      "per_arity": {
+        "2": {
+          "n": 117,
+          "parsed": 117,
+          "arity": 0,
+          "sigma": 0,
+          "sigma_rate": 0.0
+        },
+        "3": {
+          "n": 1837,
+          "parsed": 1837,
+          "arity": 1612,
+          "sigma": 706,
+          "sigma_rate": 0.38432226456178553
+        },
+        "4": {
+          "n": 5061,
+          "parsed": 5061,
+          "arity": 388,
+          "sigma": 51,
+          "sigma_rate": 0.01007705986959099
+        },
+        "5": {
+          "n": 4234,
+          "parsed": 4234,
+          "arity": 0,
+          "sigma": 0,
+          "sigma_rate": 0.0
+        },
+        "6": {
+          "n": 910,
+          "parsed": 910,
+          "arity": 0,
+          "sigma": 0,
+          "sigma_rate": 0.0
+        }
+      }
+    },
+    "test_both_novel": {
+      "n": 1088,
+      "n_parsed": 1088,
+      "n_arity_correct": 180,
+      "n_sigma_exact": 61,
+      "parse_rate": 1.0,
+      "arity_rate": 0.16544117647058823,
+      "sigma_rate": 0.05606617647058824,
+      "per_arity": {
+        "3": {
+          "n": 162,
+          "parsed": 162,
+          "arity": 136,
+          "sigma": 53,
+          "sigma_rate": 0.3271604938271605
+        },
+        "4": {
+          "n": 473,
+          "parsed": 473,
+          "arity": 44,
+          "sigma": 8,
+          "sigma_rate": 0.016913319238900635
+        },
+        "5": {
+          "n": 384,
+          "parsed": 384,
+          "arity": 0,
+          "sigma": 0,
+          "sigma_rate": 0.0
+        },
+        "6": {
+          "n": 69,
+          "parsed": 69,
+          "arity": 0,
+          "sigma": 0,
+          "sigma_rate": 0.0
+        }
+      }
+    }
+  },
+  "checkpoint_path": "outputs/runs/proof_decoder_random_ctl/best_checkpoint.pt"
+}

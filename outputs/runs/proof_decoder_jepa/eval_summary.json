@@ -1,0 +1,160 @@
+{
+  "config": {
+    "embedding_source": "jepa",
+    "embeddings_path": "outputs/embeddings/v1.0/embeddings.npy",
+    "dataset": "data/processed/proof_corpus/decoder_phase1_dataset.parquet",
+    "matcher_proofs": "data/processed/proof_corpus/matcher_proofs.parquet",
+    "output_dir": "outputs/runs/proof_decoder_jepa",
+    "epochs": 30,
+    "batch_size": 256,
+    "lr": 0.0003,
+    "weight_decay": 0.0,
+    "dropout": 0.1,
+    "max_token_len": 20,
+    "max_new_tokens": 20,
+    "seed": 42,
+    "eval_every": 1,
+    "wandb": false,
+    "wandb_name": null,
+    "force": true
+  },
+  "best_epoch": 26,
+  "best_both_novel_sigma": 0.9632352941176471,
+  "best_one_novel_sigma": 0.9695698659429229,
+  "best_train_sigma": 0.9882220204188338,
+  "best_avg_loss": 0.008725816669257385,
+  "final_metrics": {
+    "train": {
+      "n": 36339,
+      "n_parsed": 36339,
+      "n_arity_correct": 36337,
+      "n_sigma_exact": 35911,
+      "parse_rate": 1.0,
+      "arity_rate": 0.9999449627122375,
+      "sigma_rate": 0.9882220204188338,
+      "per_arity": {
+        "2": {
+          "n": 626,
+          "parsed": 626,
+          "arity": 626,
+          "sigma": 626,
+          "sigma_rate": 1.0
+        },
+        "3": {
+          "n": 6207,
+          "parsed": 6207,
+          "arity": 6207,
+          "sigma": 6161,
+          "sigma_rate": 0.9925890124053488
+        },
+        "4": {
+          "n": 14488,
+          "parsed": 14488,
+          "arity": 14487,
+          "sigma": 14340,
+          "sigma_rate": 0.9897846493649917
+        },
+        "5": {
+          "n": 11735,
+          "parsed": 11735,
+          "arity": 11734,
+          "sigma": 11559,
+          "sigma_rate": 0.9850021303792075
+        },
+        "6": {
+          "n": 3283,
+          "parsed": 3283,
+          "arity": 3283,
+          "sigma": 3225,
+          "sigma_rate": 0.9823332318001827
+        }
+      }
+    },
+    "test_one_novel": {
+      "n": 12159,
+      "n_parsed": 12159,
+      "n_arity_correct": 12159,
+      "n_sigma_exact": 11789,
+      "parse_rate": 1.0,
+      "arity_rate": 1.0,
+      "sigma_rate": 0.9695698659429229,
+      "per_arity": {
+        "2": {
+          "n": 117,
+          "parsed": 117,
+          "arity": 117,
+          "sigma": 117,
+          "sigma_rate": 1.0
+        },
+        "3": {
+          "n": 1837,
+          "parsed": 1837,
+          "arity": 1837,
+          "sigma": 1812,
+          "sigma_rate": 0.9863908546543277
+        },
+        "4": {
+          "n": 5061,
+          "parsed": 5061,
+          "arity": 5061,
+          "sigma": 4942,
+          "sigma_rate": 0.9764868603042877
+        },
+        "5": {
+          "n": 4234,
+          "parsed": 4234,
+          "arity": 4234,
+          "sigma": 4077,
+          "sigma_rate": 0.9629192253188474
+        },
+        "6": {
+          "n": 910,
+          "parsed": 910,
+          "arity": 910,
+          "sigma": 841,
+          "sigma_rate": 0.9241758241758242
+        }
+      }
+    },
+    "test_both_novel": {
+      "n": 1088,
+      "n_parsed": 1088,
+      "n_arity_correct": 1088,
+      "n_sigma_exact": 1048,
+      "parse_rate": 1.0,
+      "arity_rate": 1.0,
+      "sigma_rate": 0.9632352941176471,
+      "per_arity": {
+        "3": {
+          "n": 162,
+          "parsed": 162,
+          "arity": 162,
+          "sigma": 158,
+          "sigma_rate": 0.9753086419753086
+        },
+        "4": {
+          "n": 473,
+          "parsed": 473,
+          "arity": 473,
+          "sigma": 462,
+          "sigma_rate": 0.9767441860465116
+        },
+        "5": {
+          "n": 384,
+          "parsed": 384,
+          "arity": 384,
+          "sigma": 362,
+          "sigma_rate": 0.9427083333333334
+        },
+        "6": {
+          "n": 69,
+          "parsed": 69,
+          "arity": 69,
+          "sigma": 66,
+          "sigma_rate": 0.9565217391304348
+        }
+      }
+    }
+  },
+  "checkpoint_path": "outputs/runs/proof_decoder_jepa/best_checkpoint.pt"
+}
