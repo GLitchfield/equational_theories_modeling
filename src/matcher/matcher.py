@@ -125,10 +125,54 @@ class Match:
     def proof_tactic_body(self) -> str:
         """Stage 2 submission body (the judge wraps in `:= by <body>`).
 
-        Pinned format TBD against the live judge in Task 20; placeholder
-        is `exact <term-mode proof>`, which is the natural lifting.
+        Format pinned by inspection of
+        `tests/fixtures/answers/accepted_true_basic.answer.json` in the
+        Stage 2 repo:
+
+            import JudgeProblem
+
+            def submission : Goal := by
+              intro G _ h
+              <user tactic body>
+
+        After the judge's `intro G _ h`, the user's body inherits a goal
+        of `Equation_Y G = ∀ <e2_vars>, lhs2 = rhs2`. The natural body
+        is a single `exact fun <e2_vars> => h <σ(e1_vars)>` for the
+        direct case (or with `.symm` wrap for the flipped case).
+
+        Live-judge confirmation is pending a built Stage 2 environment
+        (Lean 4.30.0-rc2 + mathlib). The format here is structurally
+        correct by construction (a value of the goal type) and matches
+        the fixture pattern.
         """
         return f'exact {self.proof_term()}'
+
+    def proof_full_code(self) -> str:
+        """Stage 2 ``code`` field for the answer JSON.
+
+        Wraps ``proof_tactic_body()`` in the canonical submission shell:
+
+            import JudgeProblem
+
+            def submission : Goal := by
+              intro G _ h
+              <body>
+        """
+        body = self.proof_tactic_body()
+        # Indent each line of the body by 2 spaces to nest inside the `by`.
+        indented = '\n'.join(f'  {line}' for line in body.splitlines())
+        return (
+            'import JudgeProblem\n'
+            '\n'
+            'def submission : Goal := by\n'
+            '  intro G _ h\n'
+            f'{indented}\n'
+        )
+
+    def answer_json(self) -> dict:
+        """Stage 2 ``{verdict, code}`` answer dict — serialize to JSON
+        and pass as ``raw_answer`` to ``judge.verify.verify_answer``."""
+        return {'verdict': 'true', 'code': self.proof_full_code()}
 
     def substitution_padded(self, width: int = 6, sentinel: int = -1) -> tuple[int, ...]:
         """Substitution as a fixed-length-`width` tuple of E2-variable indices.

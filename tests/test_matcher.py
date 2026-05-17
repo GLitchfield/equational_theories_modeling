@@ -204,13 +204,46 @@ def test_proof_term_flipped_uses_symm():
 
 
 def test_proof_tactic_body_lifts_term():
-    """Stage 2 submission body is `exact <term proof>`. Will be revisited
-    in Task 20 once the live judge confirms the expected shape."""
+    """Stage 2 submission body is `exact <term proof>`. Format pinned
+    against the Stage 2 fixture
+    tests/fixtures/answers/accepted_true_basic.answer.json."""
     eq1 = parse_equation('x ◇ y = y')
     eq2 = parse_equation('a ◇ b = b')
     m = match(eq1, eq2)
     assert m is not None
     assert m.proof_tactic_body() == 'exact fun a b => h a b'
+
+
+def test_proof_full_code_matches_stage2_fixture_shape():
+    """The full `code` field wraps the body in the canonical
+    `import JudgeProblem; def submission : Goal := by; intro G _ h; <body>`
+    shell, per the Stage 2 fixture
+    (tests/fixtures/answers/accepted_true_basic.answer.json)."""
+    eq1 = parse_equation('x ◇ y = y')
+    eq2 = parse_equation('a ◇ b = b')
+    m = match(eq1, eq2)
+    assert m is not None
+    expected = (
+        'import JudgeProblem\n'
+        '\n'
+        'def submission : Goal := by\n'
+        '  intro G _ h\n'
+        '  exact fun a b => h a b\n'
+    )
+    assert m.proof_full_code() == expected
+
+
+def test_answer_json_shape():
+    eq1 = parse_equation('x = x')
+    eq2 = parse_equation('y = y')
+    m = match(eq1, eq2)
+    assert m is not None
+    ans = m.answer_json()
+    assert ans['verdict'] == 'true'
+    assert 'import JudgeProblem' in ans['code']
+    assert 'def submission : Goal := by' in ans['code']
+    assert 'intro G _ h' in ans['code']
+    assert 'exact fun y => h y' in ans['code']
 
 
 # ---------- substitution_padded ----------
