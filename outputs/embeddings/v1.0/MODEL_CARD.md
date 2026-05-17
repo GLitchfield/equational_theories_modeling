@@ -5,7 +5,7 @@ tags:
 - mathematical-logic
 - equational-theories
 pipeline_tag: feature-extraction
-license: tbd  # see Citation & License below
+license: apache-2.0
 ---
 
 # Equational Implication Embeddings — v1.0
@@ -42,6 +42,7 @@ doesn't discard pooled features.
 | `eq_ids.npy` | `(4694,) int32`, ascending 1..4694 | 19 KB | `69914ed9…24ecaed6` |
 | `source_checkpoint.pt` | torch state dict + training config | 3.0 MB | `0389edfd…340b0b64` |
 | `MODEL_CARD.md` | this file | — | — |
+| `LICENSE` | Apache 2.0 license text | — | — |
 
 `embeddings[i]` is the embedding of equation `eq_ids[i]`. Eq IDs are
 1-indexed and stored ascending, so a downstream script can index by
@@ -257,13 +258,19 @@ mv equation_embeddings_ids.npy eq_ids.npy
 The parse tree cache (`data/processed/equation_graphs.pt`) is built
 from `data/raw/etp/equations.txt` via `scripts/parse_equations.py`.
 
-## Citation & License
+## License
 
-The training labels come from the Equational Theories Project (Tao et
-al., 2024), a Lean-formalized study of implications between
-equations over magmas. If you use these embeddings in research,
-please cite both the corpus and (if applicable) the architecture
-recipe used to produce them.
+Apache License 2.0. See the `LICENSE` file shipped alongside this
+artifact for the full text.
+
+The training labels and equation corpus are derived from the
+Equational Theories Project, which is itself Apache 2.0 — so this
+artifact's license matches upstream.
+
+## Citation
+
+If you use these embeddings in research, please cite the upstream
+corpus:
 
 ```
 @misc{etp,
@@ -274,6 +281,3 @@ recipe used to produce them.
   note   = {Lean-verified implication labels and counterexamples for the 4{,}694-equation corpus.}
 }
 ```
-
-License: **TBD** — pending alignment with the upstream ETP license.
-For now, treat as research-only / no-warranty.
