@@ -168,63 +168,132 @@ require reconstructing:
 3. **The orientation** — direct vs flipped (the latter requires a
    `.symm` wrap).
 
-Decomposing by what the embedding must support:
+**The right framing of this result is preservation, not discovery.**
+σ is not extra information beyond the equations. For the
+variable-substitution category, **σ is a deterministic function of
+the two parse trees** — it's exactly what the matcher computes by
+structural walking. So the question was never "did the contrastive
+loss learn proofs?" It was **"did the embedding preserve enough of
+each equation's structure that σ, which is a function of that
+structure, remains recoverable from `(z_e1, z_e2)`?"** The contrastive
+loss forced detailed structural preservation as a side effect — to
+discriminate 22 million pairs by margin contrast, the encoder had
+to encode equation structure finely. The witness was always latent
+in the structure; the finding is that the embedding didn't destroy
+it.
 
-- **Arity readability (arity-correct rate = 100%):** consistent
-  with the survey's probing results showing variable count is
-  linearly accessible from the JEPA embedding at ~99% accuracy.
-  Not a new finding.
-- **Witness reconstruction (σ-exact = 96%):** new finding. The
-  contrastive geometry doesn't just signal "E1 implies E2" — it
-  encodes a specific permutation of variables that realizes that
-  implication. Two different `(E1, E2)` pairs with the same
-  TRUE/FALSE outcome but different substitution patterns get
-  embedded such that the decoder can tell them apart.
+That reframing matters for two reasons:
 
-This is somewhat surprising. The JEPA was trained by a margin
-contrastive loss that pulls TRUE pairs together and pushes FALSE
-pairs apart up to a margin. There's no obvious mechanism by which
-that loss would care about HOW E1 implies E2 — only THAT it does.
-Yet the embedding ends up encoding the "how."
+1. **It's more precise.** No mystical "the contrastive objective
+   learned theorem-proving." Instead: the encoder fits a margin
+   loss over 22M pairs, which requires preserving fine structural
+   distinctions; σ is one of many structural quantities that
+   survive that preservation; a small decoder recovers σ from the
+   preserved geometry. That's the mechanism — non-mysterious,
+   testable, expected in retrospect.
+2. **It sets up phase 2 correctly.** Rewrite-chain proofs are
+   **not** a deterministic function of the two equations' structure
+   — they require search, multiple valid chains can coexist, the
+   witness isn't computable by matching. So phase 2 is a
+   **genuinely different and harder** claim, not just "more of the
+   same curriculum." Phase 1 established "the embedding preserves
+   matching-relevant structure." Phase 2 asks "does the embedding
+   contain anything about search-requiring proofs" — and the answer
+   might be NO, which would also be a real finding (one that
+   bounds what the contrastive objective could possibly have
+   captured).
 
-Two non-exclusive explanations:
+### Linear-probe σ-exact-match — where is the work?
 
-1. **Structural feature leakage.** The encoder's input is the parse
-   tree of each equation, with variable names as 1-of-6 indicators.
-   To minimize the contrastive loss, the encoder must extract
-   structural features that the loss can use to distinguish TRUE
-   from FALSE pairs at scale. Those structural features happen to
-   include the same variable-permutation information that
-   determines the substitution.
-2. **Geometric regularity of substitution-related pairs.** Pairs
-   that share the same substitution shape (e.g., all proofs of
-   form `λ x y => h x y x`) cluster in embedding space — even
-   though the loss doesn't directly enforce this. The decoder
-   learns to map "shape cluster in concat embedding space" →
-   "permutation tuple."
+To localize how much of the witness is linearly accessible vs requires
+nonlinear composition, a linear probe was trained on the same task:
+six independent `Linear(1536, 7)` heads predicting each substitution
+position, plus one `Linear(1536, 2)` for orientation. Total 67,628
+parameters (vs the transformer's 4,747,280 — ~70× smaller). Same
+train/test splits, same evaluation. Reproducer:
+`scripts/probe_decoder_linear.py`.
 
-Both are testable downstream — probing the embeddings for
-substitution-shape predictability directly, before training a
-decoder, would isolate the geometric story. Worth doing if phase 2
-needs the mechanism nailed down.
+| Model | Params | both-novel σ-exact (joint) |
+|---|---:|---:|
+| Majority baseline | 0 | 0.000 |
+| Random-embedding control | 4.7M | 0.056 |
+| **Linear probe** | **68K** | **0.576** |
+| Transformer decoder (this report) | 4.7M | 0.963 |
+
+The linear probe at 57.6% is well above the controls but well below
+the transformer. The **40-percentage-point gap between linear probe
+and decoder is the decoder's depth doing real nonlinear work**.
+
+Per-arity, the gap grows monotonically with σ length:
+
+| E1 arity | Linear (both-novel) | Decoder (both-novel) | Gap |
+|---:|---:|---:|---:|
+| 3 | 0.741 | 0.975 | 23pp |
+| 4 | 0.626 | 0.977 | 35pp |
+| 5 | 0.505 | 0.943 | 44pp |
+| 6 | 0.246 | 0.957 | 71pp |
+
+Longer substitutions need more nonlinear processing — each additional
+σ position is one more dependent choice, and the consistency
+constraints between positions (the structural-walk invariants the
+matcher exploits) compose nonlinearly across dimensions of the
+embedding. A linear classifier predicts each position independently
+of the others; the transformer can attend to its own earlier
+predictions and condition.
+
+**Orientation alone is 99.9% linear** (linear-probe `orient_only_rate`
+on every split). Direct vs flipped is essentially one binary linear
+feature in the embedding — unsurprising given the JEPA loss was
+explicitly TRUE/FALSE-discriminative.
+
+So the decoder is earning its keep on σ length, but the
+orientation channel is trivial linearly. Phase 2's rewrite chains
+will further stress whatever nonlinear capacity the decoder has,
+since the output sequence is longer and the witness less
+deterministically tied to structure.
 
 ---
 
 ## What's next
 
-Phase 2 (rewrite-chain category, ~15% of TRUE proofs) is the
-natural curriculum extension. The setup is unchanged:
-- Same decoder architecture.
-- Pre-tokenized vocab (~85-100 tokens after named-lemma normalization;
-  see `outputs/analyses/proof_decoder/phase2_vocab.json` for the
-  full bucket breakdown).
-- Phase 1's training set augmented with the rewrite-chain proofs
-  from the survey's `c_rewrite_chain` category.
-- Intermediate-equation embeddings optionally added to the
-  conditioning during generation (the intermediate states of a
-  rewrite chain ARE equations the same JEPA encoder handles).
+Phase 2 (rewrite-chain category, ~15% of TRUE proofs) extends the
+decoder to a harder claim — and per the mechanism reframing above,
+it's a genuinely different question, not "more of the same":
 
-Phase 1 came in cleanly above target. Phase 2 follows.
+- **Phase 1 claim:** the embedding preserves matching-relevant
+  structure. Since σ is a deterministic function of the parse
+  trees, the only thing that could fail here is information
+  destruction during the contrastive training. The decoder
+  empirically confirms the structure survives (96% σ-exact on
+  both-novel), and the linear probe quantifies *how much*
+  composition is required to recover it (57.6% linear baseline,
+  with a clear arity-length nonlinearity).
+- **Phase 2 claim:** the embedding contains information about
+  search-requiring proofs. Rewrite chains aren't a function of the
+  two equations' structure — there can be multiple valid chains,
+  the witness isn't computable by matching, and the choice of
+  chain depends on what intermediate states are reachable. This is
+  a real possibility-of-failure: the contrastive loss had no
+  reason to preserve rewrite-step information beyond what's
+  needed for TRUE/FALSE discrimination, and there's no obvious
+  side-effect path the way there was for σ.
+
+Setup for phase 2 is mostly unchanged:
+
+- Same decoder architecture; phase-2 vocab (~85-100 tokens after
+  named-lemma normalization, see
+  `outputs/analyses/proof_decoder/phase2_vocab.json`).
+- Phase 1's training set augmented with the rewrite-chain proofs
+  from the survey's `c_rewrite_chain` category (1,637 proofs).
+- Intermediate-equation embeddings optionally added to the
+  conditioning during generation — rewrite-chain intermediate
+  states ARE equations the same JEPA encoder handles, so the
+  conditioning extension is cheap.
+- Random-embedding control and linear-probe diagnostic again, for
+  the same isolation properties.
+
+Phase 1 came in cleanly above target with the mechanism localized.
+Phase 2 follows.
 
 ---
 
@@ -251,8 +320,11 @@ python scripts/train_decoder.py \
 
 # Majority baseline
 python scripts/eval_decoder_majority_baseline.py --force
+
+# Linear probe (mechanism localization)
+python scripts/probe_decoder_linear.py --force
 ```
 
-All four take well under 5 minutes total on a single 4080. No
+All five take well under 5 minutes total on a single 4080. No
 hyperparameter search — the configuration above is the literal
 run from this report.

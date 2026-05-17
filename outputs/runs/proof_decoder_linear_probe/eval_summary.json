@@ -1,0 +1,112 @@
+{
+  "config": {
+    "embeddings_path": "outputs/embeddings/v1.0/embeddings.npy",
+    "dataset": "data/processed/proof_corpus/decoder_phase1_dataset.parquet",
+    "matcher_proofs": "data/processed/proof_corpus/matcher_proofs.parquet",
+    "output": "outputs/runs/proof_decoder_linear_probe/eval_summary.json",
+    "epochs": 30,
+    "batch_size": 512,
+    "lr": 0.01,
+    "weight_decay": 0.0,
+    "seed": 42,
+    "force": true
+  },
+  "wall_clock_seconds": 3.9832624639966525,
+  "n_parameters": 67628,
+  "splits": {
+    "train": {
+      "n": 36339,
+      "sigma_only_rate": 0.6268471479415894,
+      "orient_only_rate": 0.9922947287559509,
+      "joint_sigma_rate": 0.6262417435646057,
+      "per_arity": {
+        "2": {
+          "n": 626,
+          "correct": 626,
+          "joint_sigma_rate": 1.0
+        },
+        "3": {
+          "n": 6207,
+          "correct": 4985,
+          "joint_sigma_rate": 0.8031255034638312
+        },
+        "4": {
+          "n": 14488,
+          "correct": 9610,
+          "joint_sigma_rate": 0.6633075648812811
+        },
+        "5": {
+          "n": 11735,
+          "correct": 6564,
+          "joint_sigma_rate": 0.5593523647209203
+        },
+        "6": {
+          "n": 3283,
+          "correct": 972,
+          "joint_sigma_rate": 0.2960706670727993
+        }
+      }
+    },
+    "test_one_novel": {
+      "n": 12159,
+      "sigma_only_rate": 0.5812155604362488,
+      "orient_only_rate": 0.9967102408409119,
+      "joint_sigma_rate": 0.5808866024017334,
+      "per_arity": {
+        "2": {
+          "n": 117,
+          "correct": 117,
+          "joint_sigma_rate": 1.0
+        },
+        "3": {
+          "n": 1837,
+          "correct": 1400,
+          "joint_sigma_rate": 0.7621121393576483
+        },
+        "4": {
+          "n": 5061,
+          "correct": 3147,
+          "joint_sigma_rate": 0.6218138707765264
+        },
+        "5": {
+          "n": 4234,
+          "correct": 2168,
+          "joint_sigma_rate": 0.512045347189419
+        },
+        "6": {
+          "n": 910,
+          "correct": 231,
+          "joint_sigma_rate": 0.25384615384615383
+        }
+      }
+    },
+    "test_both_novel": {
+      "n": 1088,
+      "sigma_only_rate": 0.576286792755127,
+      "orient_only_rate": 0.9990808963775635,
+      "joint_sigma_rate": 0.576286792755127,
+      "per_arity": {
+        "3": {
+          "n": 162,
+          "correct": 120,
+          "joint_sigma_rate": 0.7407407407407407
+        },
+        "4": {
+          "n": 473,
+          "correct": 296,
+          "joint_sigma_rate": 0.6257928118393234
+        },
+        "5": {
+          "n": 384,
+          "correct": 194,
+          "joint_sigma_rate": 0.5052083333333334
+        },
+        "6": {
+          "n": 69,
+          "correct": 17,
+          "joint_sigma_rate": 0.2463768115942029
+        }
+      }
+    }
+  }
+}
