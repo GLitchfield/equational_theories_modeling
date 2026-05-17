@@ -31,15 +31,19 @@ data/processed/*
 # data/splits — committed (small JSON, needed for reproducibility),
 #               so NOT ignored.
 
-# Outputs — checkpoints, embeddings, figures all generated, not committed
+# Outputs — checkpoints, figures, probing-results: generated, not committed
 outputs/checkpoints/*
-outputs/embeddings/*
 outputs/probing_results/*
 outputs/figures/*
 !outputs/checkpoints/.gitkeep
-!outputs/embeddings/.gitkeep
 !outputs/probing_results/.gitkeep
 !outputs/figures/.gitkeep
+
+# outputs/embeddings/ holds promoted embedding artifacts. The .npy
+# embeddings are large + regenerable from the source checkpoint, so
+# they stay out of git. The model card AND the source checkpoint (.pt)
+# travel with the artifact so it's fully reproducible from git alone.
+outputs/embeddings/**/*.npy
 
 # per-run artifacts: large parquet + npy stay out of git (regenerable
 # from checkpoints via scripts/save_predictions.py and save_embeddings.py);

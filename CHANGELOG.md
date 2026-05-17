@@ -1,6 +1,48 @@
 # Changelog
 
-Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `mlp_classifier_plan.md`; prior plans are in `archive/`, and the failure-analysis plan that informed the current diagnostic infrastructure is in `trash/testing_plan_phase2.md`.
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `proof_corpus_survey_plan.md`; the JEPA-phase plans are all in `archive/`.
+
+---
+
+## 2026-05-16 — JEPA phase wrapped; embeddings promoted to v1.0
+
+The JEPA training phase is **complete**. The deliverable is a stable
+per-equation embedding artifact at `outputs/embeddings/v1.0/`,
+intended as a frozen input for downstream work. We may revisit if a
+downstream task surfaces a specific deficiency, but the v1.0
+embeddings are considered good enough to build on.
+
+What's in the v1.0 artifact:
+
+  - `embeddings.npy` — `(4694, 768) float32`, L2-normalized. Gitignored
+    (large, regenerable from the checkpoint).
+  - `eq_ids.npy` — `(4694,) int32`, ascending eq IDs (1..4694).
+    Gitignored.
+  - `source_checkpoint.pt` — copy of
+    `outputs/checkpoints/skip_h128_seed42_diag/epoch_009.pt` so the
+    artifact is fully self-contained. **Committed** (~3 MB).
+  - `MODEL_CARD.md` — spec, source, validation numbers, known
+    limitations, reproduction recipe. Committed.
+
+Headline numbers (matched 10% pair holdout, seed 42):
+
+  - JEPA distance bal_acc:   0.9841 (0.9840 on the full 22M corpus)
+  - Linear probe bal_acc:    0.9530
+  - MLP-head bal_acc:        0.9996
+  - MLP-head accuracy on always-wrong-trained ∩ holdout: 91.37%
+    (JEPA = 0% by definition)
+
+Cleanup actions taken alongside the promotion:
+
+  - `skip_connection_plan.md` and `mlp_classifier_plan.md` moved
+    from the repo root to `archive/`. Both are complete; the active
+    plan is now `proof_corpus_survey_plan.md` (the next phase).
+  - `.gitignore` updated to track `outputs/embeddings/**/*.pt` and
+    `MODEL_CARD.md` while still ignoring `.npy` binaries.
+  - CLAUDE.md and README.md rewritten to lead with the v1.0
+    embedding artifact rather than the active-training framing.
+    The JEPA-phase recap is preserved in CLAUDE.md as historical
+    context for if we ever return to retraining.
 
 ---
 

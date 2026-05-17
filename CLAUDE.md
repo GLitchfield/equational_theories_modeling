@@ -1,20 +1,40 @@
-# CLAUDE.md — JEPA for Equational Implication
+# CLAUDE.md — Equational Implication
 
-The active plan is `skip_connection_plan.md` — add a parameter-free skip connection from the GNN's pooled representation (256-dim) to the embedding, concatenated with the projected output and L2-normalized. Tests the simpler hypothesis "the projection is throwing away features the GNN already learned." Tabled and archived: `dual_encoder_plan.md` (would have added a cohomology MLP as a second encoder pathway); the skip-connection result will inform whether the dual encoder is still needed. Read the plan first when starting a session.
+The active plan is `proof_corpus_survey_plan.md`. Read it first when starting a session; scrutinize it critically before implementing (see the "review planning files" rule below).
 
-Prior plans completed, in `archive/`: `aux_heads_implementation_plan.md` (delivered `aux_h128_seed1_diag` at 0.9619), `probing_experiments_plan.md` (delivered the probing run record showing cohom is already in the embeddings to 80-88%), `dual_encoder_plan.md` (deferred pending skip-connection result; in-progress code is in `archive/dual_encoder/`).
+The JEPA training phase is **complete and wrapped**. The deliverable is the **v1.0 embeddings**, promoted to `outputs/embeddings/v1.0/`. From here on, downstream work consumes those embeddings as a frozen input; we don't expect to retrain the JEPA unless a downstream task surfaces a specific deficiency.
 
-**Current stable project best is `skip_h128_seed42_diag` at bal_acc 0.9840 (h=128, 10 structural aux heads, VICReg 0.1/0.1, margin 1.5, skip connection from pooled to embedding with per-channel LayerNorms, embed_dim=768, ep9 checkpoint).** Two-seed reproducible: seed=1 → 0.9779 ep5, seed=42 → 0.9840 ep9. Two-seed mean 0.9810 vs the no-skip aux baseline two-seed mean 0.9601 = **+2.09pp improvement**. Skip wins at every single training epoch over baseline (1-4pp delta). Mechanism is geometric/structural (more dims, stable LayerNorm'd skip reference) rather than feature-preservation as the plan predicted — re-probing after training showed cohom probe accuracy gained only +0.4pp on average. See `outputs/runs/skip_h128_seed42_diag/diagnostics_report.md` for the multi-seed analysis and `outputs/runs/skip_h128_seed1_diag/diagnostics_report.md` for the mechanism analysis.
+## v1.0 embeddings (current deliverable)
 
-Numbers convention: all `bal_acc` figures in this document are full-corpus re-evaluations from `outputs/runs/<name>/failure_summary.json` (`scripts/save_predictions.py` on all 22M pairs, threshold calibrated on a 1M-sample). The per-epoch monitor values in `per_epoch_eval.csv` and the diagnostics_reports differ by ~0.0002-0.0004 from val-batch subsampling — use the former for cross-run comparison, the latter for per-epoch trajectory analysis.
+- **Spec**: 4694 × 768 float32, L2-normalized; produced by the context encoder of `skip_h128_seed42_diag` epoch 9.
+- **Files**: `outputs/embeddings/v1.0/embeddings.npy` (gitignored, regenerable), `outputs/embeddings/v1.0/eq_ids.npy` (gitignored), `outputs/embeddings/v1.0/source_checkpoint.pt` (committed), `outputs/embeddings/v1.0/MODEL_CARD.md` (committed).
+- **JEPA bal_acc (matched 10% holdout)**: 0.9841 (essentially identical to the 0.9840 full-corpus number).
+- **Frozen-embedding MLP head bal_acc (matched holdout)**: 0.9996. The MLP recovers 91.37% of the "always-wrong-trained" subset (TRUE-by-vacuity cases the JEPA distance metric structurally couldn't represent). Downstream classifiers operating on these embeddings can pick that signal up.
+- **Full model card** with sha256s, reproduction recipe, and known limitations: `outputs/embeddings/v1.0/MODEL_CARD.md`.
 
-Notable: seed=42 climbed monotonically through ep9 (per-epoch monitor 0.9693 → 0.9840) with no drift — initially read as "additional headroom past 10 epochs" but the 20-epoch extension (`skip_h128_seed42_20ep_diag`) underperformed at every comparable epoch, refuting that reading; see that run's diagnostics_report for the cosine-LR-scaling explanation (untested directly, see Limitations there). Seed sensitivity at h=128+skip is +0.61pp (0.9779 vs 0.9840) vs +0.37pp at h=128 no-skip — larger embed_dim opens up more seed-dependent loss-landscape exploration.
+## JEPA-phase recap (historical)
 
-The h=256 single-seed `aux_h256_diag` hit 0.9636 via a regime-B phase transition that did NOT reproduce under seed=1 (reverted to 0.9488); h=256 is considered an unreliable recipe and future experiments should default to h=128. The original h=256 simplicity-bias drift problem (TRUE-recall → 0.99, FALSE-recall → 0.87) is unresolved on the aux-head path: 4 cohomology aux-head experiments (`aux_h256_cohom_diag`, `aux_h256_cohom_w5_diag`, `aux_h128_cohom_w5_diag`, plus the structural-only baselines) confirmed that per-equation classification aux heads do not constrain pair-level contrastive geometry at any tested aux_weight.
+All JEPA plans are in `archive/`. In rough order:
 
-The original Phase 1 → Phase 4 engineering plan is at `archive/jepa_engineering_plan.md`. Phase 1 (architecture sweep + loss form) is complete. The original "failure analysis" plan (`trash/testing_plan_phase2.md`) is also complete — it produced the diagnostic infrastructure (per-step grad/loss/distance instrumentation, no-holdout training mode) and the run records under `outputs/runs/stable_*` that the current aux-heads plan builds on.
+- `archive/jepa_engineering_plan.md` — original Phase 1–4 plan; Phase 1 (architecture sweep + loss) is complete.
+- `trash/testing_plan_phase2.md` — failure-analysis plan that produced the diagnostic infrastructure and the `outputs/runs/stable_*` series.
+- `archive/aux_heads_implementation_plan.md` — delivered `aux_h128_seed1_diag` at 0.9619 (prior best before skip).
+- `archive/probing_experiments_plan.md` — showed cohomology features are linearly accessible in the embeddings to 80–88%.
+- `archive/dual_encoder_plan.md` — deferred pending the skip-connection result; in-progress code in `archive/dual_encoder/`. Skip ended up not preserving cohom features either, so this remains relevant if a future task needs cohom in the embedding.
+- `archive/skip_connection_plan.md` — delivered the current v1.0 embeddings (`skip_h128_seed42_diag`, 0.9840 full corpus / 0.9841 matched holdout).
+- `archive/mlp_classifier_plan.md` — frozen-embedding MLP head; validated the v1.0 embeddings (0.9996 holdout, 91.37% vacuity).
 
-`CHANGELOG.md` records deviations from the plan and explains *why* the plan reads the way it does — read it whenever a plan or commit references a CHANGELOG entry.
+Cross-run failure-overlap analysis (8 trained models, partitioned per Rule B): `outputs/analyses/failure_overlap/`. Reproducer: `scripts/analyze_failure_overlap.py`. Headline: a stable set of 32,496 always-wrong-trained pairs (99.99% TRUE), dominated by the "TRUE-by-vacuity" pattern; an MLP on the v1.0 embeddings recovers 91% of them.
+
+Numbers convention: all `bal_acc` figures in this document are full-corpus re-evaluations from `outputs/runs/<name>/failure_summary.json` (`scripts/save_predictions.py` on all 22M pairs, threshold calibrated on a 1M-sample). The per-epoch monitor values in `per_epoch_eval.csv` differ by ~0.0002–0.0004 from val-batch subsampling — use the former for cross-run comparison, the latter for per-epoch trajectory analysis.
+
+A few JEPA-internal results worth knowing if we ever return to training:
+
+- **h=128 is the reliable recipe.** Two-seed mean 0.9810 (seed=1 → 0.9779, seed=42 → 0.9840), seed sensitivity +0.61pp.
+- **h=256 is unreliable** — `aux_h256_diag` hit 0.9636 via a regime-B phase transition that did NOT reproduce under seed=1 (reverted to 0.9488). The h=256 simplicity-bias drift problem (TRUE-recall → 0.99, FALSE-recall → 0.87) is unresolved on the aux-head path.
+- **20-epoch extension underperformed** the 10-epoch run (`skip_h128_seed42_20ep_diag` peaked at 0.9774); see that run's diagnostics_report for the cosine-LR-scaling explanation (untested directly, called out in its Limitations section).
+
+`CHANGELOG.md` records deviations from the plans and explains *why* each archived plan reads the way it does — read it whenever a plan or commit references a CHANGELOG entry.
 
 When you deviate from the active plan, update it to match reality AND add a CHANGELOG.md entry explaining why, in the same commit as the deviating code.
 
@@ -34,9 +54,9 @@ When you deviate from the active plan, update it to match reality AND add a CHAN
 - Keep checkpoints small — encoder weights + full JEPA state, skip optimizer state unless resuming from a crash.
 - Every completed training run gets recorded artifacts (`outputs/runs/<name>/` with `diagnostics_report.md`, `diagnostic_extract.json`, `per_step_trace.csv`, `per_epoch_eval.csv`) AND a commit with the message pattern `Phase N: record <run_name> — <one-line takeaway>`. Run records are part of the run's deliverable, not a separate request.
 
-## Regularization options
+## JEPA implementation reference (historical, for if we ever return to training)
 
-VICReg (`src/training/losses.py::vicreg_terms`) is the production regularizer. Active via `loss.vicreg_var_weight` and `loss.vicreg_cov_weight` in any config. Works robustly at h=128 (0.9619 bal_acc with structural aux heads, 0.9582 stable from prior seed); degrades into TRUE-bias drift at h=256.
+VICReg (`src/training/losses.py::vicreg_terms`) was the production regularizer. Active via `loss.vicreg_var_weight` and `loss.vicreg_cov_weight` in any config. Works robustly at h=128 (0.9619 bal_acc with structural aux heads, 0.9582 stable from prior seed); degrades into TRUE-bias drift at h=256.
 
 SIGReg (`src/training/sigreg.py`) is implemented and verified (9 unit tests pass) but **shelved as not-a-fit for our task**. Three variants tested at h=256 — see commits `4fec7a3` → `cf5e00a` and `outputs/runs/stable_h256_*sigreg*/`, `outputs/runs/stable_h256_lejepa_3ep_diag/`. Failure modes: with L2-norm, SIGReg's pre-norm Gaussian target → uniform on sphere, conflicts with contrastive's TRUE-clustering need (cl_TRUE pinned at 1.97 = random unit-sphere distance²); without L2-norm, SIGReg's globally-coherent spread direction beats contrastive in clip-saturated steps (cl_TRUE = K = orthogonal-pair distance). Code stays in repo as a known-correct implementation for future setups where the prediction loss isn't margin-based contrastive. Don't re-attempt without revisiting the linked diagnostics_report.md files.
 
