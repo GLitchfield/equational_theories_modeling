@@ -1,0 +1,290 @@
+{
+  "total_proofs": 10676,
+  "levels": {
+    "n1_whitespace": {
+      "total_proofs": 10676,
+      "distinct_clusters": 2736,
+      "top_k_coverage": {
+        "top_10_coverage": 0.4838890970400899,
+        "top_20_coverage": 0.6311352566504309,
+        "top_50_coverage": 0.7293930310977894,
+        "top_100_coverage": 0.7518733608092919
+      },
+      "clusters_to_cover_pct": {
+        ">=50pct": 11,
+        ">=80pct": 601,
+        ">=95pct": 2203
+      },
+      "top_10_clusters": [
+        [
+          "\u03bb x y => h x y x",
+          705
+        ],
+        [
+          "\u03bb x y => h x y y",
+          662
+        ],
+        [
+          "\u03bb x y => h x x y",
+          646
+        ],
+        [
+          "\u03bb x => h x x",
+          618
+        ],
+        [
+          "\u03bb x y z => h x y z z",
+          589
+        ],
+        [
+          "\u03bb x y z => h x y z y",
+          490
+        ],
+        [
+          "\u03bb x y z => h x y y z",
+          430
+        ],
+        [
+          "\u03bb x y z => h x y x z",
+          418
+        ],
+        [
+          "\u03bb x y z => h x y z x",
+          324
+        ],
+        [
+          "by repeat intro repeat rw [<-h]",
+          284
+        ]
+      ]
+    },
+    "n2_plus_vars": {
+      "total_proofs": 10676,
+      "distinct_clusters": 2736,
+      "top_k_coverage": {
+        "top_10_coverage": 0.4838890970400899,
+        "top_20_coverage": 0.6311352566504309,
+        "top_50_coverage": 0.7293930310977894,
+        "top_100_coverage": 0.7518733608092919
+      },
+      "clusters_to_cover_pct": {
+        ">=50pct": 11,
+        ">=80pct": 601,
+        ">=95pct": 2203
+      },
+      "top_10_clusters": [
+        [
+          "\u03bb v1 v2 => h v1 v2 v1",
+          705
+        ],
+        [
+          "\u03bb v1 v2 => h v1 v2 v2",
+          662
+        ],
+        [
+          "\u03bb v1 v2 => h v1 v1 v2",
+          646
+        ],
+        [
+          "\u03bb v1 => h v1 v1",
+          618
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v3 v3",
+          589
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v3 v2",
+          490
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v2 v3",
+          430
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v1 v3",
+          418
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v3 v1",
+          324
+        ],
+        [
+          "by repeat intro repeat rw [<-h]",
+          284
+        ]
+      ]
+    },
+    "n3_plus_eqrefs": {
+      "total_proofs": 10676,
+      "distinct_clusters": 2736,
+      "top_k_coverage": {
+        "top_10_coverage": 0.4838890970400899,
+        "top_20_coverage": 0.6311352566504309,
+        "top_50_coverage": 0.7293930310977894,
+        "top_100_coverage": 0.7518733608092919
+      },
+      "clusters_to_cover_pct": {
+        ">=50pct": 11,
+        ">=80pct": 601,
+        ">=95pct": 2203
+      },
+      "top_10_clusters": [
+        [
+          "\u03bb v1 v2 => h v1 v2 v1",
+          705
+        ],
+        [
+          "\u03bb v1 v2 => h v1 v2 v2",
+          662
+        ],
+        [
+          "\u03bb v1 v2 => h v1 v1 v2",
+          646
+        ],
+        [
+          "\u03bb v1 => h v1 v1",
+          618
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v3 v3",
+          589
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v3 v2",
+          490
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v2 v3",
+          430
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v1 v3",
+          418
+        ],
+        [
+          "\u03bb v1 v2 v3 => h v1 v2 v3 v1",
+          324
+        ],
+        [
+          "by repeat intro repeat rw [<-h]",
+          284
+        ]
+      ]
+    },
+    "n4_plus_hyps": {
+      "total_proofs": 10676,
+      "distinct_clusters": 2736,
+      "top_k_coverage": {
+        "top_10_coverage": 0.4838890970400899,
+        "top_20_coverage": 0.6311352566504309,
+        "top_50_coverage": 0.7293930310977894,
+        "top_100_coverage": 0.7518733608092919
+      },
+      "clusters_to_cover_pct": {
+        ">=50pct": 11,
+        ">=80pct": 601,
+        ">=95pct": 2203
+      },
+      "top_10_clusters": [
+        [
+          "\u03bb v1 v2 => h1 v1 v2 v1",
+          705
+        ],
+        [
+          "\u03bb v1 v2 => h1 v1 v2 v2",
+          662
+        ],
+        [
+          "\u03bb v1 v2 => h1 v1 v1 v2",
+          646
+        ],
+        [
+          "\u03bb v1 => h1 v1 v1",
+          618
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v3 v3",
+          589
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v3 v2",
+          490
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v2 v3",
+          430
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v1 v3",
+          418
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v3 v1",
+          324
+        ],
+        [
+          "by repeat intro repeat rw [<-h1]",
+          284
+        ]
+      ]
+    },
+    "n5_plus_implicits": {
+      "total_proofs": 10676,
+      "distinct_clusters": 2736,
+      "top_k_coverage": {
+        "top_10_coverage": 0.4838890970400899,
+        "top_20_coverage": 0.6311352566504309,
+        "top_50_coverage": 0.7293930310977894,
+        "top_100_coverage": 0.7518733608092919
+      },
+      "clusters_to_cover_pct": {
+        ">=50pct": 11,
+        ">=80pct": 601,
+        ">=95pct": 2203
+      },
+      "top_10_clusters": [
+        [
+          "\u03bb v1 v2 => h1 v1 v2 v1",
+          705
+        ],
+        [
+          "\u03bb v1 v2 => h1 v1 v2 v2",
+          662
+        ],
+        [
+          "\u03bb v1 v2 => h1 v1 v1 v2",
+          646
+        ],
+        [
+          "\u03bb v1 => h1 v1 v1",
+          618
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v3 v3",
+          589
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v3 v2",
+          490
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v2 v3",
+          430
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v1 v3",
+          418
+        ],
+        [
+          "\u03bb v1 v2 v3 => h1 v1 v2 v3 v1",
+          324
+        ],
+        [
+          "by repeat intro repeat rw [<-h1]",
+          284
+        ]
+      ]
+    }
+  }
+}
