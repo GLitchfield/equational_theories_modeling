@@ -1,0 +1,53 @@
+{
+  "lean_root": "/home/gavin/git/equational_theories/equational_theories",
+  "n_counterex_theorems_extracted": 394,
+  "n_not_implies_names_not_captured": 16,
+  "template_distribution": {
+    "lifting_family": 294,
+    "tactic_block": 56,
+    "angle_tuple_Fin": 25,
+    "angle_tuple_Nat": 14,
+    "angle_tuple_other": 4,
+    "angle_tuple_Bool": 1
+  },
+  "angle_tuple_carrier_distribution": {
+    "Fin": 25,
+    "Nat": 14,
+    "other": 4,
+    "Bool": 1
+  },
+  "angle_tuple_Fin_size_distribution": {
+    "2": 12,
+    "3": 13
+  },
+  "top_establish_modules": {
+    "LiftingMagmaFamily": 294
+  },
+  "top_first_tactics_for_tactic_blocks": {
+    "let": 20,
+    "obtain": 13,
+    "refine": 8,
+    "simp": 6,
+    "exact": 6,
+    "letI": 1,
+    "have": 1,
+    "exists": 1
+  },
+  "top_files_by_counterex_count": {
+    "Generated/InvariantMetatheoremNonimplications/instLiftingMagmaFamilyFinset_counterexamples.lean": 190,
+    "Subgraph.lean": 63,
+    "Generated/InvariantMetatheoremNonimplications/instLiftingMagmaFamilyMultiset_counterexamples.lean": 36,
+    "Generated/InvariantMetatheoremNonimplications/instLiftingMagmaFamilyRightProj_counterexamples.lean": 28,
+    "Generated/InvariantMetatheoremNonimplications/instLiftingMagmaFamilyLeftProj_counterexamples.lean": 24,
+    "ManuallyProved/Equation1661.lean": 24,
+    "Generated/InvariantMetatheoremNonimplications/instLiftingMagmaFamilyList_counterexamples.lean": 16,
+    "InfModel.lean": 4,
+    "StringMagmas.lean": 2,
+    "ManuallyProved/Equation1701.lean": 2,
+    "Generated/Z3GenNonImp.lean": 1,
+    "ManuallyProved/Equation1323.lean": 1,
+    "ManuallyProved/Equation1648.lean": 1,
+    "ManuallyProved/Equation63.lean": 1,
+    "ManuallyProved/Equation1729.lean": 1
+  }
+}
