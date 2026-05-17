@@ -1,8 +1,15 @@
 # CLAUDE.md — Equational Implication
 
-The active plan is `proof_corpus_survey_plan.md`. Read it first when starting a session; scrutinize it critically before implementing (see the "review planning files" rule below).
+No active plan right now — the JEPA training phase and the proof-corpus survey are both complete. The next plan, when written, will design the proof generator based on the survey's recommendation; until then, treat this as a between-phases checkpoint.
 
-The JEPA training phase is **complete and wrapped**. The deliverable is the **v1.0 embeddings**, promoted to `outputs/embeddings/v1.0/`. From here on, downstream work consumes those embeddings as a frozen input; we don't expect to retrain the JEPA unless a downstream task surfaces a specific deficiency.
+The two completed phases left two durable artifacts:
+
+1. **v1.0 embeddings** at `outputs/embeddings/v1.0/` — frozen 768-dim equation embeddings, the JEPA-phase deliverable.
+2. **Proof-corpus characterization** at `outputs/analyses/proof_survey/README.md` — survey of the ETP Lean proofs with an architecture recommendation for the proof generator.
+
+The JEPA training phase is **complete and wrapped**. From here on, downstream work consumes the v1.0 embeddings as a frozen input; we don't expect to retrain the JEPA unless a downstream task surfaces a specific deficiency.
+
+The proof-corpus survey is **complete and wrapped**. Its three-track architecture recommendation (permutation predictor → tactic-sequence generator → upstream-tool delegation, plus a search-based FALSE generator) is the starting point for the next plan.
 
 ## v1.0 embeddings (current deliverable)
 
@@ -23,8 +30,27 @@ All JEPA plans are in `archive/`. In rough order:
 - `archive/dual_encoder_plan.md` — deferred pending the skip-connection result; in-progress code in `archive/dual_encoder/`. Skip ended up not preserving cohom features either, so this remains relevant if a future task needs cohom in the embedding.
 - `archive/skip_connection_plan.md` — delivered the current v1.0 embeddings (`skip_h128_seed42_diag`, 0.9840 full corpus / 0.9841 matched holdout).
 - `archive/mlp_classifier_plan.md` — frozen-embedding MLP head; validated the v1.0 embeddings (0.9996 holdout, 91.37% vacuity).
+- `archive/proof_corpus_survey_plan.md` — surveyed the ETP Lean proofs to inform the generator architecture. Output: `outputs/analyses/proof_survey/README.md` with the three-track recommendation.
 
 Cross-run failure-overlap analysis (8 trained models, partitioned per Rule B): `outputs/analyses/failure_overlap/`. Reproducer: `scripts/analyze_failure_overlap.py`. Headline: a stable set of 32,496 always-wrong-trained pairs (99.99% TRUE), dominated by the "TRUE-by-vacuity" pattern; an MLP on the v1.0 embeddings recovers 91% of them.
+
+## Proof-corpus survey recap (current jumping-off point)
+
+Survey of ETP's Lean proofs at `outputs/analyses/proof_survey/` (READ THIS BEFORE designing the proof generator — it captures the recommended architecture). Reproducers in `scripts/survey_*.py`. Key findings:
+
+- **62.5% of TRUE proofs are arg-permutation closes** (`λ x y => h x y x`-style). The generator for that majority is a structured-prediction model emitting a `(hypothesis_id, permutation_tuple)`. Training data: 6,567 examples already in the corpus.
+- **15.3% are rewrite chains.** Intermediate states are equations, which v1.0 embeddings already represent natively. Generator: small transformer over a ~100-token Lean tactic vocab, conditioned on v1.0 embeddings.
+- **22% are machine output from Vampire (14.1%) or Egg (7.5%).** Don't try to learn these — delegate by invoking the upstream tool directly.
+- **0.5% genuinely diverse complex.** Skip / corner-case.
+- **FALSE side: Stage 2 accepts only Fin-n matrix counterexamples**, so the FALSE generator is a brute-force search over small `Fin n` magmas regardless of how the ETP corpus's proof shapes look (which are 74.6% lifting-family proofs at the source level).
+- Vocab is small: 119 tokens cover 95% of TRUE proof usage. Proof length is bimodal — median 10 tokens, mean 102 (Vampire/Egg long tail).
+- Lean version skew: ETP uses 4.20.1, Stage 2 judge uses 4.30.0-rc2. Most term-mode proofs port; tactic-mode may need adjustment. LeanDojo compatibility unverified; assess with a small extraction before committing to it.
+
+Three-track architecture recommendation in the survey README:
+  1. Permutation predictor (62.5% TRUE) — MVP
+  2. Short tactic-sequence generator (15% TRUE)
+  3. Upstream-tool delegation (22% TRUE)
+  + Brute-force FALSE search.
 
 Numbers convention: all `bal_acc` figures in this document are full-corpus re-evaluations from `outputs/runs/<name>/failure_summary.json` (`scripts/save_predictions.py` on all 22M pairs, threshold calibrated on a 1M-sample). The per-epoch monitor values in `per_epoch_eval.csv` differ by ~0.0002–0.0004 from val-batch subsampling — use the former for cross-run comparison, the latter for per-epoch trajectory analysis.
 

@@ -2,16 +2,31 @@
 
 Learn the geometric structure of equational implication over magmas. The 22M Lean-verified implication pairs from the Equational Theories Project drove training of a JEPA over equation parse trees; the result is a per-equation embedding that captures both algebraic structure and the harder "TRUE-by-vacuity" pattern (equations implied tautologically by every more-specific axiom).
 
-The **JEPA training phase is complete**. The deliverable is the **v1.0 embeddings** at [outputs/embeddings/v1.0/](outputs/embeddings/v1.0/) — see [`outputs/embeddings/v1.0/MODEL_CARD.md`](outputs/embeddings/v1.0/MODEL_CARD.md). All JEPA plans are in [archive/](archive/).
+The **JEPA training phase** and **proof-corpus survey phase** are both complete. Their two durable deliverables:
 
-**Current active plan:** [proof_corpus_survey_plan.md](proof_corpus_survey_plan.md).
+1. **v1.0 embeddings** at [outputs/embeddings/v1.0/](outputs/embeddings/v1.0/) — frozen 768-dim equation embeddings; see [`MODEL_CARD.md`](outputs/embeddings/v1.0/MODEL_CARD.md).
+2. **Proof-corpus characterization** at [outputs/analyses/proof_survey/README.md](outputs/analyses/proof_survey/README.md) — surveyed the ETP's 10,676 explicit-implication proofs and 1,698 facts entries, ending with a three-track architecture recommendation for the proof generator.
+
+All plans (both phases) are archived in [archive/](archive/). **No active plan right now** — the next plan, when written, will design the proof generator based on the survey's recommendation.
 
 ## v1.0 embeddings at a glance
 
 - **Spec:** 4694 × 768 float32, L2-normalized.
 - **Source:** `skip_h128_seed42_diag` ep9 (h=128 GATv2 encoder with parameter-free skip connection from the pooled rep). Source checkpoint travels with the artifact at `outputs/embeddings/v1.0/source_checkpoint.pt`.
 - **JEPA distance bal_acc on the matched 10% pair holdout:** 0.9841 (0.9840 on the full 22M corpus).
-- **Frozen-embedding MLP-head bal_acc on the same holdout:** 0.9996, recovering 91.37% of the "always-wrong-trained" subset (pairs where the JEPA distance metric structurally couldn't represent vacuity). So the information is in the embeddings even when the JEPA's own decision rule misses it.
+- **Frozen-embedding MLP-head bal_acc on the same holdout:** 0.9996, recovering 91.37% of the "always-wrong-trained" subset.
+
+## Proof-corpus survey at a glance
+
+- **TRUE corpus (10,676 explicit-implication proofs):**
+  - **62.5% arg-permutation** (`λ x y => h x y x` style — predict a short permutation tuple)
+  - 15.3% rewrite chains (short tactic sequences)
+  - 14.1% Vampire-superposition machine output (delegate to upstream tool)
+  - 7.5% Egg-combinator machine output (delegate to upstream tool)
+  - 0.5% genuinely complex / corner cases
+- **FALSE corpus:** Stage 2 judge accepts only `Fin n` matrix counterexamples, so FALSE generation is brute-force search over small `Fin n` magmas.
+- **Vocab:** 119 tokens cover 95% of TRUE proof usage. Median proof length is 10 tokens.
+- **Architecture recommendation** (three-track ensemble + FALSE search) in [`outputs/analyses/proof_survey/README.md`](outputs/analyses/proof_survey/README.md).
 
 See [CLAUDE.md](CLAUDE.md) for the full project-state guide and [`CHANGELOG.md`](CHANGELOG.md) for the history of deviations from the various plans.
 

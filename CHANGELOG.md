@@ -1,6 +1,79 @@
 # Changelog
 
-Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `proof_corpus_survey_plan.md`; the JEPA-phase plans are all in `archive/`.
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. No active plan right now — the JEPA training phase and the proof-corpus survey are both complete; their plans are all in `archive/`.
+
+---
+
+## 2026-05-17 — Proof-corpus survey wrapped; plan archived
+
+The proof-corpus survey ran the six tasks specified in
+`proof_corpus_survey_plan.md` and produced a characterization report
+at `outputs/analyses/proof_survey/README.md`. The plan is archived
+(`archive/proof_corpus_survey_plan.md`).
+
+Headline findings, all derived from the 10,676 explicit implication
+proofs and 394 source-level counterexample theorems in the ETP:
+
+  - **62.5% of TRUE proofs reduce to "predict an argument permutation"**
+    (single hypothesis applied to a permutation of input variables).
+    The architecture-deciding finding.
+  - **15.3% are rewrite chains.** Intermediate states are equations,
+    which v1.0 embeddings already represent.
+  - **21.6% combined are uniform machine output** (14.1% Vampire-style,
+    7.5% Egg-combinator). Delegation candidates rather than learning
+    targets.
+  - **FALSE corpus is more diverse at the source level than the plan
+    assumed** (74.6% lifting-family proofs, only 6.3% Fin-n decide),
+    but **Stage 2's judge accepts only Fin-n matrix counterexamples**,
+    so the FALSE generator's target output is uniform. FALSE
+    generation reduces to brute-force search over small Fin n magmas.
+  - **Plan's "top 10-20 templates cover 80%+" criterion is NOT met**
+    (top-20 covers 63%). But the top clusters are all permutation
+    variants of the same shape, so a structured-prediction model that
+    emits the permutation tuple covers them generatively — no fixed
+    template vocabulary needed.
+  - **Vocab is small** (119 tokens cover 95% of TRUE-proof usage).
+    Proof length is bimodal: median 10 tokens (variable-substitution),
+    Vampire/Egg long tail goes to 12K tokens.
+
+Architecture recommendation (three-track ensemble plus FALSE search):
+
+  Track 1 — Permutation predictor for 62.5% of TRUE. Small structured-
+            prediction model on v1.0 embeddings. Output: (hypothesis_id,
+            permutation_tuple), wrapped as
+            `by exact fun v1..vn => h <perm>`.
+  Track 2 — Tactic-sequence generator for 15% (rewrite chains). Small
+            transformer over a ~100-token Lean tactic vocab.
+  Track 3 — Upstream-tool delegation for 22% (Vampire / Egg). Wrap
+            those tools rather than learning to mimic their output.
+  FALSE   — Brute force over small Fin n magmas, v1.0 embeddings
+            optionally guiding search order.
+
+  Track 1 + FALSE search is the MVP. Tracks 2 and 3 are second-wave
+  additions.
+
+Methodological note worth keeping: the plan initially framed Task 3
+as "single-tactic / short-sequence / rewrite-chain / other" — all
+tactic-mode categories. Orientation surfaced that 69% of ETP proofs
+are term-mode (no tactics), with the term/tactic split determined
+by which ETP automation generated the proof, not by proof
+difficulty. The plan was reframed mid-survey (Methodology Resolution
+11) to classify by SEMANTIC structure rather than surface mode.
+This reframing is the principal reason the survey produced a
+clearly architecture-deciding answer instead of a mass of
+"unclassified" complex proofs.
+
+Cleanup actions:
+
+  - `proof_corpus_survey_plan.md` moved from the repo root to
+    `archive/`.
+  - CLAUDE.md updated: added a "Proof-corpus survey recap" section
+    with the headlines; removed the "active plan" pointer (no
+    active plan right now).
+  - README.md updated to match (Rule C): leads with both
+    deliverables (v1.0 embeddings + proof survey) side by side.
+  - The next plan, when written, will design the Track-1 generator
+    based on the survey's recommendation.
 
 ---
 
