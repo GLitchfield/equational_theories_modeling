@@ -1,0 +1,157 @@
+{
+  "majority_per_arity": {
+    "2": {
+      "orientation": 0,
+      "substitution": [
+        0,
+        0
+      ],
+      "train_coverage": 1.0,
+      "train_count": 626,
+      "train_total_this_arity": 626
+    },
+    "3": {
+      "orientation": 0,
+      "substitution": [
+        0,
+        0,
+        0
+      ],
+      "train_coverage": 0.27404543257612374,
+      "train_count": 1701,
+      "train_total_this_arity": 6207
+    },
+    "4": {
+      "orientation": 0,
+      "substitution": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "train_coverage": 0.07944505797901712,
+      "train_count": 1151,
+      "train_total_this_arity": 14488
+    },
+    "5": {
+      "orientation": 0,
+      "substitution": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "train_coverage": 0.02181508308478909,
+      "train_count": 256,
+      "train_total_this_arity": 11735
+    },
+    "6": {
+      "orientation": 0,
+      "substitution": [
+        0,
+        1,
+        2,
+        2,
+        3,
+        4
+      ],
+      "train_coverage": 0.006091989034419738,
+      "train_count": 20,
+      "train_total_this_arity": 3283
+    }
+  },
+  "splits": {
+    "train": {
+      "n": 36339,
+      "n_correct": 3754,
+      "sigma_rate": 0.10330498913013567,
+      "per_arity": {
+        "2": {
+          "n": 626,
+          "correct": 626,
+          "sigma_rate": 1.0
+        },
+        "3": {
+          "n": 6207,
+          "correct": 1701,
+          "sigma_rate": 0.27404543257612374
+        },
+        "4": {
+          "n": 14488,
+          "correct": 1151,
+          "sigma_rate": 0.07944505797901712
+        },
+        "5": {
+          "n": 11735,
+          "correct": 256,
+          "sigma_rate": 0.02181508308478909
+        },
+        "6": {
+          "n": 3283,
+          "correct": 20,
+          "sigma_rate": 0.006091989034419738
+        }
+      }
+    },
+    "test_one_novel": {
+      "n": 12159,
+      "n_correct": 678,
+      "sigma_rate": 0.05576116456945472,
+      "per_arity": {
+        "2": {
+          "n": 117,
+          "correct": 117,
+          "sigma_rate": 1.0
+        },
+        "3": {
+          "n": 1837,
+          "correct": 287,
+          "sigma_rate": 0.1562329885683179
+        },
+        "4": {
+          "n": 5061,
+          "correct": 221,
+          "sigma_rate": 0.04366725943489429
+        },
+        "5": {
+          "n": 4234,
+          "correct": 51,
+          "sigma_rate": 0.012045347189418989
+        },
+        "6": {
+          "n": 910,
+          "correct": 2,
+          "sigma_rate": 0.002197802197802198
+        }
+      }
+    },
+    "test_both_novel": {
+      "n": 1088,
+      "n_correct": 0,
+      "sigma_rate": 0.0,
+      "per_arity": {
+        "3": {
+          "n": 162,
+          "correct": 0,
+          "sigma_rate": 0.0
+        },
+        "4": {
+          "n": 473,
+          "correct": 0,
+          "sigma_rate": 0.0
+        },
+        "5": {
+          "n": 384,
+          "correct": 0,
+          "sigma_rate": 0.0
+        },
+        "6": {
+          "n": 69,
+          "correct": 0,
+          "sigma_rate": 0.0
+        }
+      }
+    }
+  }
+}
