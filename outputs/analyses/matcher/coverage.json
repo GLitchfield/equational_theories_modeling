@@ -1,0 +1,18 @@
+{
+  "corpus": {
+    "n_pairs": 22028942,
+    "n_true": 8173585,
+    "n_false": 13855357,
+    "n_directly_proved_set": 10666,
+    "n_directly_proved_pairs_seen_in_corpus": 10658
+  },
+  "matcher_coverage": {
+    "matched_true": 49586,
+    "matched_true_fraction_of_all_true": 0.00606661581178883,
+    "matched_directly_proved": 6374,
+    "matched_directly_proved_fraction": 0.5980484143366486,
+    "matched_false_FALSE_POSITIVES": 0
+  },
+  "wall_clock_seconds": 58.78345614200225,
+  "pairs_per_second": 374747.30895007326
+}
