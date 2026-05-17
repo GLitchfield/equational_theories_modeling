@@ -1,0 +1,36 @@
+{
+  "n_equations": 4694,
+  "n_held_out": 704,
+  "holdout_fraction_actual": 0.149978696207925,
+  "seed": 42,
+  "n_pairs_total": 49586,
+  "n_pairs_train": 36339,
+  "n_pairs_test_one_novel": 12159,
+  "n_pairs_test_both_novel": 1088,
+  "token_seq_len": {
+    "min": 9,
+    "max": 18,
+    "mean": 12.818880329125156,
+    "median": 13.0,
+    "p95": 15.0,
+    "p99": 16.0
+  },
+  "orientation_distribution": {
+    "direct": 49211,
+    "flipped": 375
+  },
+  "e1_arity_distribution": {
+    "2": 743,
+    "3": 8206,
+    "4": 20022,
+    "5": 16353,
+    "6": 4262
+  },
+  "e2_arity_distribution": {
+    "1": 4430,
+    "2": 21667,
+    "3": 18571,
+    "4": 4600,
+    "5": 318
+  }
+}
