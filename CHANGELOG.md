@@ -1,6 +1,64 @@
 # Changelog
 
-Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. No active plan right now — the JEPA training phase and the proof-corpus survey are both complete; their plans are all in `archive/`.
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `matcher_plan.md`; prior plans are archived.
+
+---
+
+## 2026-05-17 — Architecture update: matcher replaces Track 1 of the survey's three-track recommendation
+
+The proof-corpus survey concluded with a three-track architecture
+recommendation: (1) learned permutation predictor on v1.0 embeddings
+for 62.5% of TRUE, (2) tactic-sequence generator for ~15% (rewrite
+chains), (3) upstream-tool delegation for ~22% (Vampire/Egg). Plus
+FALSE counterexample search.
+
+`matcher_plan.md` (now active) replaces Track 1 with a
+**deterministic first-order matcher**. Same coverage (62.5%), exact
+correctness, zero embeddings, zero learning, zero GPU. It's strictly
+stronger than the survey's proposed learned model — pure symbolic
+computation on parse trees, O(tree size) per pair.
+
+Why this is a strict improvement:
+
+  - The variable-substitution category is defined by an exact
+    algorithmic test (does there exist a σ: vars(E1) → vars(E2)
+    such that σ(lhs1) ≡ lhs2 ∧ σ(rhs1) ≡ rhs2?). The matcher just
+    runs that test. No learning needed.
+  - The matcher's output is verifiable by construction — the emitted
+    proof is `fun <e2_vars> => h <σ(e1_vars)>` (or its `.symm`
+    flip), which type-checks iff σ is correct, which it is by the
+    structural-walk invariant.
+  - The matcher can be applied to the full 22M-pair corpus in
+    seconds. No GPU, no embeddings, no inference loop.
+
+Updated three-track architecture, going forward:
+
+  1. **Deterministic matcher** (62.5% TRUE) — matcher_plan.md
+  2. Short tactic-sequence generator (15% TRUE — rewrite chains)
+  3. Upstream-tool delegation (22% TRUE — Vampire / Egg)
+  + Brute-force FALSE search.
+
+The v1.0 embeddings are not needed for Track 1 anymore. They remain
+relevant for Track 2 (where intermediate states are equations the
+JEPA encoder handles natively) and as inputs to any future research
+decoder. CLAUDE.md and README.md updated to reflect the architecture
+change.
+
+Methodology resolutions locked into the plan before implementation
+(8 of them, per the standard pattern). Most consequential ones:
+
+  - Standalone matcher-parser (don't reuse the JEPA's
+    variable-canonicalizing parser, which would lose the original
+    variable names needed for λ-binding).
+  - False-positive check on the FULL 13,855,357-pair FALSE corpus
+    (not a sample — matching is microseconds per pair).
+  - Fixed-length-6 padded substitution format for the ground-truth
+    proof dataset (max var count in ETP is 6).
+  - 2 orientations, not 4 (flipping both equations = flipping
+    neither; provably 2 is complete).
+  - Pin the Stage 2 tactic submission format BEFORE mass emission
+    by reading the demo solvers and submitting 5-10 test proofs
+    end-to-end.
 
 ---
 

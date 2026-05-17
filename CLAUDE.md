@@ -1,6 +1,6 @@
 # CLAUDE.md — Equational Implication
 
-No active plan right now — the JEPA training phase and the proof-corpus survey are both complete. The next plan, when written, will design the proof generator based on the survey's recommendation; until then, treat this as a between-phases checkpoint.
+The active plan is `matcher_plan.md` — a deterministic first-order matcher for the variable-substitution category (62.5% of TRUE proofs), which **replaces Track 1 from the survey's three-track architecture recommendation** (a learned permutation predictor on v1.0 embeddings is no longer needed; the matcher does the same coverage deterministically with exact correctness). Read it first when starting a session.
 
 The two completed phases left two durable artifacts:
 
@@ -46,11 +46,13 @@ Survey of ETP's Lean proofs at `outputs/analyses/proof_survey/` (READ THIS BEFOR
 - Vocab is small: 119 tokens cover 95% of TRUE proof usage. Proof length is bimodal — median 10 tokens, mean 102 (Vampire/Egg long tail).
 - Lean version skew: ETP uses 4.20.1, Stage 2 judge uses 4.30.0-rc2. Most term-mode proofs port; tactic-mode may need adjustment. LeanDojo compatibility unverified; assess with a small extraction before committing to it.
 
-Three-track architecture recommendation in the survey README:
-  1. Permutation predictor (62.5% TRUE) — MVP
-  2. Short tactic-sequence generator (15% TRUE)
-  3. Upstream-tool delegation (22% TRUE)
-  + Brute-force FALSE search.
+**Updated architecture (matcher replaces Track 1):**
+  1. **Deterministic matcher** (62.5% TRUE) — `matcher_plan.md`, currently active. Pure symbolic computation on parse trees; no embeddings, no learned model. Exact correctness by construction.
+  2. Short tactic-sequence generator (15% TRUE — rewrite chains) — v1.0 embeddings condition this; still a learned model.
+  3. Upstream-tool delegation (22% TRUE — Vampire / Egg) — wrap, don't learn.
+  + Brute-force FALSE counterexample search over small Fin n magmas.
+
+The v1.0 embeddings have **no role in the variable-substitution category** after the matcher subsumes it. They remain relevant for Track 2 (rewrite chains, where intermediate states are equations the JEPA encoder handles natively) and for any future research decoder.
 
 Numbers convention: all `bal_acc` figures in this document are full-corpus re-evaluations from `outputs/runs/<name>/failure_summary.json` (`scripts/save_predictions.py` on all 22M pairs, threshold calibrated on a 1M-sample). The per-epoch monitor values in `per_epoch_eval.csv` differ by ~0.0002–0.0004 from val-batch subsampling — use the former for cross-run comparison, the latter for per-epoch trajectory analysis.
 
