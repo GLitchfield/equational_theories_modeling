@@ -1,0 +1,27 @@
+{
+  "n_proofs": 1636,
+  "per_arg_classification": {
+    "h_reverse": 5182,
+    "h_forward": 4573,
+    "other_name": 15
+  },
+  "per_proof_classification": {
+    "h_bidirectional": 954,
+    "h_only_reverse": 361,
+    "no_rewrite_args": 273,
+    "h_only_forward": 43,
+    "has_other_name": 5
+  },
+  "within_h_set_count": 1631,
+  "within_h_set_fraction": 0.9969437652811736,
+  "outside_names_distribution": {
+    "Equation1571_implies_Equation16": 3,
+    "idem": 2,
+    "op_idem": 2,
+    "Equation1571_implies_Equation40": 2,
+    "Equation1571_implies_Equation23": 2,
+    "Equation1571_implies_Equation43": 2,
+    "comm": 1,
+    "znx": 1
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "n_proofs": 1636,
+  "chain_length_distribution": {
+    "min": 0,
+    "max": 80,
+    "mean": 5.971882640586797,
+    "median": 2.0,
+    "p50": 2.0,
+    "p75": 8.0,
+    "p90": 13.0,
+    "p95": 24.0,
+    "p99": 46.0
+  },
+  "proof_token_length_distribution": {
+    "min": 8,
+    "max": 777,
+    "mean": 72.54645476772616,
+    "median": 44.0,
+    "p50": 44.0,
+    "p75": 63.0,
+    "p90": 177.0,
+    "p95": 259.0,
+    "p99": 660.0
+  },
+  "structural_proof_count": 250,
+  "structural_proof_fraction": 0.1528117359413203,
+  "tactic_presence_per_proof": {
+    "intro": 1503,
+    "repeat": 1405,
+    "rw": 1362,
+    "try": 909,
+    "nth_rewrite": 417,
+    "assumption": 352,
+    "apply": 266,
+    "have": 243,
+    "calc": 7,
+    "nth_rw": 5,
+    "rfl": 5,
+    "exact": 2,
+    "rwa": 1
+  },
+  "tactic_total_invocations": {
+    "try": 7902,
+    "rw": 6297,
+    "nth_rewrite": 3574,
+    "apply": 2304,
+    "intro": 1962,
+    "repeat": 1765,
+    "have": 471,
+    "assumption": 354,
+    "calc": 7,
+    "nth_rw": 7,
+    "rfl": 5,
+    "exact": 2,
+    "rwa": 1
+  }
+}
