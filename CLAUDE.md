@@ -1,6 +1,6 @@
 # CLAUDE.md — Equational Implication
 
-The active plan is `matcher_plan.md` — a deterministic first-order matcher for the variable-substitution category (62.5% of TRUE proofs), which **replaces Track 1 from the survey's three-track architecture recommendation** (a learned permutation predictor on v1.0 embeddings is no longer needed; the matcher does the same coverage deterministically with exact correctness). Read it first when starting a session.
+The active plan is `proof_decoder_plan.md` — phase 1 of the research decoder: train an autoregressive decoder on the matcher's 49,586 verified proofs to test whether the JEPA embeddings encode the proof witness (σ), not just TRUE/FALSE. Pure embeddings-only conditioning; equation-level train/test split; nested metric stack (parse rate → arity-correct → σ-exact-match); random-embedding control. The previous matcher plan is complete and archived.
 
 The two completed phases left two durable artifacts:
 
@@ -31,10 +31,25 @@ All JEPA plans are in `archive/`. In rough order:
 - `archive/skip_connection_plan.md` — delivered the current v1.0 embeddings (`skip_h128_seed42_diag`, 0.9840 full corpus / 0.9841 matched holdout).
 - `archive/mlp_classifier_plan.md` — frozen-embedding MLP head; validated the v1.0 embeddings (0.9996 holdout, 91.37% vacuity).
 - `archive/proof_corpus_survey_plan.md` — surveyed the ETP Lean proofs to inform the generator architecture. Output: `outputs/analyses/proof_survey/README.md` with the three-track recommendation.
+- `archive/matcher_plan.md` — deterministic first-order matcher; solves Track 1 with 59.8% coverage of the directly-proved set, 0 false positives. Output: `outputs/analyses/matcher/README.md`, 49,586-row proof dataset.
 
 Cross-run failure-overlap analysis (8 trained models, partitioned per Rule B): `outputs/analyses/failure_overlap/`. Reproducer: `scripts/analyze_failure_overlap.py`. Headline: a stable set of 32,496 always-wrong-trained pairs (99.99% TRUE), dominated by the "TRUE-by-vacuity" pattern; an MLP on the v1.0 embeddings recovers 91% of them.
 
-## Proof-corpus survey recap (current jumping-off point)
+## Matcher recap (Track 1 — complete)
+
+`archive/matcher_plan.md` (now archived). Deterministic first-order matcher for the variable-substitution category. Outputs:
+
+- **Coverage** (`outputs/analyses/matcher/`):
+  - Directly-proved set: 6,374 / 10,658 = 59.8%
+  - Full TRUE corpus: 49,586 / 8,173,585 = 0.607%
+  - **FALSE positives: 0 / 13,855,357 ✓** (the correctness gate)
+- Wall clock: 58.8 s on a single core, pure Python (~375K pairs/sec).
+- Ground-truth proof dataset at `data/processed/proof_corpus/matcher_proofs.parquet` (49,586 rows, gitignored, regenerable).
+- Reproducer: `scripts/run_matcher.py`; module: `src/matcher/matcher.py`; 27 unit tests.
+- Methodology note: 59.8% vs the survey's 62.5% prediction is a methodology difference (survey counted proofs whose source body LOOKS like arg-permutation by regex; matcher counts equations where E2 IS a substitution instance of E1). Worth ~2.7pp; not a bug.
+- Stage 2 submission format pinned against `tests/fixtures/answers/accepted_true_basic.answer.json` in the Stage 2 repo: `import JudgeProblem\n\ndef submission : Goal := by\n  intro G _ h\n  <body>`. Live-judge verification deferred to when a built Stage 2 env (Lean 4.30.0-rc2) is available.
+
+## Proof-corpus survey recap
 
 Survey of ETP's Lean proofs at `outputs/analyses/proof_survey/` (READ THIS BEFORE designing the proof generator — it captures the recommended architecture). Reproducers in `scripts/survey_*.py`. Key findings:
 
@@ -46,13 +61,15 @@ Survey of ETP's Lean proofs at `outputs/analyses/proof_survey/` (READ THIS BEFOR
 - Vocab is small: 119 tokens cover 95% of TRUE proof usage. Proof length is bimodal — median 10 tokens, mean 102 (Vampire/Egg long tail).
 - Lean version skew: ETP uses 4.20.1, Stage 2 judge uses 4.30.0-rc2. Most term-mode proofs port; tactic-mode may need adjustment. LeanDojo compatibility unverified; assess with a small extraction before committing to it.
 
-**Updated architecture (matcher replaces Track 1):**
-  1. **Deterministic matcher** (62.5% TRUE) — `matcher_plan.md`, currently active. Pure symbolic computation on parse trees; no embeddings, no learned model. Exact correctness by construction.
+**Updated architecture (matcher replaces Track 1 for the competition track):**
+  1. **Deterministic matcher** (62.5% TRUE) — `archive/matcher_plan.md`, complete. Pure symbolic computation on parse trees; no embeddings, no learned model. Exact correctness by construction. Outputs at `outputs/analyses/matcher/` + the 49,586-row `data/processed/proof_corpus/matcher_proofs.parquet`.
   2. Short tactic-sequence generator (15% TRUE — rewrite chains) — v1.0 embeddings condition this; still a learned model.
   3. Upstream-tool delegation (22% TRUE — Vampire / Egg) — wrap, don't learn.
   + Brute-force FALSE counterexample search over small Fin n magmas.
 
-The v1.0 embeddings have **no role in the variable-substitution category** after the matcher subsumes it. They remain relevant for Track 2 (rewrite chains, where intermediate states are equations the JEPA encoder handles natively) and for any future research decoder.
+**Research track (parallel to the competition cascade):** `proof_decoder_plan.md`. Train an autoregressive decoder on the matcher's 49,586 verified proofs to test the research question — do the JEPA embeddings encode the proof witness even though they were trained only on TRUE/FALSE? Pure embeddings-only conditioning; equation-level train/test split; nested metric stack; random-embedding control. The decoder is not the competition path (the matcher already solves this category exactly) — its value is the scientific claim and the eventual extension to rewrite chains where no deterministic shortcut exists.
+
+The v1.0 embeddings have **no competition-track role in the variable-substitution category** after the matcher subsumes it. They are central to the research-track decoder (phase 1) and to Track 2 of the competition cascade (rewrite chains, where intermediate states are equations the JEPA encoder handles natively).
 
 Numbers convention: all `bal_acc` figures in this document are full-corpus re-evaluations from `outputs/runs/<name>/failure_summary.json` (`scripts/save_predictions.py` on all 22M pairs, threshold calibrated on a 1M-sample). The per-epoch monitor values in `per_epoch_eval.csv` differ by ~0.0002–0.0004 from val-batch subsampling — use the former for cross-run comparison, the latter for per-epoch trajectory analysis.
 

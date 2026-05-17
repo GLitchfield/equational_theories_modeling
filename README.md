@@ -7,7 +7,11 @@ The **JEPA training phase** and **proof-corpus survey phase** are both complete.
 1. **v1.0 embeddings** at [outputs/embeddings/v1.0/](outputs/embeddings/v1.0/) — frozen 768-dim equation embeddings; see [`MODEL_CARD.md`](outputs/embeddings/v1.0/MODEL_CARD.md).
 2. **Proof-corpus characterization** at [outputs/analyses/proof_survey/README.md](outputs/analyses/proof_survey/README.md) — surveyed the ETP's 10,676 explicit-implication proofs and 1,698 facts entries, ending with a three-track architecture recommendation for the proof generator.
 
-**Current active plan:** [matcher_plan.md](matcher_plan.md) — a deterministic first-order matcher for the variable-substitution category (62.5% of TRUE proofs). Replaces Track 1 from the survey's architecture recommendation: the matcher solves that category by pure symbolic computation, with exact correctness and zero embeddings. All prior plans (both completed phases) are archived in [archive/](archive/).
+**Current active plan:** [proof_decoder_plan.md](proof_decoder_plan.md) — phase 1 of the research decoder: train an autoregressive decoder on the matcher's 49,586 verified proofs to test whether the JEPA embeddings encode the proof witness (σ), not just TRUE/FALSE.
+
+The deterministic matcher (the competition-track solution for the variable-substitution category, 59.8% directly-proved coverage with zero false positives) is **complete and archived**. The decoder is the research-track companion — same proof category, different question.
+
+All prior plans are archived in [archive/](archive/).
 
 ## v1.0 embeddings at a glance
 

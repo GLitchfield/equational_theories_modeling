@@ -1,6 +1,56 @@
 # Changelog
 
-Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `matcher_plan.md`; prior plans are archived.
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `proof_decoder_plan.md`; prior plans are archived.
+
+---
+
+## 2026-05-17 — Matcher wrapped; proof_decoder_plan is the new active plan
+
+The deterministic matcher is complete. Coverage: 59.8% of the 10,658
+directly-proved implications (6,374), 0.607% of all 8,173,585 TRUE
+pairs (49,586), and **0 / 13,855,357 false positives** — the
+correctness gate held at full scale. Wall clock: 58.8 s on a single
+core in pure Python. Outputs at `outputs/analyses/matcher/` and the
+49,586-row `data/processed/proof_corpus/matcher_proofs.parquet`.
+
+`matcher_plan.md` archived. `proof_decoder_plan.md` is now active —
+phase 1 of the research decoder, targeting exactly the matcher's
+49,586 verified proofs. The research question: do the JEPA
+embeddings encode the proof witness (σ), or just TRUE/FALSE?
+
+Seven methodology resolutions locked into the decoder plan before
+implementation. Most consequential:
+
+  - 16-token phase 1 vocab (13 proof tokens + 3 special). Drops
+    `intro`, `G`, `_` — those are judge-preamble tokens the decoder
+    never emits.
+  - Pure embeddings-only conditioning. No explicit arity input, even
+    as a "safety belt" — probing already showed arity is linearly
+    decodable from the embedding at ~99%.
+  - Nested metric stack: parse rate -> arity-correct rate ->
+    σ-exact-match. Does the failure-attribution work that an
+    explicit arity input would do, without compromising the
+    embeddings-only claim.
+  - Equation-level (not pair-level) train/test split, seed 42. With
+    only 4,694 equations and 49,586 pairs, a random pair split would
+    leak nearly every test equation into training and let the
+    decoder memorize per-equation features. The research question
+    requires testing on equations the decoder didn't train on.
+  - Random-embedding control with seed 42 — frozen random vectors
+    replace the JEPA embeddings, identical decoder. The control
+    bounds how much of accuracy is dataset-regularity vs embedding-
+    geometry.
+  - Phase 2 vocab pre-tokenization done as part of phase 1 setup.
+
+The decoder is the RESEARCH track, parallel to the competition
+cascade (matcher → tactic-sequence generator → tool delegation +
+FALSE search). The matcher already solves this category exactly;
+the decoder's value is the scientific claim and the eventual
+extension (phase 2) to rewrite chains where no deterministic
+shortcut exists.
+
+CLAUDE.md and README.md updated to reflect the new active plan
+(Rule C).
 
 ---
 
