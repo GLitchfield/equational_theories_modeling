@@ -1,0 +1,195 @@
+{
+  "lean_root": "/home/gavin/git/equational_theories/equational_theories",
+  "n_implication_theorems_extracted": 10676,
+  "category_distribution": {
+    "a_variable_substitution": 6567,
+    "c_rewrite_chain": 1636,
+    "e_vampire_superposition": 1507,
+    "e_egg_combinator": 796,
+    "a_trivial_rfl": 57,
+    "a_dot_fill": 54,
+    "e_complex_construction": 45,
+    "b_hypothesis_composition": 14
+  },
+  "syn_mode_distribution": {
+    "term": 7343,
+    "tactic": 3333
+  },
+  "category_x_syn_mode": {
+    "a_dot_fill|term": 54,
+    "a_trivial_rfl|tactic": 57,
+    "a_variable_substitution|tactic": 261,
+    "a_variable_substitution|term": 6306,
+    "b_hypothesis_composition|term": 14,
+    "c_rewrite_chain|tactic": 1507,
+    "c_rewrite_chain|term": 129,
+    "e_complex_construction|tactic": 1,
+    "e_complex_construction|term": 44,
+    "e_egg_combinator|term": 796,
+    "e_vampire_superposition|tactic": 1507
+  },
+  "by_e2_spine": {
+    "a_dot_fill": {
+      "family_c": 37,
+      "left": 9,
+      "mixed": 3,
+      "no_lhs_var_in_rhs": 2,
+      "right": 1,
+      "trivial": 0
+    },
+    "a_trivial_rfl": {
+      "family_c": 0,
+      "left": 0,
+      "mixed": 0,
+      "no_lhs_var_in_rhs": 0,
+      "right": 0,
+      "trivial": 57
+    },
+    "a_variable_substitution": {
+      "family_c": 2550,
+      "left": 1626,
+      "mixed": 1371,
+      "no_lhs_var_in_rhs": 824,
+      "right": 196,
+      "trivial": 0
+    },
+    "b_hypothesis_composition": {
+      "family_c": 9,
+      "left": 2,
+      "mixed": 2,
+      "no_lhs_var_in_rhs": 0,
+      "right": 1,
+      "trivial": 0
+    },
+    "c_rewrite_chain": {
+      "family_c": 995,
+      "left": 57,
+      "mixed": 99,
+      "no_lhs_var_in_rhs": 478,
+      "right": 7,
+      "trivial": 0
+    },
+    "e_complex_construction": {
+      "family_c": 14,
+      "left": 3,
+      "mixed": 2,
+      "no_lhs_var_in_rhs": 17,
+      "right": 3,
+      "trivial": 0
+    },
+    "e_egg_combinator": {
+      "family_c": 257,
+      "left": 159,
+      "mixed": 200,
+      "no_lhs_var_in_rhs": 101,
+      "right": 79,
+      "trivial": 0
+    },
+    "e_vampire_superposition": {
+      "family_c": 435,
+      "left": 562,
+      "mixed": 395,
+      "no_lhs_var_in_rhs": 1,
+      "right": 114,
+      "trivial": 0
+    }
+  },
+  "top_20_variable_substitution_shapes": [
+    [
+      "x y x",
+      705
+    ],
+    [
+      "x y y",
+      662
+    ],
+    [
+      "x x y",
+      646
+    ],
+    [
+      "x x",
+      618
+    ],
+    [
+      "x y z z",
+      589
+    ],
+    [
+      "x y z y",
+      490
+    ],
+    [
+      "x y y z",
+      430
+    ],
+    [
+      "x y x z",
+      418
+    ],
+    [
+      "x y z x",
+      324
+    ],
+    [
+      "<all>",
+      261
+    ],
+    [
+      "x x y z",
+      198
+    ],
+    [
+      "x y z w z",
+      163
+    ],
+    [
+      "x y z w w",
+      151
+    ],
+    [
+      "x y z w y",
+      138
+    ],
+    [
+      "x y z y w",
+      133
+    ],
+    [
+      "x y z z w",
+      120
+    ],
+    [
+      "x y z x w",
+      109
+    ],
+    [
+      "x y x z w",
+      95
+    ],
+    [
+      "x y y z w",
+      79
+    ],
+    [
+      "x y z w x",
+      59
+    ]
+  ],
+  "top_hypothesis_identifiers_in_var_subst": {
+    "h": 6567
+  },
+  "headline": {
+    "fraction_variable_substitution": 0.6151180217309854,
+    "fraction_trivial_rfl": 0.005339078306481828,
+    "fraction_dot_fill": 0.005058074185088048,
+    "fraction_a_combined": 0.6255151742225553,
+    "fraction_hypothesis_composition": 0.0013113525665043087,
+    "fraction_rewrite_chain": 0.15324091420007493,
+    "fraction_automation_close": 0.0,
+    "fraction_complex_construction": 0.004215061820906706,
+    "fraction_vampire_superposition": 0.14115773698014236,
+    "fraction_egg_combinator": 0.07455976020981642,
+    "fraction_e_combined": 0.2199325590108655
+  }
+}
