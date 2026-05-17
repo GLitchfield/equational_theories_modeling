@@ -4,6 +4,23 @@ Deviations from the active plan and other notable project decisions, in reverse-
 
 ---
 
+## 2026-05-17 — matcher plan: reuse src/data/parser.py instead of writing a standalone parser
+
+The original Methodology Resolution 2 in matcher_plan.md called for a standalone matcher-specific parser, on the premise that the JEPA-era parser canonicalizes variables to `v0/v1/...` and would lose the original names the matcher needs for λ-binding.
+
+On re-reading `src/data/parser.py`, that premise was wrong:
+`parse_equation(text)` returns `Equation(lhs, rhs)` with raw
+`Var(name)` dataclasses preserving the original variable names.
+Variable canonicalization happens later in a separate function
+(`canonical_var_ids`) that the GNN calls; the matcher won't call
+it. So the existing parser returns exactly what the matcher needs.
+
+Plan updated to reuse `src/data/parser.py` directly. Task 17 (the
+standalone parser task) is consequently a no-op — collapsing it
+into Phase 2's matcher-algorithm import.
+
+---
+
 ## 2026-05-17 — Architecture update: matcher replaces Track 1 of the survey's three-track recommendation
 
 The proof-corpus survey concluded with a three-track architecture

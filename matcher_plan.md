@@ -30,12 +30,19 @@ canonical record.
    v1.0 embeddings have no role in the variable-substitution
    category. They remain relevant for the tactic-sequence generator
    (Track 2) and any future research decoder.
-2. **Standalone matcher-specific parser.** The JEPA-era parser at
-   `src/data/parser.py` canonicalizes variables to `v0, v1, ...`
-   for the GNN's node features; the matcher needs the original
-   names (`x, y, z, w, u, v`) for the λ-binding in the emitted
-   proof. Write a small standalone parser (~50 lines) rather than
-   entangle with the JEPA parser.
+2. **Reuse `src/data/parser.py`.** (Revised 2026-05-17.) The
+   original intent was a standalone matcher-parser to avoid
+   "JEPA-era variable canonicalization." On re-reading
+   `src/data/parser.py`, that premise was inaccurate: the parser's
+   `parse_equation(text)` returns raw `Equation(lhs, rhs)` with
+   `Var(name)` dataclasses preserving the original variable names
+   (`x, y, z, w, u, v`). The canonicalization the original
+   resolution was concerned about happens in a separate downstream
+   function (`canonical_var_ids`) that the GNN calls but the
+   matcher won't. So the existing parser returns exactly what the
+   matcher needs. Reuse it (`from src.data.parser import
+   parse_equation, Var, Op`); skip writing a redundant standalone.
+   The existing parser has 27 unit tests already.
 3. **False-positive check runs on the FULL FALSE corpus** (all
    13,855,357 FALSE pairs in `data/processed/implication_pairs.parquet`),
    not a sample. Matching is O(tree size) ≈ 1µs per pair, so this
@@ -237,7 +244,7 @@ Fixed-length-6 padded substitution per Methodology Resolution 4: max variable co
 
 ## Notes for Claude Code
 
-- Write a **standalone matcher-specific parser** (Methodology Resolution 2). Don't reuse `src/data/parser.py` — that one canonicalizes variables to `v0, v1, ...` for the GNN; the matcher needs the original names for λ-binding. A ~50-line parser keeping the original `x, y, z, w, u, v` names is what you want.
+- **Reuse `src/data/parser.py`** (Methodology Resolution 2 as revised 2026-05-17). Its `parse_equation(text)` returns `Equation(lhs, rhs)` with `Var(name)` preserving the original variable names. Skip writing a standalone parser.
 - The matcher needs **NO embeddings, NO model, NO GPU**. It is pure symbolic code. Keep it that way — it's the deterministic baseline.
 - **2 orientations, not 4** (Methodology Resolution 6). Direct: `(lhs1→lhs2, rhs1→rhs2)`. Flipped: `(lhs1→rhs2, rhs1→lhs2)` with `.symm` on the resulting term.
 - **Pin the Stage 2 TRUE submission format BEFORE mass emission** (Methodology Resolution 5). Read `examples/solo/demos/baseline/solver.py` and the JudgeMagma module; submit 5-10 test proofs through the live judge to confirm. The plan's `intro h` example is probably wrong — `h` is likely a theorem parameter already in scope.
