@@ -7,11 +7,9 @@ The **JEPA training phase** and **proof-corpus survey phase** are both complete.
 1. **v1.0 embeddings** at [outputs/embeddings/v1.0/](outputs/embeddings/v1.0/) — frozen 768-dim equation embeddings; see [`MODEL_CARD.md`](outputs/embeddings/v1.0/MODEL_CARD.md).
 2. **Proof-corpus characterization** at [outputs/analyses/proof_survey/README.md](outputs/analyses/proof_survey/README.md) — surveyed the ETP's 10,676 explicit-implication proofs and 1,698 facts entries, ending with a three-track architecture recommendation for the proof generator.
 
-**Current active plan:** [proof_decoder_plan.md](proof_decoder_plan.md) — phase 1 of the research decoder: train an autoregressive decoder on the matcher's 49,586 verified proofs to test whether the JEPA embeddings encode the proof witness (σ), not just TRUE/FALSE.
+**Current active plan:** [rewrite_chain_study_plan.md](rewrite_chain_study_plan.md) — deep characterization of the 1,636 rewrite-chain proofs to determine whether the category is deterministically search-solvable (parallels the matcher's outcome for variable substitution) or genuinely needs a learned model. Build a bidirectional rewrite engine with first-order matching; the coverage-vs-depth curve and the within-{E1} rule-set fraction are the two numbers the prover-architecture decision turns on.
 
-The deterministic matcher (the competition-track solution for the variable-substitution category, 59.8% directly-proved coverage with zero false positives) is **complete and archived**. The decoder is the research-track companion — same proof category, different question.
-
-All prior plans are archived in [archive/](archive/).
+The deterministic matcher and the phase-1 proof decoder (both for the variable-substitution category) are complete and archived. The matcher gives the competition-track solution at 59.8% directly-proved coverage with zero false positives. The decoder is the research-track companion — established that the JEPA v1.0 embeddings preserve the proof witness (96.32% σ-exact-match on both-novel test, vs 5.6% random-embedding control). All prior plans are archived in [archive/](archive/).
 
 ## v1.0 embeddings at a glance
 

@@ -1,6 +1,6 @@
 # CLAUDE.md — Equational Implication
 
-The active plan is `proof_decoder_plan.md` — phase 1 of the research decoder: train an autoregressive decoder on the matcher's 49,586 verified proofs to test whether the JEPA embeddings encode the proof witness (σ), not just TRUE/FALSE. Pure embeddings-only conditioning; equation-level train/test split; nested metric stack (parse rate → arity-correct → σ-exact-match); random-embedding control. The previous matcher plan is complete and archived.
+The active plan is `rewrite_chain_study_plan.md` — a deep characterization of the 1,636 rewrite-chain proofs (the survey's `c_rewrite_chain` category). The decisive question: is this category deterministically search-solvable (like the variable-substitution category turned out to be, against the survey's prediction), or does it genuinely need a learned model? Build a bidirectional rewrite engine with first-order matching, measure coverage-vs-depth, and let the answer pick the prover architecture. Previous plans (proof_decoder phase 1, matcher, proof corpus survey, JEPA training) all complete and archived.
 
 The two completed phases left two durable artifacts:
 
@@ -32,6 +32,7 @@ All JEPA plans are in `archive/`. In rough order:
 - `archive/mlp_classifier_plan.md` — frozen-embedding MLP head; validated the v1.0 embeddings (0.9996 holdout, 91.37% vacuity).
 - `archive/proof_corpus_survey_plan.md` — surveyed the ETP Lean proofs to inform the generator architecture. Output: `outputs/analyses/proof_survey/README.md` with the three-track recommendation.
 - `archive/matcher_plan.md` — deterministic first-order matcher; solves Track 1 with 59.8% coverage of the directly-proved set, 0 false positives. Output: `outputs/analyses/matcher/README.md`, 49,586-row proof dataset.
+- `archive/proof_decoder_plan.md` — phase 1 research decoder; both-novel σ-exact 96.32% with random-embedding control at 5.6% (+90.7pp gap). Established that JEPA embeddings preserve the proof witness for the variable-substitution category. Output: `outputs/runs/proof_decoder_*/`, full writeup in `outputs/runs/proof_decoder_jepa/diagnostics_report.md`.
 
 Cross-run failure-overlap analysis (8 trained models, partitioned per Rule B): `outputs/analyses/failure_overlap/`. Reproducer: `scripts/analyze_failure_overlap.py`. Headline: a stable set of 32,496 always-wrong-trained pairs (99.99% TRUE), dominated by the "TRUE-by-vacuity" pattern; an MLP on the v1.0 embeddings recovers 91% of them.
 
@@ -48,6 +49,38 @@ Cross-run failure-overlap analysis (8 trained models, partitioned per Rule B): `
 - Reproducer: `scripts/run_matcher.py`; module: `src/matcher/matcher.py`; 27 unit tests.
 - Methodology note: 59.8% vs the survey's 62.5% prediction is a methodology difference (survey counted proofs whose source body LOOKS like arg-permutation by regex; matcher counts equations where E2 IS a substitution instance of E1). Worth ~2.7pp; not a bug.
 - Stage 2 submission format pinned against `tests/fixtures/answers/accepted_true_basic.answer.json` in the Stage 2 repo: `import JudgeProblem\n\ndef submission : Goal := by\n  intro G _ h\n  <body>`. Live-judge verification deferred to when a built Stage 2 env (Lean 4.30.0-rc2) is available.
+
+## Proof decoder (phase 1, research track) — complete
+
+`archive/proof_decoder_plan.md`. Trained an autoregressive decoder
+on the matcher's 49,586 verified proofs to test whether the JEPA v1.0
+embeddings encode the proof witness (σ) despite training on TRUE/FALSE
+only. Pure embeddings-only conditioning, equation-level split, nested
+metric stack (parse → arity-correct → σ-exact), random-embedding
+control, linear probe for mechanism localization.
+
+Headline result: **both-novel σ-exact 96.32%** (JEPA decoder) vs **5.6%**
+(random-embedding control) vs **0.0%** (majority baseline). A 90.7pp
+gap that decisively answers the research question YES — the
+contrastive embedding preserves the proof witness.
+
+Mechanism reframing (per the preservation-vs-discovery memory): σ is
+a deterministic function of the two parse trees (it's what the matcher
+computes structurally), so the finding isn't "contrastive learning
+mystically learned theorem-proving" — it's "the contrastive loss
+preserved enough structure that σ remains recoverable from
+`(z_e1, z_e2)`." Linear probe localizes the work cleanly: per-position
+σ accuracy is ~88-93% linearly accessible (positions approximately
+independent in linear space, +1pp deltas vs independence inversion for
+arities 3-5), so the decoder's 40pp lift over linear is specifically
+about modeling inter-position consistency constraints — the
+structural-walk invariants the matcher exploits.
+
+Outputs at `outputs/runs/proof_decoder_jepa/`,
+`outputs/runs/proof_decoder_random_ctl/`,
+`outputs/runs/proof_decoder_linear_probe/`,
+`outputs/runs/proof_decoder_majority/`. Full writeup in
+`outputs/runs/proof_decoder_jepa/diagnostics_report.md`.
 
 ## Proof-corpus survey recap
 

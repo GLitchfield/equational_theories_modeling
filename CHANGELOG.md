@@ -1,6 +1,79 @@
 # Changelog
 
-Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `proof_decoder_plan.md`; prior plans are archived.
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `rewrite_chain_study_plan.md`; prior plans are archived.
+
+---
+
+## 2026-05-17 — Proof decoder phase 1 wrapped; rewrite_chain_study_plan active
+
+Phase 1 of the proof decoder is complete. The research question
+("do the JEPA embeddings encode the proof witness, not just
+TRUE/FALSE?") was answered cleanly:
+
+  Both-novel σ-exact:
+    Majority baseline         : 0.000
+    Random-embedding control  : 0.056
+    Linear probe (68K params) : 0.576
+    Transformer decoder       : 0.963   (+90.7pp vs control)
+
+Mechanism localized via the linear probe + per-position
+decomposition: σ positions are approximately linearly independent
+(per-position accuracy ≈ joint^(1/k) within ±1pp for arities 3-5),
+so the decoder's 40pp lift over linear is specifically about
+modeling inter-position consistency — the structural-walk
+invariants the matcher exploits, not per-position discriminability.
+
+Mechanism reframing (saved as a feedback memory:
+preservation_vs_discovery): σ is a deterministic function of the
+two parse trees (the matcher computes it structurally), so the
+finding is preservation, not discovery. The contrastive loss
+preserved enough of the equation structure that a downstream
+computation on that structure (σ-extraction) remains recoverable
+from `(z_e1, z_e2)`. This isn't "the model learned proofs" — it's
+"the embedding didn't destroy the structure that lets you compute
+proofs." The reframing matters because phase 2 / rewrite chains are
+genuinely different: those proofs are NOT a function of the input
+equations' structure (search-requiring, multiple valid chains),
+so phase 2 is a real second question, not a curriculum extension.
+
+`proof_decoder_plan.md` archived. `rewrite_chain_study_plan.md` is
+now active.
+
+The rewrite-chain plan parallels the matcher's: ask whether the
+category is deterministically search-solvable (as the matcher
+turned out to be for variable substitution) before assuming it
+needs a learned model. Ten methodology resolutions locked in
+before implementation. Most consequential:
+
+  - **First-order matching is a NEW function**, not a reuse of the
+    matcher's structural-match. Rewriting binds rule variables to
+    arbitrary subterms (compound included), which the matcher
+    explicitly prohibits. Implementation: a recursive walk identical
+    in shape to the matcher's, with one rule changed (pattern-var-
+    vs-anything binds instead of requiring var-vs-var). New module
+    `src/rewrite/matching.py`.
+  - **Source full bodies from normalized_proofs.parquet**'s
+    `n1_whitespace` column, NOT from true_corpus.parquet (which
+    only has `first_80` truncated).
+  - **Bidirectional iterative-deepening BFS** with per-side
+    `d_max=6` and term-size cap `max(50, 5*max(|lhs2|, |rhs2|))`,
+    both CLI-tunable for sensitivity sweeps. Bidirectional saves
+    ~10^3x for short chains.
+  - **Task 3 (intermediate-state characterization) reads from
+    Task 4's engine output** — without LeanDojo, simulating
+    rewrites IS the only way to get intermediate states in Python,
+    and the engine does that anyway.
+  - **Rule-set detection** classifies each `rw [...]` arg into
+    `{h, ← h, other_name}`. The fraction that stays within
+    `{h, ← h}` is the strongest predictor of search tractability
+    alongside the coverage curve — the two decision-driving
+    numbers.
+  - Search cost reported as **distributions** (median, p95,
+    per-depth), not means — the "90% easy at depth 2, hard 10%
+    needs depth 6+" shape is the informative picture.
+
+CLAUDE.md and README.md updated to point at the new active plan and
+add a proof-decoder recap section (Rule C).
 
 ---
 
