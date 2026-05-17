@@ -233,13 +233,47 @@ Per-arity, the gap grows monotonically with σ length:
 | 5 | 0.505 | 0.943 | 44pp |
 | 6 | 0.246 | 0.957 | 71pp |
 
-Longer substitutions need more nonlinear processing — each additional
-σ position is one more dependent choice, and the consistency
-constraints between positions (the structural-walk invariants the
-matcher exploits) compose nonlinearly across dimensions of the
-embedding. A linear classifier predicts each position independently
-of the others; the transformer can attend to its own earlier
-predictions and condition.
+### What's the source of the linear→decoder gap? Compounding, not per-position weakness
+
+To localize where the linear probe loses ground, measure each
+σ-position's individual accuracy directly and compare against the
+independence-inversion estimate `(joint_σ)^(1/k)`. If positions are
+linearly independent, measured per-position should match the
+inversion exactly.
+
+| Arity | Joint σ | Measured per-pos | Inverted (joint^(1/k)) | Δ |
+|---:|---:|---:|---:|---:|
+| 3 | 0.741 | 0.901 | 0.905 | **−0.004** |
+| 4 | 0.626 | 0.893 | 0.889 | +0.003 |
+| 5 | 0.505 | 0.882 | 0.872 | +0.010 |
+| 6 | 0.246 | 0.824 | 0.792 | +0.032 |
+
+(both-novel test split)
+
+The deltas are within ±1pp for arities 3-5. **σ positions are
+approximately linearly independent** — each one is ~88-93% accessible
+from the concat embedding alone, and the joint σ-exact-match drops
+as roughly `(per-pos)^k`. The independence story is essentially
+exact at the linear level.
+
+The lone exception is arity 6 at +3.2pp (positions positively
+correlated), but arity 6 has the smallest sample (69 both-novel
+pairs) and the lowest joint baseline (24.6%) — both effects
+maximize the room for correlation effects to surface, so the +3pp
+is suggestive at best.
+
+This sharpens the decoder's role. The transformer isn't doing more
+linear work per position; the linear probe already extracts ~90%
+of the per-position signal that's linearly there. **The 40pp gap
+is specifically about modeling the joint constraints across
+positions** — exactly the structural-walk invariants the matcher
+exploits (e.g., "if σ(a) = x then any other occurrence of `a` must
+also map to x"). A per-position classifier predicts each position
+in isolation; the transformer's self-attention can condition each
+position on its earlier predictions and on the embedding's
+joint encoding of the parse trees. That's where the nonlinear
+processing earns its keep — joint structure, not per-position
+discriminability.
 
 **Orientation alone is 99.9% linear** (linear-probe `orient_only_rate`
 on every split). Direct vs flipped is essentially one binary linear

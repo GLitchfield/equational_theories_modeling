@@ -191,7 +191,10 @@ def main(argv: list[str] | None = None) -> int:
             'orient_only_rate': float(orient_match.float().mean()),
             'joint_sigma_rate': float(joint.float().mean()),
         }
-        # Per-arity
+        # Per-arity breakdown, including per-position accuracy AND the
+        # independence-prediction `(joint)^(1/k)` so we can see how much
+        # positions are correlated (measured > inverted = positively
+        # correlated; positions share linear structure).
         per_arity: dict[int, dict] = {}
         e1_arr_split = torch.from_numpy(e1_arity_np[idx]).to(device)
         for k in range(2, 7):
@@ -199,11 +202,35 @@ def main(argv: list[str] | None = None) -> int:
             n_k = int(mask_k.sum())
             if n_k == 0:
                 continue
-            n_correct = int(joint[mask_k].sum())
+            preds_k = preds[mask_k]
+            target_k = target[mask_k]
+            sigma_match_k = sigma_match[mask_k]
+            joint_k = joint[mask_k]
+            n_correct_joint = int(joint_k.sum())
+
+            # Per-position accuracy ONLY over the actually-present positions
+            # (positions 0..k-1; positions k..5 are always sentinel and
+            # uninformative). Plus the sentinel positions' "correctness"
+            # for completeness.
+            per_pos = {}
+            for pos in range(N_POSITIONS):
+                acc = float((preds_k[:, pos] == target_k[:, pos]).float().mean())
+                per_pos[pos] = acc
+
+            # Per-position mean over the k real positions.
+            real_pos_acc = sum(per_pos[p] for p in range(k)) / k
+            # Independence-inversion estimate: (joint_sigma_rate)^(1/k).
+            joint_rate = n_correct_joint / max(n_k, 1)
+            inverted_per_pos = joint_rate ** (1.0 / k) if joint_rate > 0 else 0.0
+
             per_arity[k] = {
                 'n': n_k,
-                'correct': n_correct,
-                'joint_sigma_rate': n_correct / n_k,
+                'correct_joint': n_correct_joint,
+                'joint_sigma_rate': joint_rate,
+                'per_position_accuracy': per_pos,
+                'mean_real_position_accuracy': real_pos_acc,
+                'inverted_per_position_from_joint': inverted_per_pos,
+                'correlation_signal': real_pos_acc - inverted_per_pos,
             }
         result['per_arity'] = per_arity
         return result
@@ -242,6 +269,22 @@ def main(argv: list[str] | None = None) -> int:
             v = m['per_arity'][k]
             cells.append(f'a{k}={v["joint_sigma_rate"]:.3f}({v["n"]})')
         print(f'    {name:<18}: {"  ".join(cells)}')
+
+    print()
+    print('  Per-arity measured per-position vs joint-inversion '
+          '(positive ⇒ positions are positively correlated):')
+    for name in ('train', 'test_one_novel', 'test_both_novel'):
+        m = splits_result[name]
+        if not m.get('per_arity'):
+            continue
+        print(f'    {name}')
+        print(f'      arity   joint   measured/pos   inverted/pos   delta')
+        for k in sorted(m['per_arity']):
+            v = m['per_arity'][k]
+            print(f'      a{k}      {v["joint_sigma_rate"]:.3f}   '
+                  f'{v["mean_real_position_accuracy"]:.3f}          '
+                  f'{v["inverted_per_position_from_joint"]:.3f}          '
+                  f'{v["correlation_signal"]:+.3f}')
     return 0
 
 
