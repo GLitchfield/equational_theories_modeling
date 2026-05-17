@@ -40,11 +40,13 @@ canonical record.
    from the original 500/1,000 to sharpen tail-behavior detection.
 4. **Stratification axis for Task 3: E2's spine.** The proof's
    structure tracks what's being proved, not what's given.
-5. **Tactic-counting rule (Task 3):** split on Lean tactic separators
-   `;`, `<;>`, and newlines outside nested `by` blocks. Treat
-   combinators (`;`, `<;>`, `<;>`, etc.) as part of the preceding
-   tactic. Example: `simp [h1]; rfl` = 2 tactics. Document the rule
-   in the report.
+5. **Tactic-counting rule (Task 3, for the tactic-mode subset):**
+   split on Lean tactic separators `;`, `<;>`, and newlines outside
+   nested `by` blocks. Treat combinators (`;`, `<;>`, etc.) as part
+   of the preceding tactic. Example: `simp [h1]; rfl` = 2 tactics.
+   Document the rule in the report. (This applies only after the
+   classifier in Resolution 11 has split proofs by structure; tactic
+   count alone is not the primary classification.)
 6. **Normalization for Task 4** expands beyond just variable / equation
    references. Apply these transformations in order, documenting each:
    variable names → `v1, v2, ...`; equation references → `E1, E2, ...`;
@@ -65,6 +67,43 @@ canonical record.
    handles them.
 10. **Sampling seed: 42.** Matches the rest of the project's seeds for
     reproducibility.
+11. **Task 3 classifies proofs by SEMANTIC STRUCTURE, not surface
+    mode.** Orientation surfaced that ~69% of ETP proofs are
+    term-mode (e.g., `:= λ x y => h x y x`) and ~31% are tactic-mode
+    (`:= by ...`), but this split is largely a syntactic artifact
+    of how ETP's automation generates output, not a meaningful
+    structural distinction. A term-mode `λ x y => h x y x` and a
+    tactic-mode `by intro x y; exact h x y x` are the *same proof*
+    in different syntax.
+
+    Real classification is by what the generator would need to
+    predict:
+
+    a. **Variable substitution** — single hypothesis applied to
+       a permutation/repetition of the goal variables. Often the
+       complete proof. (`λ x y => h x y x`, `by exact fun x y => h x y x`,
+       `by intro x y; exact h x y x` all fall here.)
+    b. **Hypothesis composition** — multiple hypotheses or rewriters
+       composed (`h.symm`, `h ▸ h'`, `by rw [h]; exact h'`).
+    c. **Rewrite chain** — explicit step-by-step transformation
+       with intermediate goal states (`calc`, multi-step `rw`).
+    d. **Complex construction** — anything that requires building
+       intermediate terms, has nontrivial `have` chains, or
+       otherwise goes beyond a-c.
+
+    **Headline metric of Task 3:** the fraction of TRUE proofs in
+    category (a). If 70%+ are variable substitutions, the generator
+    for that 70% is a tiny model that predicts a short structured
+    object (which variables go where), not a sequence model.
+    Category (a) is also directly emittable for Stage 2: a term-mode
+    proof `λ args => h <perm>` wraps trivially as
+    `by exact fun args => h <perm>`, so the term-mode dominance
+    isn't a corpus/target mismatch.
+
+    Report (a-d) breakdowns for both syntactic modes separately AND
+    unified; if the structural distribution is approximately the
+    same across modes, that confirms the 69/31 split is a syntactic
+    artifact and the structural categorization is what matters.
 
 ## Data Sources
 
@@ -105,18 +144,25 @@ Report:
 
 This is the important one. Extract a sample of TRUE proofs (target **5,000**, seed=42, **stratified by E2's spine** per Methodology Resolution 4 — the proof's structure tracks what's being proved, not what's given). Spine labels come from `data/processed/equation_invariants.parquet`'s `spine_type` column: `family_c`, `mixed`, `no_lhs_var_in_rhs`, `left`, `right`, `trivial`.
 
-For each proof, classify by structure. **Tactic-counting rule** (Methodology Resolution 5): split on Lean tactic separators `;`, `<;>`, and newlines outside nested `by` blocks; combinators stay with the preceding tactic. So `simp [h1]; rfl` = 2 tactics, `· decide` = 1.
+Classification is **structural, not surface-syntactic** (Methodology Resolution 11 — the term/tactic mode split is largely a syntactic artifact of ETP's automation). For each proof, classify into one of:
 
-- **Single-tactic close**: the proof is one tactic (`simp`, `grind`, `aesop`, `decide`, etc.). No intermediate states.
-- **Short tactic sequence**: 2-5 tactics, no explicit rewrite chain.
-- **Rewrite chain**: an explicit sequence of `rw`/`calc`/substitution steps transforming one term to another. Genuine intermediate states.
-- **Other**: anything that doesn't fit.
+- **(a) Variable substitution** — the proof is a single hypothesis applied to a permutation/repetition of goal variables. Often the complete proof. Examples (semantically equivalent):
+  - `:= λ x y => h x y x` (term mode)
+  - `:= by exact fun x y => h x y x` (tactic mode, exact-wrapped term)
+  - `:= by intro x y; exact h x y x` (tactic mode, intro + exact)
+- **(b) Hypothesis composition** — multiple hypotheses, dot-accessors (`h.symm`), rewriter combinators (`h ▸ h'`), or rewrite-followed-by-exact patterns. Still a single "construct-the-term" idea, just compositional.
+- **(c) Rewrite chain** — explicit step-by-step transformation with intermediate goal states (`calc` blocks, multi-step `rw`, manual term-level rewriting).
+- **(d) Complex construction** — anything that requires `have` chains, intermediate terms, or otherwise goes beyond a-c.
+
+For tactic-mode proofs, use the tactic-counting rule from Methodology Resolution 5 to identify chain structure inside (c) and (d). For term-mode proofs in (a), record the variable-permutation shape (e.g., `(x, y, x)` for `h x y x`) to support Task 4's clustering.
 
 Report:
-- The distribution across these four categories (overall and per E2 spine)
-- For rewrite chains: distribution of chain length (number of steps)
-- For single-tactic closes: which tactics, and how often each
-- Proof length distribution (in tokens) across the whole TRUE corpus
+- **Headline: fraction of TRUE proofs in category (a)** — the architecture-deciding number. If 70%+ are variable substitutions, the generator for that majority is a tiny structured-output model (predict which variables go where), not a sequence model.
+- Per-category breakdown (a-d), overall and per E2 spine.
+- **Cross-tab: structural category × syntactic mode.** If the (a-d) distribution is roughly the same across term-mode and tactic-mode subsets, that confirms the 69/31 mode split is syntactic and the structural categorization is what matters.
+- For (b)/(c)/(d): proof length distribution in tokens; for (c) rewrite chains, length of chain in steps.
+- For (a) variable substitutions: distribution of permutation shapes (how many distinct shapes; how many proofs each shape covers).
+- For tactic-mode proofs of all kinds: which tactics, and how often each.
 
 ### Task 4: Proof clustering
 
