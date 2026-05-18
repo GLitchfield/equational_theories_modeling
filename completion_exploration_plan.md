@@ -52,14 +52,33 @@ to reflect them; this section is the canonical record.
    that data rather than re-running. Question: when completion
    decides E1 ⊭ E2, does the completed system yield a finite
    counter-model directly, or only an infinite one?
-7. **Cross-method consistency: record it.** If Phase 0 shows that
-   the variable-disjoint equations overlap heavily with the
-   family_c "weak" laws (the TRUE-by-vacuity failure mode for the
-   JEPA distance metric — see `outputs/analyses/failure_overlap/`),
-   that is a finding in its own right: the same equations resist
-   contrastive-embedding training AND rewriting-based decision
-   procedures. Worth flagging in the Phase 0 output and again in
-   the synthesis report.
+7. **Cross-method consistency: symmetry is the shared hard core.**
+   Phase 0 (run 2026-05-17) revealed an unexpected pattern: the
+   3.5% of equations with `Vars(lhs) = Vars(rhs)` are 6.6×
+   over-represented as consequents in always-wrong-trained pairs.
+   The unifying cause is symmetry — equations whose two sides
+   share the same variable set and mirror each other structurally
+   are simultaneously (a) weakly constraining as consequents
+   (vacuity-prone, defeats JEPA distance) and (b) order-
+   unorientable (neither side is greater under any reduction order,
+   defeats plain KB). One structural property, two methods, same
+   cause. **This elevates Phase 4 (ordered completion) from
+   fallback to headline phase**: ordered completion is the joint
+   recovery path for the most-enriched hard cross-method cluster.
+   The variable-disjoint subset (35% of corpus) is a *different*
+   hard core — structurally outside ALL rewriting methods, but
+   tractable for the JEPA distance — and remains a separate concern.
+8. **Phase 3 pair-coverage prediction.** The 65% equation-
+   completion ceiling does NOT translate to 65% pair-coverage.
+   Variable-disjoint equations are *strong hypotheses* — they
+   collapse the magma hard and imply enormous numbers of other
+   equations. Excluding them as rule sources excludes a
+   disproportionately large share of TRUE pairs. Phase 3
+   pair-coverage will likely come in noticeably below 65%.
+   That's expected structure, not a letdown; the goal of the
+   exploration is to map exactly how far one uniform symbolic
+   method reaches and characterize what it can't touch, not to
+   solve everything.
 
 The two numbers the exploration's bottom line turns on:
 **Phase 3 pair-level coverage** (TRUE+FALSE decided by plain
@@ -140,14 +159,16 @@ Report:
 - **Coverage**: what fraction of all 22M pairs have a completing E1, and are therefore decided — TRUE and FALSE — by normalization alone.
 - The TRUE/FALSE split of that coverage. The FALSE side is the new capability — the current engine has no refutation primitive.
 
-### Phase 4: Ordered (unfailing) completion for the non-completing equations
+### Phase 4: Ordered (unfailing) completion — the joint recovery path
 
-For equations that failed to orient under plain KB completion, implement ordered completion — ordered rewriting that applies an equation only in instances that decrease under the reduction order, so unorientable equations (commutativity-like) still yield a decision procedure.
+**Elevated from fallback to headline phase by Phase 0** (per Methodology Resolution 7). For equations that failed to orient under plain KB completion (the symmetric `both`-direction set — `Vars(lhs) = Vars(rhs)` with mirrored structure), implement ordered completion — ordered rewriting that applies an equation only in instances that decrease under the reduction order.
+
+This phase recovers the cluster that simultaneously defeats the JEPA distance metric (6.6× over-represented as always-wrong consequents) and plain KB completion. If ordered completion works, we have a symbolic method that cleanly recovers what contrastive embedding training couldn't — a finding worth foregrounding in the synthesis report regardless of the absolute coverage numbers.
 
 Report:
-- The additional equations that become decision-procedure-backed under ordered completion.
-- The new total coverage of the 22M-pair problem.
-- The residual — equations where even ordered completion does not terminate or decide.
+- The additional equations that become decision-procedure-backed under ordered completion. **Cross-check against the always-wrong-trained set**: of the 6.6×-enriched consequent cluster, what fraction does ordered completion handle?
+- The new total pair-level coverage of the 22M-pair problem.
+- The residual — equations where even ordered completion does not terminate or decide. The variable-disjoint subset (35% of corpus) is excluded a priori per Phase 0.
 
 ### Phase 5: Finite counterexample extraction
 
@@ -165,9 +186,11 @@ This report stands in the same relation to the project that the proof survey did
 
 ## Decision points
 
-- **Phase 2 completion rate** decides whether plain completion is a major method or a minor one. High → the project's center of gravity shifts to symbolic completion. Low → ordered completion (Phase 4) carries the weight, or the method is partial.
-- **Phase 3 coverage** is the first real measurement of how much of the *whole* problem (not just TRUE, not just one category) a single uniform method handles.
-- **Phase 5** decides whether completion is a competition asset for the FALSE side or only a theoretical decision procedure.
+- **Phase 0 (done):** plain-KB completion has a hard ceiling at 64.7% of equations as rule sources; the 35.3% variable-disjoint set is structurally excluded. Symmetric `both`-direction equations (3.5% of corpus) are the JEPA-distance hard cluster and also plain-KB unorientable — ordered completion is the joint recovery path.
+- **Phase 2 completion rate** is the input to Phase 3, not the headline. Plain KB attempts up to ~65% of equations; how many actually finish (vs hit the budget) is what Phase 2 measures.
+- **Phase 3 pair-level coverage** is the first real measurement of how much of the *whole* problem one uniform method handles. Expectation: below 65% (variable-disjoint equations are implication-dense, so excluding them as rule sources excludes a disproportionate share of TRUE pairs).
+- **Phase 4** is now a headline phase: does ordered completion recover the symmetric cross-method-hard cluster?
+- **Phase 5** is an exploration question (finite vs infinite counter-models from completed systems); not a competition deliverable.
 
 ## Notes for Claude Code
 
