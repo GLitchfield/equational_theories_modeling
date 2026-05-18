@@ -1,0 +1,64 @@
+{
+  "config": {
+    "n_equations": 4694,
+    "equations_path": "data/raw/etp/equations.txt"
+  },
+  "classification_counts": {
+    "both": 164,
+    "incomparable": 1656,
+    "rhs_to_lhs": 2833,
+    "lhs_to_rhs": 41
+  },
+  "classification_fractions": {
+    "both": 0.03493821900298253,
+    "incomparable": 0.3527907967618236,
+    "rhs_to_lhs": 0.6035364294844482,
+    "lhs_to_rhs": 0.008734554750745633
+  },
+  "incomparable_sub_counts": {
+    "disjoint": 1044,
+    "overlapping": 612
+  },
+  "family_classification_counts": {
+    "family_c": 1555,
+    "family_var": 3139
+  },
+  "family_vs_classification": {
+    "family_var::both": 23,
+    "family_var::incomparable": 816,
+    "family_var::rhs_to_lhs": 2300,
+    "family_c::rhs_to_lhs": 533,
+    "family_c::incomparable": 840,
+    "family_c::both": 141,
+    "family_c::lhs_to_rhs": 41
+  },
+  "always_wrong_trained_cross_method": {
+    "n_pairs": 32496,
+    "eq1_role_classification_counts": {
+      "both": 283,
+      "rhs_to_lhs": 27719,
+      "incomparable": 4172,
+      "lhs_to_rhs": 322
+    },
+    "eq2_role_classification_counts": {
+      "both": 7491,
+      "rhs_to_lhs": 18451,
+      "incomparable": 6322,
+      "lhs_to_rhs": 232
+    },
+    "unique_eq1_classification_counts": {
+      "both": 113,
+      "rhs_to_lhs": 2003,
+      "incomparable": 811,
+      "lhs_to_rhs": 41
+    },
+    "unique_eq2_classification_counts": {
+      "both": 151,
+      "rhs_to_lhs": 1183,
+      "incomparable": 220,
+      "lhs_to_rhs": 27
+    },
+    "n_unique_eq1": 2968,
+    "n_unique_eq2": 1581
+  }
+}
