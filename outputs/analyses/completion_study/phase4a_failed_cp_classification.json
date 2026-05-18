@@ -1,0 +1,28 @@
+{
+  "config": {
+    "n_failed_orient_derived_equations": 1581,
+    "max_rules": 50,
+    "max_critical_pairs": 500,
+    "max_term_size": 30,
+    "wall_seconds": 2.0
+  },
+  "classification_counts": {
+    "WRONG_DIR": 251,
+    "INCOMPARABLE": 1247,
+    "SYMMETRIC": 83
+  },
+  "classification_fractions": {
+    "WRONG_DIR": 0.15876027830487033,
+    "INCOMPARABLE": 0.788741302972802,
+    "SYMMETRIC": 0.05249841872232764
+  },
+  "phase4_recovery_estimate": {
+    "description": "Upper bound on Phase 4 ordered-completion recovery of the FAILED_ORIENT_DERIVED bucket. SYMMETRIC are fully recoverable abstractly (per-instance orientation succeeds); WRONG_DIR are partially recoverable (some instances orient OK); INCOMPARABLE are not recoverable.",
+    "symmetric_count": 83,
+    "wrong_dir_count": 251,
+    "incomparable_count": 1247,
+    "upper_bound_recoverable": 334,
+    "upper_bound_unrecoverable": 1247
+  },
+  "wall_seconds": 1.3771445751190186
+}
