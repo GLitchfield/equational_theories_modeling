@@ -2,12 +2,13 @@
 
 Learn the geometric structure of equational implication over magmas. The 22M Lean-verified implication pairs from the Equational Theories Project drove training of a JEPA over equation parse trees; the result is a per-equation embedding that captures both algebraic structure and the harder "TRUE-by-vacuity" pattern (equations implied tautologically by every more-specific axiom).
 
-The **JEPA training phase** and **proof-corpus survey phase** are both complete. Their two durable deliverables:
+The **JEPA training phase**, **proof-corpus survey phase**, and **rewrite-chain study** are all complete. Three durable deliverables:
 
 1. **v1.0 embeddings** at [outputs/embeddings/v1.0/](outputs/embeddings/v1.0/) — frozen 768-dim equation embeddings; see [`MODEL_CARD.md`](outputs/embeddings/v1.0/MODEL_CARD.md).
 2. **Proof-corpus characterization** at [outputs/analyses/proof_survey/README.md](outputs/analyses/proof_survey/README.md) — surveyed the ETP's 10,676 explicit-implication proofs and 1,698 facts entries, ending with a three-track architecture recommendation for the proof generator.
+3. **Rewrite-chain category decision** at [outputs/analyses/rewrite_chain_study/synthesis_report.md](outputs/analyses/rewrite_chain_study/synthesis_report.md) — 83.13% deterministic-search coverage at d_max=6, 99.7% rule set within {h, ← h}, 87% unimodal. Recommendation: neural-guided search targeting the 17% hard tail (after trying d_max=8/10 and tighter size caps first). Engine in `src/rewrite/`; plan archived at [archive/rewrite_chain_study_plan.md](archive/rewrite_chain_study_plan.md).
 
-**Current active plan:** [rewrite_chain_study_plan.md](rewrite_chain_study_plan.md) — deep characterization of the 1,636 rewrite-chain proofs to determine whether the category is deterministically search-solvable (parallels the matcher's outcome for variable substitution) or genuinely needs a learned model. Build a bidirectional rewrite engine with first-order matching; the coverage-vs-depth curve and the within-{E1} rule-set fraction are the two numbers the prover-architecture decision turns on.
+**No active plan.** The rewrite-chain study is the most recent piece. The next plan would build the neural-guided rewrite engine that targets the hard tail.
 
 The deterministic matcher and the phase-1 proof decoder (both for the variable-substitution category) are complete and archived. The matcher gives the competition-track solution at 59.8% directly-proved coverage with zero false positives. The decoder is the research-track companion — established that the JEPA v1.0 embeddings preserve the proof witness (96.32% σ-exact-match on both-novel test, vs 5.6% random-embedding control). All prior plans are archived in [archive/](archive/).
 

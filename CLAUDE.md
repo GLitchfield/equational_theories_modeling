@@ -1,6 +1,8 @@
 # CLAUDE.md — Equational Implication
 
-The active plan is `rewrite_chain_study_plan.md` — a deep characterization of the 1,636 rewrite-chain proofs (the survey's `c_rewrite_chain` category). The decisive question: is this category deterministically search-solvable (like the variable-substitution category turned out to be, against the survey's prediction), or does it genuinely need a learned model? Build a bidirectional rewrite engine with first-order matching, measure coverage-vs-depth, and let the answer pick the prover architecture. Previous plans (proof_decoder phase 1, matcher, proof corpus survey, JEPA training) all complete and archived.
+**No active plan.** The rewrite-chain study (`rewrite_chain_study_plan.md`) is **complete**, delivering the third durable artifact: the c_rewrite_chain category's prover-architecture decision. Output: `outputs/analyses/rewrite_chain_study/synthesis_report.md`. Headline: 83.13% deterministic-search coverage at d_max=6, 99.7% rule set within {h, ← h}, 87% unimodal — recommendation is neural-guided search where the model targets the 17% hard tail (split between states-budget blow-up and depth-limited frontiers). Pre-model "free" improvements: bump d_max from 6 to 8/10, or sweep tighter size caps on the blow-up cases.
+
+Previous plans (proof_decoder phase 1, matcher, proof corpus survey, JEPA training) all complete and archived.
 
 The two completed phases left two durable artifacts:
 
@@ -33,6 +35,7 @@ All JEPA plans are in `archive/`. In rough order:
 - `archive/proof_corpus_survey_plan.md` — surveyed the ETP Lean proofs to inform the generator architecture. Output: `outputs/analyses/proof_survey/README.md` with the three-track recommendation.
 - `archive/matcher_plan.md` — deterministic first-order matcher; solves Track 1 with 59.8% coverage of the directly-proved set, 0 false positives. Output: `outputs/analyses/matcher/README.md`, 49,586-row proof dataset.
 - `archive/proof_decoder_plan.md` — phase 1 research decoder; both-novel σ-exact 96.32% with random-embedding control at 5.6% (+90.7pp gap). Established that JEPA embeddings preserve the proof witness for the variable-substitution category. Output: `outputs/runs/proof_decoder_*/`, full writeup in `outputs/runs/proof_decoder_jepa/diagnostics_report.md`.
+- `archive/rewrite_chain_study_plan.md` — deep characterization of the 1,636 c_rewrite_chain proofs. Headline: 83.13% deterministic-search coverage at d_max=6, 99.7% rule set within {h, ← h}, 87% unimodal proofs. Output: `outputs/analyses/rewrite_chain_study/synthesis_report.md` with prover-architecture recommendation (neural-guided search targeting the 17% hard tail, after trying d_max=8/10 and tighter size caps first). Engine in `src/rewrite/` (matching.py + engine.py with search/find_path/enumerate_chains), 36 tests.
 
 Cross-run failure-overlap analysis (8 trained models, partitioned per Rule B): `outputs/analyses/failure_overlap/`. Reproducer: `scripts/analyze_failure_overlap.py`. Headline: a stable set of 32,496 always-wrong-trained pairs (99.99% TRUE), dominated by the "TRUE-by-vacuity" pattern; an MLP on the v1.0 embeddings recovers 91% of them.
 
