@@ -28,18 +28,27 @@ Position semantics in this file:
 
 from __future__ import annotations
 
+import signal as _signal
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 
 from src.data.parser import Op, Term, Var
 from src.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, orient
-from src.rewrite.matching import all_rewrites
+from src.rewrite.matching import all_rewrites, term_size
 from src.rewrite.unification import (
     apply_subst,
     rename_vars,
     unify,
 )
+
+
+class _CompletionTimeout(Exception):
+    """Internal: raised by the SIGALRM handler to force BUDGET_WALL."""
+
+
+def _alarm_handler(signum, frame):
+    raise _CompletionTimeout()
 
 
 Position = tuple[int, ...]
@@ -59,13 +68,30 @@ class CompletionResult:
     status: CompletionStatus
     rules: list[Rule]
     n_critical_pairs_considered: int = 0
+    n_critical_pairs_dropped_by_size_cap: int = 0
     n_iterations: int = 0
     wall_seconds: float = 0.0
     failed_equation: tuple[Term, Term] | None = None
+    # True if the FAILED_ORIENT was on a critical-pair generated
+    # mid-run; False if on the original input equation. None when
+    # status != FAILED_ORIENT. This distinction matters for Phase 4:
+    # original-equation failures are Phase 0's known variable-disjoint
+    # set (ordered completion can't recover them either); derived-CP
+    # failures are new information (ordered completion may recover them).
+    failed_on_derived: bool | None = None
     # For Phase 5: ground normal forms of the completed system.
     # Populated only when status == COMPLETED and the caller requests it.
     ground_normal_forms_finite: bool | None = None
     ground_normal_forms: list[Term] = field(default_factory=list)
+
+    @property
+    def is_fully_completed(self) -> bool:
+        """True iff COMPLETED with no CPs dropped by size cap. Sound for
+        both TRUE and FALSE decisions on Phase 3. COMPLETED-with-drops
+        is sound for TRUE only — equal NFs prove TRUE, but unequal NFs
+        don't prove FALSE (could be TRUE via a dropped CP)."""
+        return (self.status == CompletionStatus.COMPLETED
+                and self.n_critical_pairs_dropped_by_size_cap == 0)
 
 
 # ============================================================
@@ -189,6 +215,7 @@ def complete(
     equations: list[tuple[Term, Term]],
     max_rules: int = 100,
     max_critical_pairs: int = 10_000,
+    max_term_size: int = 30,
     wall_seconds: float = 30.0,
     precedence: tuple[str, ...] = DEFAULT_VAR_PRECEDENCE,
 ) -> CompletionResult:
@@ -231,74 +258,119 @@ def complete(
       return COMPLETED
     """
     t_start = time.time()
-    pending: list[tuple[Term, Term]] = list(equations)
+    # Each pending item is (lhs, rhs, is_derived). Input equations are
+    # is_derived=False; critical pairs and inter-reduction kickbacks are
+    # is_derived=True.
+    pending: list[tuple[Term, Term, bool]] = [(s, t, False) for s, t in equations]
     rules: list[Rule] = []
     n_iter = 0
     n_cps = 0
+    n_cps_dropped = 0
 
-    while pending:
-        n_iter += 1
-        elapsed = time.time() - t_start
-        if elapsed > wall_seconds:
-            return CompletionResult(
-                CompletionStatus.BUDGET_WALL, rules,
-                n_critical_pairs_considered=n_cps, n_iterations=n_iter,
-                wall_seconds=elapsed,
-            )
-        if len(rules) > max_rules:
-            return CompletionResult(
-                CompletionStatus.BUDGET_RULES, rules,
-                n_critical_pairs_considered=n_cps, n_iterations=n_iter,
-                wall_seconds=elapsed,
-            )
-        if n_cps > max_critical_pairs:
-            return CompletionResult(
-                CompletionStatus.BUDGET_CPS, rules,
-                n_critical_pairs_considered=n_cps, n_iterations=n_iter,
-                wall_seconds=elapsed,
-            )
+    # The loop's own elapsed-time check only fires between iterations; a
+    # single bad CP cascade can keep one iteration running for minutes
+    # (normalize over a deep term with many rules). SIGALRM fires
+    # asynchronously between bytecodes and interrupts that case reliably.
+    # We install it once around the whole loop and catch _CompletionTimeout
+    # at the bottom of this function.
+    use_alarm = wall_seconds is not None and wall_seconds > 0
+    old_handler = None
+    if use_alarm:
+        old_handler = _signal.signal(_signal.SIGALRM, _alarm_handler)
+        _signal.setitimer(_signal.ITIMER_REAL, wall_seconds)
 
-        s, t = pending.pop(0)
-        s = normalize(s, rules)
-        t = normalize(t, rules)
-        if s == t:
-            continue
-        oriented = orient(s, t, precedence)
-        if oriented is None:
-            return CompletionResult(
-                CompletionStatus.FAILED_ORIENT, rules,
-                n_critical_pairs_considered=n_cps, n_iterations=n_iter,
-                wall_seconds=time.time() - t_start,
-                failed_equation=(s, t),
-            )
-        new_rule = oriented
+    def _add_cp(cp_l: Term, cp_r: Term) -> None:
+        nonlocal n_cps, n_cps_dropped
+        n_cps += 1
+        if term_size(cp_l) > max_term_size or term_size(cp_r) > max_term_size:
+            n_cps_dropped += 1
+            return
+        pending.append((cp_l, cp_r, True))
 
-        # Inter-reduction: simplify existing rules with the new rule.
-        kept_rules: list[Rule] = []
-        for (l, r) in rules:
-            # If new_rule rewrites l, the old rule is subsumed; turn back
-            # into a pending equation.
-            l_after = normalize(l, [new_rule])
-            r_after = normalize(r, [new_rule])
-            if l_after != l:
-                pending.append((l_after, r_after))
-            else:
-                kept_rules.append((l, r_after))
-        rules = kept_rules + [new_rule]
+    try:
+        while pending:
+            n_iter += 1
+            elapsed = time.time() - t_start
+            if elapsed > wall_seconds:
+                return CompletionResult(
+                    CompletionStatus.BUDGET_WALL, rules,
+                    n_critical_pairs_considered=n_cps,
+                    n_critical_pairs_dropped_by_size_cap=n_cps_dropped,
+                    n_iterations=n_iter, wall_seconds=elapsed,
+                )
+            if len(rules) > max_rules:
+                return CompletionResult(
+                    CompletionStatus.BUDGET_RULES, rules,
+                    n_critical_pairs_considered=n_cps,
+                    n_critical_pairs_dropped_by_size_cap=n_cps_dropped,
+                    n_iterations=n_iter, wall_seconds=elapsed,
+                )
+            if n_cps > max_critical_pairs:
+                return CompletionResult(
+                    CompletionStatus.BUDGET_CPS, rules,
+                    n_critical_pairs_considered=n_cps,
+                    n_critical_pairs_dropped_by_size_cap=n_cps_dropped,
+                    n_iterations=n_iter, wall_seconds=elapsed,
+                )
 
-        # Compute critical pairs between new_rule and every rule
-        # (including itself for non-root overlaps).
-        for r in rules:
-            for cp in critical_pairs(new_rule, r, same_rule=(r is new_rule)):
-                pending.append(cp)
-                n_cps += 1
-            if r is not new_rule:
-                for cp in critical_pairs(r, new_rule):
-                    pending.append(cp)
-                    n_cps += 1
+            s, t, is_derived = pending.pop(0)
+            s = normalize(s, rules)
+            t = normalize(t, rules)
+            if s == t:
+                continue
+            oriented = orient(s, t, precedence)
+            if oriented is None:
+                return CompletionResult(
+                    CompletionStatus.FAILED_ORIENT, rules,
+                    n_critical_pairs_considered=n_cps,
+                    n_critical_pairs_dropped_by_size_cap=n_cps_dropped,
+                    n_iterations=n_iter,
+                    wall_seconds=time.time() - t_start,
+                    failed_equation=(s, t),
+                    failed_on_derived=is_derived,
+                )
+            new_rule = oriented
 
-    return CompletionResult(
-        CompletionStatus.COMPLETED, rules,
-        n_critical_pairs_considered=n_cps, n_iterations=n_iter,
-        wall_seconds=time.time() - t_start,
-    )
+            # Inter-reduction: simplify existing rules with the new rule.
+            kept_rules: list[Rule] = []
+            for (l, r) in rules:
+                # If new_rule rewrites l, the old rule is subsumed; turn back
+                # into a pending equation (marked derived).
+                l_after = normalize(l, [new_rule])
+                r_after = normalize(r, [new_rule])
+                if l_after != l:
+                    pending.append((l_after, r_after, True))
+                else:
+                    kept_rules.append((l, r_after))
+            rules = kept_rules + [new_rule]
+
+            # Compute critical pairs between new_rule and every rule
+            # (including itself for non-root overlaps). _add_cp drops
+            # any CP whose either side exceeds max_term_size — bounds
+            # per-iteration normalize cost.
+            for r in rules:
+                for cp_l, cp_r in critical_pairs(new_rule, r, same_rule=(r is new_rule)):
+                    _add_cp(cp_l, cp_r)
+                if r is not new_rule:
+                    for cp_l, cp_r in critical_pairs(r, new_rule):
+                        _add_cp(cp_l, cp_r)
+
+        return CompletionResult(
+            CompletionStatus.COMPLETED, rules,
+            n_critical_pairs_considered=n_cps,
+            n_critical_pairs_dropped_by_size_cap=n_cps_dropped,
+            n_iterations=n_iter,
+            wall_seconds=time.time() - t_start,
+        )
+    except _CompletionTimeout:
+        return CompletionResult(
+            CompletionStatus.BUDGET_WALL, rules,
+            n_critical_pairs_considered=n_cps,
+            n_critical_pairs_dropped_by_size_cap=n_cps_dropped,
+            n_iterations=n_iter,
+            wall_seconds=time.time() - t_start,
+        )
+    finally:
+        if use_alarm:
+            _signal.setitimer(_signal.ITIMER_REAL, 0)
+            _signal.signal(_signal.SIGALRM, old_handler)
