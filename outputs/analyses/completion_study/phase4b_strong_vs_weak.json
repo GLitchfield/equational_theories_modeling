@@ -1,0 +1,233 @@
+{
+  "group_true_row_density_stats": {
+    "all_4694": {
+      "n": 4694,
+      "min": 0,
+      "max": 4693,
+      "mean": 1741.2835534725182,
+      "median": 398.0,
+      "p25": 16.0,
+      "p75": 4693.0,
+      "p95": 4693.0
+    },
+    "completed": {
+      "n": 1005,
+      "min": 0,
+      "max": 1213,
+      "mean": 173.83582089552237,
+      "median": 4.0,
+      "p25": 2.0,
+      "p75": 41.0,
+      "p95": 1213.0
+    },
+    "fully_completed": {
+      "n": 574,
+      "min": 0,
+      "max": 1213,
+      "mean": 289.52090592334497,
+      "median": 11.0,
+      "p25": 2.0,
+      "p75": 139.75,
+      "p95": 1213.0
+    },
+    "failed_orient_derived": {
+      "n": 1581,
+      "min": 2,
+      "max": 4693,
+      "mean": 2205.296647691335,
+      "median": 574.0,
+      "p25": 227.0,
+      "p75": 4693.0,
+      "p95": 4693.0
+    },
+    "phase0_excluded": {
+      "n": 1656,
+      "min": 1,
+      "max": 4693,
+      "mean": 2661.733695652174,
+      "median": 1555.0,
+      "p25": 227.0,
+      "p75": 4693.0,
+      "p95": 4693.0
+    },
+    "budget_cps": {
+      "n": 249,
+      "min": 2,
+      "max": 4693,
+      "mean": 231.93975903614458,
+      "median": 16.0,
+      "p25": 7.0,
+      "p75": 72.0,
+      "p95": 1213.0
+    },
+    "symmetric_fail": {
+      "n": 83,
+      "min": 2,
+      "max": 4693,
+      "mean": 214.53012048192772,
+      "median": 8.0,
+      "p25": 2.0,
+      "p75": 70.0,
+      "p95": 1555.0
+    },
+    "wrong_dir_fail": {
+      "n": 251,
+      "min": 2,
+      "max": 4693,
+      "mean": 978.0478087649402,
+      "median": 346.0,
+      "p25": 69.0,
+      "p75": 574.0,
+      "p95": 4693.0
+    },
+    "incomparable_fail": {
+      "n": 1247,
+      "min": 5,
+      "max": 4693,
+      "mean": 2584.825982357658,
+      "median": 4693.0,
+      "p25": 346.0,
+      "p75": 4693.0,
+      "p95": 4693.0
+    },
+    "phase4_recoverable": {
+      "n": 334,
+      "min": 2,
+      "max": 4693,
+      "mean": 788.311377245509,
+      "median": 227.0,
+      "p25": 15.0,
+      "p75": 574.0,
+      "p95": 4693.0
+    }
+  },
+  "comparison": {
+    "phase4_recoverable_mean_minus_completed": 614.4755563499866,
+    "phase4_recoverable_mean_minus_all_corpus": -952.9721762270092
+  },
+  "decision": "STRONG \u2014 build Phase 4 (likely adds real TRUE coverage)",
+  "spot_check_symmetric": [
+    {
+      "eq_id": 66,
+      "failed_s_repr": "((x_2_1_2 \u25c7 x_2_1_1_1) \u25c7 (x_2_1_2 \u25c7 x_2_1_1_1))",
+      "failed_t_repr": "((x_2_1_2 \u25c7 x_2_1_2) \u25c7 (x_2_1_1_1 \u25c7 x_2_1_1_1))"
+    },
+    {
+      "eq_id": 125,
+      "failed_s_repr": "((x_1_2_2_1 \u25c7 (x_1_2_2_1 \u25c7 x_1_1_1)) \u25c7 ((x_1_2_2_1 \u25c7 (x_1_2_2_1 \u25c7 (x_1_2_2_1 \u25c7 x_1_1_1))) \u25c7 (x_1_2_2_1 \u25c7 (x_1_2_2_1 \u25c7 x_1_1_1))))",
+      "failed_t_repr": "((x_1_1_1 \u25c7 (x_1_2_2_1 \u25c7 (x_1_2_2_1 \u25c7 x_1_1_1))) \u25c7 (x_1_2_2_1 \u25c7 (x_1_2_2_1 \u25c7 x_1_1_1)))"
+    },
+    {
+      "eq_id": 170,
+      "failed_s_repr": "((y_1_1 \u25c7 y_2) \u25c7 (y_1_1 \u25c7 y_2))",
+      "failed_t_repr": "((y_1_1 \u25c7 y_1_1) \u25c7 (y_2 \u25c7 y_2))"
+    },
+    {
+      "eq_id": 177,
+      "failed_s_repr": "((y_2 \u25c7 y_1_1) \u25c7 (y_2 \u25c7 y_1_1))",
+      "failed_t_repr": "((y_2 \u25c7 y_2) \u25c7 (y_1_1 \u25c7 y_1_1))"
+    },
+    {
+      "eq_id": 222,
+      "failed_s_repr": "((((x_1 \u25c7 x_1_1_2) \u25c7 x_1_1_2) \u25c7 x_1_1_2) \u25c7 (((x_1 \u25c7 x_1_1_2) \u25c7 x_1_1_2) \u25c7 (((x_1 \u25c7 x_1_1_2) \u25c7 x_1_1_2) \u25c7 x_1_1_2)))",
+      "failed_t_repr": "((((x_1 \u25c7 x_1_1_2) \u25c7 x_1_1_2) \u25c7 x_1) \u25c7 (((x_1 \u25c7 x_1_1_2) \u25c7 x_1_1_2) \u25c7 x_1_1_2))"
+    },
+    {
+      "eq_id": 281,
+      "failed_s_repr": "((x_2_1_1_1 \u25c7 x_2_1_2) \u25c7 (x_2_1_1_1 \u25c7 x_2_1_2))",
+      "failed_t_repr": "((x_2_1_1_1 \u25c7 x_2_1_1_1) \u25c7 (x_2_1_2 \u25c7 x_2_1_2))"
+    },
+    {
+      "eq_id": 309,
+      "failed_s_repr": "((y_1 \u25c7 y_2) \u25c7 (y_1 \u25c7 y_2))",
+      "failed_t_repr": "((y_1 \u25c7 y_2) \u25c7 (y_2 \u25c7 y_2))"
+    },
+    {
+      "eq_id": 361,
+      "failed_s_repr": "((y_2 \u25c7 y_1) \u25c7 (y_2 \u25c7 y_1))",
+      "failed_t_repr": "((y_2 \u25c7 y_2) \u25c7 (y_2 \u25c7 y_1))"
+    },
+    {
+      "eq_id": 362,
+      "failed_s_repr": "((x_1 \u25c7 y_2) \u25c7 (x_1 \u25c7 y_2))",
+      "failed_t_repr": "((x_1 \u25c7 x_1) \u25c7 y_2)"
+    },
+    {
+      "eq_id": 365,
+      "failed_s_repr": "((x_2_1 \u25c7 x_1_1) \u25c7 (x_2_1 \u25c7 x_1_1))",
+      "failed_t_repr": "((x_2_1 \u25c7 x_2_1) \u25c7 (x_1_1 \u25c7 x_1_1))"
+    }
+  ],
+  "spot_check_wrong_dir": [
+    {
+      "eq_id": 13,
+      "failed_s_repr": "(x_1 \u25c7 x_1)",
+      "failed_t_repr": "(y_2 \u25c7 x_1)",
+      "lhs_n_vars": 1,
+      "rhs_n_vars": 2
+    },
+    {
+      "eq_id": 24,
+      "failed_s_repr": "(x_1 \u25c7 x_1)",
+      "failed_t_repr": "(x_1 \u25c7 y_2)",
+      "lhs_n_vars": 1,
+      "rhs_n_vars": 2
+    },
+    {
+      "eq_id": 62,
+      "failed_s_repr": "((x_1_1 \u25c7 (x_1_1 \u25c7 x_1_1)) \u25c7 x_1_1)",
+      "failed_t_repr": "(y_2 \u25c7 x_1_1)",
+      "lhs_n_vars": 1,
+      "rhs_n_vars": 2
+    },
+    {
+      "eq_id": 72,
+      "failed_s_repr": "((x_2_1 \u25c7 x_2_1) \u25c7 (x_2_1 \u25c7 x_2_1))",
+      "failed_t_repr": "(y_2 \u25c7 (y_2 \u25c7 x_2_1))",
+      "lhs_n_vars": 1,
+      "rhs_n_vars": 2
+    },
+    {
+      "eq_id": 82,
+      "failed_s_repr": "(x_1 \u25c7 x_1)",
+      "failed_t_repr": "(y_2 \u25c7 x_1)",
+      "lhs_n_vars": 1,
+      "rhs_n_vars": 2
+    },
+    {
+      "eq_id": 114,
+      "failed_s_repr": "((x_1 \u25c7 x_1) \u25c7 x_1)",
+      "failed_t_repr": "(y_2 \u25c7 x_1)",
+      "lhs_n_vars": 1,
+      "rhs_n_vars": 2
+    },
+    {
+      "eq_id": 157,
+      "failed_s_repr": "(x_1 \u25c7 y_1)",
+      "failed_t_repr": "(x_1 \u25c7 x_1)",
+      "lhs_n_vars": 2,
+      "rhs_n_vars": 1
+    },
+    {
+      "eq_id": 158,
+      "failed_s_repr": "(x_1_2 \u25c7 y_1_2)",
+      "failed_t_repr": "(x_1_2 \u25c7 x_1_2)",
+      "lhs_n_vars": 2,
+      "rhs_n_vars": 1
+    },
+    {
+      "eq_id": 169,
+      "failed_s_repr": "(y_1 \u25c7 x_1)",
+      "failed_t_repr": "(x_1 \u25c7 x_1)",
+      "lhs_n_vars": 2,
+      "rhs_n_vars": 1
+    },
+    {
+      "eq_id": 172,
+      "failed_s_repr": "(z_1_2 \u25c7 x_1_2)",
+      "failed_t_repr": "(x_1_2 \u25c7 x_1_2)",
+      "lhs_n_vars": 2,
+      "rhs_n_vars": 1
+    }
+  ]
+}
