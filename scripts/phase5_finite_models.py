@@ -360,13 +360,25 @@ def main(argv: list[str] | None = None) -> int:
             'size_buckets': dict(Counter(finite_sizes)),
         },
         'refutation_headline': {
-            'description': ('Of FALSE pairs decided by plain KB whose '
-                            'E1 has a finite term model, how many does '
-                            'that finite model also refute? Refutation '
-                            'is checked by enumerating var assignments '
-                            'to model elements and finding one where '
-                            "E2's two sides evaluate to different "
-                            'elements.'),
+            'description': ('PER-PAIR check: for each (E1, E2) ground-truth '
+                            'FALSE pair where E1 has a finite term model M, '
+                            'enumerate assignments of E2.lhs ∪ E2.rhs '
+                            "variables to elements of M; evaluate both "
+                            "sides in M's operation table; report refuted "
+                            'iff at least one assignment evaluates the '
+                            'sides to different model elements. NOT a '
+                            'per-E1 assumption — each individual pair is '
+                            'checked. 100% refutation across the checked '
+                            'pairs is therefore an EMPIRICAL result, not '
+                            'a construction-time guarantee: small term '
+                            'models in principle could satisfy '
+                            "accidental equations beyond E1's theory and "
+                            'thus fail to refute some FALSE consequents. '
+                            'The data says that did not happen for these '
+                            '130 E1s — their small term models are '
+                            'equationally faithful, an interesting fact '
+                            'about strong/collapsing equations in the '
+                            'corpus.'),
             'n_false_pairs_checked': n_false_pairs_checked,
             'n_false_pairs_refuted_by_finite_model': n_pairs_refuted,
             'fraction_of_checked_pairs_refuted': n_pairs_refuted / max(1, n_false_pairs_checked),

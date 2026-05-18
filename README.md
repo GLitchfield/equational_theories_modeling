@@ -2,13 +2,14 @@
 
 Learn the geometric structure of equational implication over magmas. The 22M Lean-verified implication pairs from the Equational Theories Project drove training of a JEPA over equation parse trees; the result is a per-equation embedding that captures both algebraic structure and the harder "TRUE-by-vacuity" pattern (equations implied tautologically by every more-specific axiom).
 
-The **JEPA training phase**, **proof-corpus survey phase**, and **rewrite-chain study** are all complete. Three durable deliverables:
+The **JEPA training phase**, **proof-corpus survey phase**, **rewrite-chain study**, and **completion exploration** are all complete. Four durable deliverables:
 
 1. **v1.0 embeddings** at [outputs/embeddings/v1.0/](outputs/embeddings/v1.0/) — frozen 768-dim equation embeddings; see [`MODEL_CARD.md`](outputs/embeddings/v1.0/MODEL_CARD.md).
 2. **Proof-corpus characterization** at [outputs/analyses/proof_survey/README.md](outputs/analyses/proof_survey/README.md) — surveyed the ETP's 10,676 explicit-implication proofs and 1,698 facts entries, ending with a three-track architecture recommendation for the proof generator.
-3. **Rewrite-chain category decision** at [outputs/analyses/rewrite_chain_study/synthesis_report.md](outputs/analyses/rewrite_chain_study/synthesis_report.md) — 83.13% deterministic-search coverage at d_max=6, 99.7% rule set within {h, ← h}, 87% unimodal. Recommendation: neural-guided search targeting the 17% hard tail (after trying d_max=8/10 and tighter size caps first). Engine in `src/rewrite/`; plan archived at [archive/rewrite_chain_study_plan.md](archive/rewrite_chain_study_plan.md).
+3. **Rewrite-chain category decision** at [outputs/analyses/rewrite_chain_study/synthesis_report.md](outputs/analyses/rewrite_chain_study/synthesis_report.md) — 83.13% deterministic-search coverage at d_max=6, 99.7% rule set within {h, ← h}, 87% unimodal. Recommendation: neural-guided search targeting the 17% hard tail. Engine in `src/rewrite/`; plan archived at [archive/rewrite_chain_study_plan.md](archive/rewrite_chain_study_plan.md).
+4. **Completion-based decision procedure** at [outputs/analyses/completion_study/synthesis_report.md](outputs/analyses/completion_study/synthesis_report.md) — KB completion (plain + ordered) as a unified TRUE/FALSE decision procedure. Headline: 13.46% of 22M pairs decided soundly (TRUE from ordered, FALSE from plain). Ordered completion lifts TRUE coverage 3× (2.13% → 6.06% of GT TRUE); plain KB FALSE coverage is 17.82% of GT FALSE, with 3.28% of GT FALSE coming with a Stage-2-ready finite counter-model (Fin n ≤ 6) for free. Completion engines in `src/completion/`; plan archived at [archive/completion_exploration_plan.md](archive/completion_exploration_plan.md).
 
-**No active plan.** The rewrite-chain study is the most recent piece. The next plan would build the neural-guided rewrite engine that targets the hard tail.
+**No active plan.** The completion exploration is the most recent piece.
 
 The deterministic matcher and the phase-1 proof decoder (both for the variable-substitution category) are complete and archived. The matcher gives the competition-track solution at 59.8% directly-proved coverage with zero false positives. The decoder is the research-track companion — established that the JEPA v1.0 embeddings preserve the proof witness (96.32% σ-exact-match on both-novel test, vs 5.6% random-embedding control). All prior plans are archived in [archive/](archive/).
 
