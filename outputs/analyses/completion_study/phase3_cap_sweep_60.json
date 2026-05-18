@@ -1,0 +1,54 @@
+{
+  "config": {
+    "n_equations": 4694,
+    "n_off_diagonal_pairs": 22028942,
+    "n_completed_e1_used": 877,
+    "n_fully_completed_e1_used": 626,
+    "ground_truth_total_TRUE": 8173585,
+    "ground_truth_total_FALSE": 13855357
+  },
+  "true_side_headline": {
+    "description": "TRUE pair coverage: among ALL 1,005 completed E1s, pairs where the rule system predicts TRUE and the ground truth is TRUE. Sound for any COMPLETED E1.",
+    "n_true_correct": 172794,
+    "n_true_pred": 172794,
+    "n_true_wrong (soundness bugs)": 0,
+    "fraction_of_all_off_diag_pairs": 0.007843953649703195,
+    "fraction_of_ground_truth_TRUE_pairs": 0.0211405399222006
+  },
+  "false_side_headline": {
+    "description": "FALSE pair coverage: among ONLY the fully-completed E1s (no CPs dropped), pairs where NFs differ AND ground truth FALSE. Sound only for fully-completed.",
+    "n_false_correct": 2706728,
+    "n_false_pred": 2706728,
+    "n_false_wrong (soundness bugs)": 0,
+    "fraction_of_all_off_diag_pairs": 0.12287144793426756,
+    "fraction_of_ground_truth_FALSE_pairs": 0.19535606336235148
+  },
+  "partial_completion_FALSE_predictions": {
+    "description": "FALSE predictions from partial-completed E1s. NOT sound \u2014 some are real FALSE, some are TRUE via a dropped CP. Reported only as info.",
+    "n_false_wrong_partial": 0
+  },
+  "combined_pair_coverage": {
+    "description": "Total pairs (TRUE+FALSE) correctly decided by completion, dividing by all off-diagonal pairs. TRUE coverage from all completed E1s + FALSE coverage from fully-completed E1s only.",
+    "n_correct_total": 2879522,
+    "fraction_total": 0.13071540158397077
+  },
+  "wall_seconds": 428.7501971721649,
+  "n_disagreements_logged": 0,
+  "n_e1_timed_out": 13,
+  "per_e1_timeout_seconds": 30.0,
+  "timed_out_e1_ids": [
+    310,
+    311,
+    367,
+    370,
+    3260,
+    3266,
+    3267,
+    4086,
+    4096,
+    4112,
+    4391,
+    4531,
+    4544
+  ]
+}
