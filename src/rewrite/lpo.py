@@ -69,11 +69,14 @@ def _var_index(v: Var, precedence: tuple[str, ...]) -> int:
 
 
 def lpo_gt(s: Term, t: Term, precedence: tuple[str, ...] = DEFAULT_VAR_PRECEDENCE) -> bool:
-    """Return True if s >_lpo t under strict LPO with the 'Op > Var'
+    """Return True if s >_lpo t under **strict** LPO with the 'Op > Var'
     convention. Variables are incomparable to each other — this is
-    what makes the order stable under substitution. The `precedence`
-    parameter is unused here; it's kept for downstream use by ordered
-    completion (Phase 4), which needs per-instance comparisons."""
+    what makes the order stable under substitution. Used by plain KB
+    completion for abstract orientation.
+
+    The `precedence` parameter is unused here. For total LPO (variables
+    ordered by precedence) used by ordered completion's per-instance
+    check, see `lpo_gt_total`."""
     if s == t:
         return False
 
@@ -110,6 +113,55 @@ def lpo_gt(s: Term, t: Term, precedence: tuple[str, ...] = DEFAULT_VAR_PRECEDENC
     )
     if lex_gt:
         if lpo_gt(s, t1, precedence) and lpo_gt(s, t2, precedence):
+            return True
+
+    return False
+
+
+def lpo_gt_total(s: Term, t: Term, precedence: tuple[str, ...] = DEFAULT_VAR_PRECEDENCE) -> bool:
+    """Return True if s >_lpo t under **total** LPO with 'Op > Var'
+    AND a variable precedence (alphabetical by default).
+
+    NOT stable under substitution — i.e., this LPO is NOT safe for
+    abstract orientation in plain KB completion. It is safe for
+    per-instance comparison in ordered completion: the comparison
+    is between two specific terms, not an abstract rule statement.
+
+    For our setting (single binary operator + variables), the order
+    is total on closed-up-to-variable terms once a variable precedence
+    is fixed."""
+    if s == t:
+        return False
+
+    # Var-Var: use precedence.
+    if isinstance(s, Var) and isinstance(t, Var):
+        return _var_index(s, precedence) > _var_index(t, precedence)
+
+    # Var vs Op: Var never greater than Op.
+    if isinstance(s, Var):
+        return False
+
+    # Op vs Var: Op > Var always.
+    if isinstance(t, Var):
+        return True
+
+    # Both Op (same head ◇).
+    assert isinstance(s, Op) and isinstance(t, Op)
+    s1, s2 = s.left, s.right
+    t1, t2 = t.left, t.right
+
+    # Case (3): some subterm s_i ≥ t.
+    if (s1 == t or lpo_gt_total(s1, t, precedence)) or \
+       (s2 == t or lpo_gt_total(s2, t, precedence)):
+        return True
+
+    # Case (4): same head, lex on subterms + s > each t_i.
+    lex_gt = (
+        lpo_gt_total(s1, t1, precedence)
+        or (s1 == t1 and lpo_gt_total(s2, t2, precedence))
+    )
+    if lex_gt:
+        if lpo_gt_total(s, t1, precedence) and lpo_gt_total(s, t2, precedence):
             return True
 
     return False
