@@ -1,0 +1,33 @@
+{
+  "config": {
+    "n_fully_completed_e1_used": 574,
+    "max_model_size": 50,
+    "per_e1_timeout_seconds": 15.0,
+    "n_total_equations": 4694,
+    "n_off_diagonal_pairs": 22028942,
+    "n_ground_truth_FALSE_pairs": 13855357
+  },
+  "finite_model_headline": {
+    "n_fully_completed_with_finite_term_model": 130,
+    "fraction_of_fully_completed": 0.2264808362369338,
+    "n_timed_out": 13,
+    "size_distribution": {
+      "min": 2,
+      "median": 2.0,
+      "mean": 2.0615384615384613,
+      "max": 6
+    },
+    "size_buckets": {
+      "2": 128,
+      "6": 2
+    }
+  },
+  "refutation_headline": {
+    "description": "Of FALSE pairs decided by plain KB whose E1 has a finite term model, how many does that finite model also refute? Refutation is checked by enumerating var assignments to model elements and finding one where E2's two sides evaluate to different elements.",
+    "n_false_pairs_checked": 454602,
+    "n_false_pairs_refuted_by_finite_model": 454602,
+    "fraction_of_checked_pairs_refuted": 1.0,
+    "fraction_of_total_GT_FALSE": 0.03281055839990265
+  },
+  "wall_seconds": 206.67606949806213
+}
