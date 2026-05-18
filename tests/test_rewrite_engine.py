@@ -13,9 +13,11 @@ from __future__ import annotations
 
 from src.data.parser import parse_equation
 from src.rewrite.engine import (
+    EnumerationResult,
     ProofPath,
     SearchResult,
     default_size_cap,
+    enumerate_chains,
     find_path,
     search,
 )
@@ -236,3 +238,65 @@ def test_find_path_intermediate_terms_have_bounded_size():
     assert p.closed
     for t in list(p.forward_path) + list(p.backward_path):
         assert term_size(t) <= cap
+
+
+# ---------- enumerate_chains: multimodality ----------
+
+def test_enumerate_chains_zero_depth_only_when_sides_equal():
+    """target_depth=0 yields one chain iff lhs2 == rhs2."""
+    lhs1, rhs1 = _e('a = a ◇ a')
+    eq = parse_equation('x = x ◇ x')
+    # lhs2 != rhs2 → 0 chains at depth 0
+    r = enumerate_chains(eq.lhs, eq.rhs, lhs1, rhs1, target_depth=0)
+    assert r.n_distinct_chains == 0
+    # lhs2 == rhs2 → 1 chain (the singleton path).
+    r = enumerate_chains(eq.lhs, eq.lhs, lhs1, rhs1, target_depth=0)
+    assert r.n_distinct_chains == 1
+    assert r.chains == ((eq.lhs,),)
+
+
+def test_enumerate_chains_returns_chains_of_exact_length():
+    """All chains returned have target_depth + 1 terms."""
+    lhs2 = parse_equation('x = x').lhs
+    rhs2 = parse_equation('x = x ◇ x').rhs
+    lhs1, rhs1 = _e('a = a ◇ a')
+    r = enumerate_chains(lhs2, rhs2, lhs1, rhs1, target_depth=1)
+    assert r.n_distinct_chains >= 1
+    for chain in r.chains:
+        assert len(chain) == 2
+        assert chain[0] == lhs2 and chain[-1] == rhs2
+
+
+def test_enumerate_chains_dedupes_by_term_sequence():
+    """If two distinct rewrite-rule applications produce the same
+    intermediate-term sequence, they count as ONE chain."""
+    lhs2 = parse_equation('x = x').lhs
+    rhs2 = parse_equation('x = x ◇ x').rhs
+    lhs1, rhs1 = _e('a = a ◇ a')
+    r = enumerate_chains(lhs2, rhs2, lhs1, rhs1, target_depth=1)
+    # Forward (a→a◇a applied at root) and backward (a◇a→a applied… NO,
+    # backward needs an op, but lhs2 is a var). So only forward works.
+    # One distinct chain.
+    assert r.n_distinct_chains == 1
+
+
+def test_enumerate_chains_can_find_multiple():
+    """Goal: x ◇ x = (x ◇ x) ◇ (x ◇ x) with rule a = a ◇ a.
+    Forward chains of length 2: at depth 1, x◇x → (x◇x)◇x or x◇(x◇x);
+    at depth 2, each leads to (x◇x)◇(x◇x). So 2 distinct chains."""
+    lhs2 = parse_equation('x = x ◇ x').rhs
+    rhs2 = parse_equation('x = (x ◇ x) ◇ (x ◇ x)').rhs
+    lhs1, rhs1 = _e('a = a ◇ a')
+    r = enumerate_chains(lhs2, rhs2, lhs1, rhs1, target_depth=2)
+    assert r.n_distinct_chains >= 2
+
+
+def test_enumerate_chains_states_budget():
+    """A tight budget aborts DFS without finishing — chains is a lower
+    bound on the true count."""
+    lhs2 = parse_equation('x = x ◇ x').rhs
+    rhs2 = parse_equation('x = (x ◇ x) ◇ (x ◇ x)').rhs
+    lhs1, rhs1 = _e('a = a ◇ a')
+    r = enumerate_chains(lhs2, rhs2, lhs1, rhs1, target_depth=4, states_budget=2)
+    assert r.hit_budget
+    assert r.states_expanded >= 2

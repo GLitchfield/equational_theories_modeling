@@ -342,3 +342,150 @@ def find_path(
 
     return fail()
 
+
+@dataclass(frozen=True)
+class EnumerationResult:
+    chains: tuple[tuple[Term, ...], ...]   # each chain: (lhs2, t_1, ..., rhs2)
+    n_distinct_chains: int
+    states_expanded: int
+    hit_budget: bool
+
+
+def enumerate_chains(
+    lhs2: Term,
+    rhs2: Term,
+    lhs1: Term,
+    rhs1: Term,
+    target_depth: int,
+    size_cap: int | None = None,
+    states_budget: int | None = 100_000,
+) -> EnumerationResult:
+    """Enumerate every distinct chain
+        lhs2 -> t_1 -> ... -> t_{D-1} -> rhs2
+    of length exactly `target_depth` rewrite steps. Used for Task 5
+    multimodality.
+
+    Implementation is bidirectional all-parents BFS:
+      1) Forward BFS from lhs2, recording every (term, depth, parent)
+         tuple so we can backtrack all shortest paths.
+      2) Backward BFS from rhs2, same.
+      3) For each meeting term `m` with min-fwd-depth + min-bwd-depth ==
+         target_depth, enumerate every fwd-path-to-`m` × every
+         bwd-path-from-`m`. Concatenate and deduplicate by chain.
+
+    Forward-only DFS does NOT work for this corpus: rules like
+    `x = x ◇ y` introduce fresh variables on the RHS, so forward
+    rewriting from `x` produces `x ◇ y_rule` (with the literal
+    rule-variable name) rather than `x ◇ z_subj`. Bidirectional
+    search binds the fresh variable naturally on the backward step.
+
+    Counting semantics: chains are deduplicated by their term sequence.
+    Different meeting-point splits of the same chain count once.
+
+    `states_budget` bounds total BFS-expansion + chain-enumeration work."""
+    if size_cap is None:
+        size_cap = default_size_cap(lhs2, rhs2)
+
+    # Forward BFS — record minimum depth + every parent at that minimum depth.
+    fwd_depth: dict[Term, int] = {lhs2: 0}
+    fwd_parents: dict[Term, list[Term]] = {lhs2: []}   # root has empty parent list
+
+    bwd_depth: dict[Term, int] = {rhs2: 0}
+    bwd_parents: dict[Term, list[Term]] = {rhs2: []}
+
+    states_expanded = 0
+
+    def expand(
+        frontier: list[Term],
+        d: int,
+        depth_map: dict[Term, int],
+        parents_map: dict[Term, list[Term]],
+    ) -> tuple[list[Term], int]:
+        new_frontier: list[Term] = []
+        budget_hit = 0
+        for t in frontier:
+            for pattern, replacement in ((lhs1, rhs1), (rhs1, lhs1)):
+                for nt in all_rewrites(t, pattern, replacement):
+                    if term_size(nt) > size_cap:
+                        continue
+                    nonlocal states_expanded
+                    states_expanded += 1
+                    if states_budget is not None and states_expanded >= states_budget:
+                        return new_frontier, 1
+                    if nt not in depth_map:
+                        depth_map[nt] = d
+                        parents_map[nt] = [t]
+                        new_frontier.append(nt)
+                    elif depth_map[nt] == d:
+                        # another shortest-path parent at this same depth
+                        if t not in parents_map[nt]:
+                            parents_map[nt].append(t)
+                    # else: deeper-route arrival — skip (we only keep shortest)
+        return new_frontier, budget_hit
+
+    fwd_frontier = [lhs2]
+    bwd_frontier = [rhs2]
+    hit_budget = False
+    for d in range(1, target_depth + 1):
+        fwd_frontier, fb = expand(fwd_frontier, d, fwd_depth, fwd_parents)
+        if fb:
+            hit_budget = True
+            break
+        bwd_frontier, bb = expand(bwd_frontier, d, bwd_depth, bwd_parents)
+        if bb:
+            hit_budget = True
+            break
+
+    if target_depth == 0:
+        if lhs2 == rhs2:
+            return EnumerationResult(
+                chains=((lhs2,),), n_distinct_chains=1,
+                states_expanded=0, hit_budget=False,
+            )
+        return EnumerationResult(
+            chains=(), n_distinct_chains=0,
+            states_expanded=0, hit_budget=False,
+        )
+
+    # Enumerate all shortest paths to each meeting term, then combine.
+    def paths_to(target: Term, depth: int, parents_map: dict[Term, list[Term]],
+                 root: Term) -> list[tuple[Term, ...]]:
+        """All paths root -> ... -> target of length exactly `depth`."""
+        if depth == 0:
+            return [(target,)] if target == root else []
+        results: list[tuple[Term, ...]] = []
+        for prev in parents_map.get(target, []):
+            for sub in paths_to(prev, depth - 1, parents_map, root):
+                results.append(sub + (target,))
+        return results
+
+    chains: set[tuple[Term, ...]] = set()
+    meeting_terms = set(fwd_depth) & set(bwd_depth)
+    for m in meeting_terms:
+        fd = fwd_depth[m]
+        bd = bwd_depth[m]
+        if fd + bd != target_depth:
+            continue
+        fwd_paths = paths_to(m, fd, fwd_parents, lhs2)
+        bwd_paths = paths_to(m, bd, bwd_parents, rhs2)
+        for fp in fwd_paths:
+            for bp in bwd_paths:
+                # fp ends at m; bp ends at m. Full chain: fp + reverse(bp without final m).
+                full = fp + tuple(reversed(bp[:-1]))
+                chains.add(full)
+                states_expanded += 1
+                if states_budget is not None and states_expanded >= states_budget:
+                    hit_budget = True
+                    return EnumerationResult(
+                        chains=tuple(chains),
+                        n_distinct_chains=len(chains),
+                        states_expanded=states_expanded,
+                        hit_budget=True,
+                    )
+
+    return EnumerationResult(
+        chains=tuple(chains),
+        n_distinct_chains=len(chains),
+        states_expanded=states_expanded,
+        hit_budget=hit_budget,
+    )
