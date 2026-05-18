@@ -221,3 +221,124 @@ def search(
         backward_states_seen=len(bwd),
     )
 
+
+@dataclass(frozen=True)
+class ProofPath:
+    closed: bool
+    meeting_term: Term | None
+    forward_path: tuple[Term, ...]    # lhs2 = forward_path[0], ..., meeting_term = forward_path[-1]
+    backward_path: tuple[Term, ...]   # rhs2 = backward_path[0], ..., meeting_term = backward_path[-1]
+    forward_depth: int                # len(forward_path) - 1
+    backward_depth: int               # len(backward_path) - 1
+    total_depth: int                  # forward_depth + backward_depth
+    states_expanded: int
+
+
+def find_path(
+    lhs2: Term,
+    rhs2: Term,
+    lhs1: Term,
+    rhs1: Term,
+    d_max: int = 6,
+    size_cap: int | None = None,
+    states_budget: int | None = None,
+) -> ProofPath:
+    """Like `search`, but tracks parents during BFS and reconstructs one
+    shortest proof path on success. Used for Task 3 intermediate-state
+    characterization. Slower than `search` (allocates parent dicts), so
+    intended for sample-level analysis, not full-corpus runs."""
+    if size_cap is None:
+        size_cap = default_size_cap(lhs2, rhs2)
+
+    # term -> (depth_reached, parent_term_or_None_for_root)
+    fwd: dict[Term, tuple[int, Term | None]] = {lhs2: (0, None)}
+    bwd: dict[Term, tuple[int, Term | None]] = {rhs2: (0, None)}
+
+    def reconstruct(meet: Term) -> ProofPath:
+        # Forward path: meet -> ... -> lhs2, then reverse.
+        rev_fwd = [meet]
+        cur = meet
+        while True:
+            _, prev = fwd[cur]
+            if prev is None:
+                break
+            rev_fwd.append(prev)
+            cur = prev
+        fwd_path = tuple(reversed(rev_fwd))
+        # Backward path: meet -> ... -> rhs2, then reverse.
+        rev_bwd = [meet]
+        cur = meet
+        while True:
+            _, prev = bwd[cur]
+            if prev is None:
+                break
+            rev_bwd.append(prev)
+            cur = prev
+        bwd_path = tuple(reversed(rev_bwd))
+        fd = len(fwd_path) - 1
+        bd = len(bwd_path) - 1
+        return ProofPath(
+            closed=True, meeting_term=meet,
+            forward_path=fwd_path, backward_path=bwd_path,
+            forward_depth=fd, backward_depth=bd, total_depth=fd + bd,
+            states_expanded=states_expanded,
+        )
+
+    if lhs2 == rhs2:
+        return ProofPath(
+            closed=True, meeting_term=lhs2,
+            forward_path=(lhs2,), backward_path=(rhs2,),
+            forward_depth=0, backward_depth=0, total_depth=0,
+            states_expanded=0,
+        )
+
+    fwd_frontier: list[Term] = [lhs2]
+    bwd_frontier: list[Term] = [rhs2]
+    states_expanded = 0
+
+    def fail() -> ProofPath:
+        return ProofPath(
+            closed=False, meeting_term=None,
+            forward_path=(), backward_path=(),
+            forward_depth=-1, backward_depth=-1, total_depth=-1,
+            states_expanded=states_expanded,
+        )
+
+    for d in range(1, d_max + 1):
+        new_fwd: list[Term] = []
+        for t in fwd_frontier:
+            for pattern, replacement in ((lhs1, rhs1), (rhs1, lhs1)):
+                for nt in all_rewrites(t, pattern, replacement):
+                    if term_size(nt) > size_cap:
+                        continue
+                    if nt not in fwd:
+                        fwd[nt] = (d, t)
+                        new_fwd.append(nt)
+                        states_expanded += 1
+                        if nt in bwd:
+                            return reconstruct(nt)
+                        if states_budget is not None and states_expanded >= states_budget:
+                            return fail()
+        fwd_frontier = new_fwd
+
+        new_bwd: list[Term] = []
+        for t in bwd_frontier:
+            for pattern, replacement in ((lhs1, rhs1), (rhs1, lhs1)):
+                for nt in all_rewrites(t, pattern, replacement):
+                    if term_size(nt) > size_cap:
+                        continue
+                    if nt not in bwd:
+                        bwd[nt] = (d, t)
+                        new_bwd.append(nt)
+                        states_expanded += 1
+                        if nt in fwd:
+                            return reconstruct(nt)
+                        if states_budget is not None and states_expanded >= states_budget:
+                            return fail()
+        bwd_frontier = new_bwd
+
+        if not fwd_frontier and not bwd_frontier:
+            return fail()
+
+    return fail()
+

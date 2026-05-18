@@ -1,0 +1,506 @@
+{
+  "config": {
+    "n_traces_total": 1636,
+    "n_closed_total": 1360,
+    "sample_size_requested": 500,
+    "sample_size_actual": 500,
+    "seed": 42
+  },
+  "whole_corpus_direction_classification": {
+    "counts": {
+      "both_move": 1250,
+      "backward_only": 70,
+      "forward_only": 40
+    },
+    "fractions": {
+      "both_move": 0.9191176470588235,
+      "backward_only": 0.051470588235294115,
+      "forward_only": 0.029411764705882353
+    }
+  },
+  "whole_corpus_direction_by_depth": {
+    "1": {
+      "backward_only": 26,
+      "both_move": 0,
+      "forward_only": 22
+    },
+    "2": {
+      "backward_only": 40,
+      "both_move": 775,
+      "forward_only": 8
+    },
+    "3": {
+      "backward_only": 4,
+      "both_move": 218,
+      "forward_only": 9
+    },
+    "4": {
+      "backward_only": 0,
+      "both_move": 89,
+      "forward_only": 1
+    },
+    "5": {
+      "backward_only": 0,
+      "both_move": 78,
+      "forward_only": 0
+    },
+    "6": {
+      "backward_only": 0,
+      "both_move": 36,
+      "forward_only": 0
+    },
+    "7": {
+      "backward_only": 0,
+      "both_move": 19,
+      "forward_only": 0
+    },
+    "8": {
+      "backward_only": 0,
+      "both_move": 11,
+      "forward_only": 0
+    },
+    "9": {
+      "backward_only": 0,
+      "both_move": 12,
+      "forward_only": 0
+    },
+    "10": {
+      "backward_only": 0,
+      "both_move": 8,
+      "forward_only": 0
+    },
+    "11": {
+      "backward_only": 0,
+      "both_move": 4,
+      "forward_only": 0
+    }
+  },
+  "sample_trajectory_summary": {
+    "start_max_size": {
+      "n": 500,
+      "min": 1.0,
+      "max": 9.0,
+      "mean": 6.324,
+      "median": 7.0,
+      "p25": 5.0,
+      "p75": 9.0,
+      "p95": 9.0
+    },
+    "max_size_along_path": {
+      "n": 500,
+      "min": 3.0,
+      "max": 43.0,
+      "mean": 9.176,
+      "median": 9.0,
+      "p25": 7.0,
+      "p75": 9.0,
+      "p95": 19.0
+    },
+    "meet_term_size": {
+      "n": 500,
+      "min": 1.0,
+      "max": 27.0,
+      "mean": 7.12,
+      "median": 7.0,
+      "p25": 5.0,
+      "p75": 9.0,
+      "p95": 13.0
+    },
+    "size_blowup_above_starts": {
+      "n": 500,
+      "min": 0.0,
+      "max": 36.0,
+      "mean": 2.852,
+      "median": 0.0,
+      "p25": 0.0,
+      "p75": 4.0,
+      "p95": 12.0
+    },
+    "pct_with_blowup": 0.376,
+    "note": "intermediate states are equations by construction (engine tracks (lhs, rhs) pair); the term-size trajectory measures whether intermediates blow up beyond the goal endpoints"
+  },
+  "sample_trajectories_first_20": [
+    {
+      "e1": 34,
+      "e2": 4243,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 7,
+      "meet_size": 3,
+      "max_size_along_path": 7,
+      "fwd_size_trajectory": [
+        3
+      ],
+      "bwd_size_trajectory": [
+        7,
+        3
+      ]
+    },
+    {
+      "e1": 4339,
+      "e2": 4314,
+      "forward_depth": 1,
+      "backward_depth": 0,
+      "total_depth": 1,
+      "direction": "forward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5,
+        5
+      ],
+      "bwd_size_trajectory": [
+        5
+      ]
+    },
+    {
+      "e1": 10,
+      "e2": 3935,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 7,
+      "meet_size": 3,
+      "max_size_along_path": 7,
+      "fwd_size_trajectory": [
+        3
+      ],
+      "bwd_size_trajectory": [
+        7,
+        3
+      ]
+    },
+    {
+      "e1": 4,
+      "e2": 381,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 5,
+      "meet_size": 3,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        3
+      ],
+      "bwd_size_trajectory": [
+        5,
+        3
+      ]
+    },
+    {
+      "e1": 31,
+      "e2": 3537,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 7,
+      "meet_size": 3,
+      "max_size_along_path": 7,
+      "fwd_size_trajectory": [
+        3
+      ],
+      "bwd_size_trajectory": [
+        7,
+        3
+      ]
+    },
+    {
+      "e1": 4340,
+      "e2": 4284,
+      "forward_depth": 1,
+      "backward_depth": 0,
+      "total_depth": 1,
+      "direction": "forward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5,
+        5
+      ],
+      "bwd_size_trajectory": [
+        5
+      ]
+    },
+    {
+      "e1": 24,
+      "e2": 4124,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 7,
+      "meet_size": 3,
+      "max_size_along_path": 7,
+      "fwd_size_trajectory": [
+        3
+      ],
+      "bwd_size_trajectory": [
+        7,
+        3
+      ]
+    },
+    {
+      "e1": 8,
+      "e2": 3319,
+      "forward_depth": 1,
+      "backward_depth": 0,
+      "total_depth": 1,
+      "direction": "forward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 7,
+      "meet_size": 7,
+      "max_size_along_path": 7,
+      "fwd_size_trajectory": [
+        3,
+        7
+      ],
+      "bwd_size_trajectory": [
+        7
+      ]
+    },
+    {
+      "e1": 4679,
+      "e2": 4605,
+      "forward_depth": 1,
+      "backward_depth": 0,
+      "total_depth": 1,
+      "direction": "forward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5,
+        5
+      ],
+      "bwd_size_trajectory": [
+        5
+      ]
+    },
+    {
+      "e1": 25,
+      "e2": 3525,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 7,
+      "meet_size": 3,
+      "max_size_along_path": 7,
+      "fwd_size_trajectory": [
+        3
+      ],
+      "bwd_size_trajectory": [
+        7,
+        3
+      ]
+    },
+    {
+      "e1": 39,
+      "e2": 4340,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5
+      ],
+      "bwd_size_trajectory": [
+        5,
+        5
+      ]
+    },
+    {
+      "e1": 4655,
+      "e2": 4599,
+      "forward_depth": 1,
+      "backward_depth": 0,
+      "total_depth": 1,
+      "direction": "forward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5,
+        5
+      ],
+      "bwd_size_trajectory": [
+        5
+      ]
+    },
+    {
+      "e1": 4330,
+      "e2": 4291,
+      "forward_depth": 1,
+      "backward_depth": 0,
+      "total_depth": 1,
+      "direction": "forward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5,
+        5
+      ],
+      "bwd_size_trajectory": [
+        5
+      ]
+    },
+    {
+      "e1": 29,
+      "e2": 4200,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 7,
+      "meet_size": 3,
+      "max_size_along_path": 7,
+      "fwd_size_trajectory": [
+        3
+      ],
+      "bwd_size_trajectory": [
+        7,
+        3
+      ]
+    },
+    {
+      "e1": 4327,
+      "e2": 4269,
+      "forward_depth": 1,
+      "backward_depth": 0,
+      "total_depth": 1,
+      "direction": "forward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5,
+        5
+      ],
+      "bwd_size_trajectory": [
+        5
+      ]
+    },
+    {
+      "e1": 11,
+      "e2": 3323,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 3,
+      "start_rhs_size": 7,
+      "meet_size": 3,
+      "max_size_along_path": 7,
+      "fwd_size_trajectory": [
+        3
+      ],
+      "bwd_size_trajectory": [
+        7,
+        3
+      ]
+    },
+    {
+      "e1": 40,
+      "e2": 4341,
+      "forward_depth": 0,
+      "backward_depth": 1,
+      "total_depth": 1,
+      "direction": "backward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5
+      ],
+      "bwd_size_trajectory": [
+        5,
+        5
+      ]
+    },
+    {
+      "e1": 4642,
+      "e2": 4584,
+      "forward_depth": 1,
+      "backward_depth": 0,
+      "total_depth": 1,
+      "direction": "forward_only",
+      "start_lhs_size": 5,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        5,
+        5
+      ],
+      "bwd_size_trajectory": [
+        5
+      ]
+    },
+    {
+      "e1": 1777,
+      "e2": 1754,
+      "forward_depth": 1,
+      "backward_depth": 1,
+      "total_depth": 2,
+      "direction": "both_move",
+      "start_lhs_size": 1,
+      "start_rhs_size": 9,
+      "meet_size": 9,
+      "max_size_along_path": 9,
+      "fwd_size_trajectory": [
+        1,
+        9
+      ],
+      "bwd_size_trajectory": [
+        9,
+        9
+      ]
+    },
+    {
+      "e1": 322,
+      "e2": 330,
+      "forward_depth": 1,
+      "backward_depth": 1,
+      "total_depth": 2,
+      "direction": "both_move",
+      "start_lhs_size": 3,
+      "start_rhs_size": 5,
+      "meet_size": 5,
+      "max_size_along_path": 5,
+      "fwd_size_trajectory": [
+        3,
+        5
+      ],
+      "bwd_size_trajectory": [
+        5,
+        5
+      ]
+    }
+  ]
+}

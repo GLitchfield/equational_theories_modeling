@@ -12,7 +12,14 @@ Cover the cases the engine must handle to be useful:
 from __future__ import annotations
 
 from src.data.parser import parse_equation
-from src.rewrite.engine import SearchResult, default_size_cap, search
+from src.rewrite.engine import (
+    ProofPath,
+    SearchResult,
+    default_size_cap,
+    find_path,
+    search,
+)
+from src.rewrite.matching import term_size
 
 
 def _e(text: str):
@@ -143,3 +150,89 @@ def test_d_max_caps_search():
     r = search(lhs2, rhs2, lhs1, rhs1, d_max=0)
     assert not r.closed
     assert r.forward_depth is None and r.backward_depth is None
+
+
+# ---------- find_path: path reconstruction ----------
+
+def test_find_path_identical_sides_returns_trivial_path():
+    """Depth-0 close: forward + backward both contain just the term."""
+    lhs2 = rhs2 = parse_equation('x = x').lhs
+    lhs1, rhs1 = _e('a = a')
+    p = find_path(lhs2, rhs2, lhs1, rhs1)
+    assert p.closed
+    assert p.total_depth == 0
+    assert p.forward_path == (lhs2,)
+    assert p.backward_path == (rhs2,)
+    assert p.meeting_term == lhs2
+
+
+def test_find_path_forward_only():
+    """E1: a = a ◇ a. Goal: x = x ◇ x. Forward step: x → x ◇ x.
+    Backward depth 0 (rhs2 IS the meeting term)."""
+    lhs2 = parse_equation('x = x').lhs
+    rhs2 = parse_equation('x = x ◇ x').rhs
+    lhs1, rhs1 = _e('a = a ◇ a')
+    p = find_path(lhs2, rhs2, lhs1, rhs1)
+    assert p.closed
+    assert p.meeting_term == rhs2
+    assert p.forward_path[0] == lhs2
+    assert p.forward_path[-1] == rhs2
+    assert p.backward_depth == 0
+    assert p.forward_depth >= 1
+    # Each successive term differs from the previous by one rewrite step.
+    assert len(p.forward_path) == p.forward_depth + 1
+    assert len(p.backward_path) == 1
+
+
+def test_find_path_meets_in_middle():
+    """Build a goal where the engine must move BOTH sides.
+    Goal: x ◇ x = (x ◇ x) ◇ (x ◇ x). Rule: a = a ◇ a.
+    Forward: x ◇ x → (x◇x) ◇ x → (x◇x) ◇ (x◇x).  Or some such.
+    Backward: same target. We mainly check that both paths are nontrivial
+    and meet at a common term."""
+    lhs2 = parse_equation('x = x ◇ x').rhs
+    rhs2 = parse_equation('x = (x ◇ x) ◇ (x ◇ x)').rhs
+    lhs1, rhs1 = _e('a = a ◇ a')
+    p = find_path(lhs2, rhs2, lhs1, rhs1)
+    assert p.closed
+    # The meeting term must appear at the end of BOTH paths.
+    assert p.forward_path[-1] == p.meeting_term
+    assert p.backward_path[-1] == p.meeting_term
+    # And each path starts from its respective endpoint.
+    assert p.forward_path[0] == lhs2
+    assert p.backward_path[0] == rhs2
+
+
+def test_find_path_unreachable_returns_failure():
+    """Same setup as test_search_unreachable: should return closed=False
+    with an empty proof path."""
+    lhs1, rhs1 = _e('a ◇ a = a')
+    lhs2, rhs2 = _e('x ◇ y = z ◇ w')
+    p = find_path(lhs2, rhs2, lhs1, rhs1, d_max=3)
+    assert not p.closed
+    assert p.forward_path == ()
+    assert p.backward_path == ()
+
+
+def test_find_path_total_depth_matches_search():
+    """find_path's reported total_depth should match search's, on a case
+    where search closes (so we can compare)."""
+    lhs2 = parse_equation('x = x').lhs
+    rhs2 = parse_equation('x = (x ◇ x) ◇ (x ◇ x)').rhs
+    lhs1, rhs1 = _e('a = a ◇ a')
+    s = search(lhs2, rhs2, lhs1, rhs1)
+    p = find_path(lhs2, rhs2, lhs1, rhs1)
+    assert s.closed and p.closed
+    assert s.total_depth == p.total_depth
+
+
+def test_find_path_intermediate_terms_have_bounded_size():
+    """All intermediate terms must respect the size cap."""
+    lhs2 = parse_equation('x = x').lhs
+    rhs2 = parse_equation('x = (x ◇ x) ◇ (x ◇ x)').rhs
+    lhs1, rhs1 = _e('a = a ◇ a')
+    cap = default_size_cap(lhs2, rhs2)
+    p = find_path(lhs2, rhs2, lhs1, rhs1, size_cap=cap)
+    assert p.closed
+    for t in list(p.forward_path) + list(p.backward_path):
+        assert term_size(t) <= cap
