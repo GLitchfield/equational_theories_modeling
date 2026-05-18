@@ -1,0 +1,38 @@
+{
+  "config": {
+    "n_equations": 4694,
+    "max_rules": 50,
+    "max_critical_pairs": 500,
+    "max_term_size": 30,
+    "wall_seconds": 2.0,
+    "pre_filtered_phase0_incomparable": true
+  },
+  "status_counts": {
+    "COMPLETED": 2129,
+    "PHASE0_EXCLUDED": 1656,
+    "BUDGET_CPS": 789,
+    "BUDGET_WALL": 78,
+    "NO_RULES_FROM_INPUT": 39,
+    "BUDGET_RULES": 3
+  },
+  "status_fractions": {
+    "COMPLETED": 0.4535577332765232,
+    "PHASE0_EXCLUDED": 0.3527907967618236,
+    "BUDGET_CPS": 0.16808691947166596,
+    "BUDGET_WALL": 0.016616957818491693,
+    "NO_RULES_FROM_INPUT": 0.008308478909245846,
+    "BUDGET_RULES": 0.0006391137622496804
+  },
+  "headline": {
+    "n_completed": 2129,
+    "n_fully_completed": 621,
+    "n_completed_with_size_cap_drops_or_dormant": 1508,
+    "completion_rate": 0.4535577332765232,
+    "fully_completion_rate": 0.13229654878568387,
+    "n_no_rules_from_input": 39,
+    "n_phase0_excluded": 1656,
+    "n_budget": 870,
+    "n_completed_with_dormant_cps": 1485
+  },
+  "total_wall_seconds": 191.39569520950317
+}

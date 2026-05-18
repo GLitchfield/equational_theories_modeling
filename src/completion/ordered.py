@@ -41,7 +41,7 @@ from src.completion.kb import (
     non_var_positions,
 )
 from src.data.parser import Term, Var
-from src.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, lpo_gt_total
+from src.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, lpo_gt, lpo_gt_total
 from src.rewrite.matching import all_rewrites, term_size
 from src.rewrite.unification import collect_vars
 
@@ -79,23 +79,32 @@ class OrderedResult:
 def equation_to_rules(s: Term, t: Term) -> list[Rule]:
     """Return the 0–2 valid directional rules for equation s = t.
 
-    Variable-inclusion is the construction-time gate; the LPO
-    per-instance check happens at rewriting.
+    Three filters in sequence:
 
-      Vars(t) ⊆ Vars(s)  → rule s → t valid.
-      Vars(s) ⊆ Vars(t)  → rule t → s valid.
+      1. Variable-inclusion: rule l → r requires Vars(r) ⊆ Vars(l).
+      2. Trivial: skip if s == t.
+      3. Wrong-direction strict LPO: if abstract STRICT lpo_gt(r, l)
+         holds — i.e., strict LPO orients the *opposite* direction —
+         then σ(r) > σ(l) for every σ (by strict-LPO stability under
+         substitution), so the per-instance check on rule l → r
+         would never pass. The rule is useless; drop it.
 
-    When both hold (Vars(s) == Vars(t)), both rules are returned —
-    the rewriter will pick whichever side is order-decreasing on the
-    specific instance. Trivial equations (s == t literally) return []."""
+    What survives:
+      - rules where strict LPO orients THIS direction (lhs > rhs):
+        the per-instance check always passes at apply-time.
+      - rules where strict LPO is incomparable (commutativity-shaped):
+        per-instance check (using total LPO with variable precedence)
+        gates each rewrite."""
     if s == t:
         return []
     vs = {v.name for v in collect_vars(s)}
     vt = {v.name for v in collect_vars(t)}
     rules: list[Rule] = []
-    if vt <= vs:
+    # rule s → t
+    if vt <= vs and not lpo_gt(t, s):
         rules.append((s, t))
-    if vs <= vt:
+    # rule t → s
+    if vs <= vt and not lpo_gt(s, t):
         rules.append((t, s))
     return rules
 
@@ -115,13 +124,23 @@ def ordered_normalize(
     (b ◇ a) vs (a ◇ b) is "greater" so that ordered rewriting can
     rewrite one to the other.
 
+    Optimization: pre-flag rules where STRICT abstract LPO orients
+    them strictly (lhs > rhs). For those, `σ(lhs) > σ(rhs)` follows
+    from strict-LPO stability under substitution, so the per-instance
+    check is guaranteed to pass and can be skipped. Only rules with
+    strict-LPO-incomparable sides pay the per-instance cost.
+
     Termination: each successful rewrite is strictly decreasing under
     total LPO, which is well-founded. So normalize terminates."""
+    # Pre-flag: strict abstract LPO orient → fast path.
+    flagged: list[tuple[Term, Term, bool]] = [
+        (l, r, lpo_gt(l, r)) for l, r in rules
+    ]
     while True:
         applied = False
-        for l, r in rules:
+        for l, r, strict in flagged:
             for nt in all_rewrites(t, l, r):
-                if lpo_gt_total(t, nt, precedence):
+                if strict or lpo_gt_total(t, nt, precedence):
                     t = nt
                     applied = True
                     break

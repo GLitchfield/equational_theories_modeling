@@ -1,0 +1,30 @@
+{
+  "config": {
+    "n_equations": 4694,
+    "n_off_diagonal_pairs": 22028942,
+    "n_completed_e1_used": 2129,
+    "n_fully_completed_e1_used": 621,
+    "ground_truth_total_TRUE": 8173585,
+    "ground_truth_total_FALSE": 13855357
+  },
+  "true_side_headline": {
+    "description": "TRUE pair coverage: rule system normalizes both sides to the same NF. SOUND for ordered completion \u2014 every rewrite step is a sound consequence of E1, regardless of precedence.",
+    "base_size": 2129,
+    "n_true_correct": 495584,
+    "n_true_wrong (soundness bugs \u2014 must be 0)": 0,
+    "fraction_of_22M": 0.02249694969463354,
+    "fraction_of_ground_truth_TRUE": 0.060632390805258646
+  },
+  "false_side_NOT_SOUND_for_ordered_kb": {
+    "description": "FALSE predictions from ordered completion are NOT sound in the equational-implication setting. The per-instance LPO check uses a fixed variable precedence; the resulting NFs depend on names of E2 free variables. Two terms equal in E1 may normalize to different NFs under one precedence and matching NFs under another. Reported here only as descriptive count, not a coverage claim.",
+    "base_size_fully": 621,
+    "n_false_predicted": 2674927,
+    "n_false_predicted_agreeing_with_ground_truth": 2672689,
+    "n_false_predicted_disagreeing": 2238,
+    "note": "Use plain-KB Phase 3 numbers for the sound FALSE headline. Ordered KB is for TRUE-side coverage only."
+  },
+  "wall_seconds": 648.9121084213257,
+  "n_disagreements_logged": 0,
+  "n_e1_timed_out": 18,
+  "per_e1_timeout_seconds": 30.0
+}
