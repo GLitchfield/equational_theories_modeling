@@ -1,0 +1,38 @@
+{
+  "purity_audit": {
+    "src/rewrite/engine.py": "clean — only imports + frozen dataclasses at module level",
+    "src/rewrite/matching.py": "clean — only imports at module level",
+    "src/coverage/safe_search.py": "clean — only imports + Enum + frozen dataclasses",
+    "verdict": "safe for multiprocessing"
+  },
+  "matcher_subsumption_check": {
+    "description": "Verify engine at d_max=2 solves matcher-solved pairs. Done with safe_search; the matcher's variable-disjoint catches are not in safe_search's reach by construction.",
+    "sample_size": 100,
+    "solved_by_safe_search_d_max_2": 36,
+    "not_solved_breakdown": {
+      "no_valid_rule_from_e1 (variable-disjoint E1)": 64
+    },
+    "matcher_proofs_total": 49586,
+    "matcher_proofs_variable_disjoint": 30010,
+    "matcher_proofs_within_ceiling": 19576,
+    "interpretation": "Of 49,586 matcher proofs: 19,576 (39.5%) have within-ceiling E1 and are subsumed by engine at d_max=2. 30,010 (60.5%) have variable-disjoint E1 — matcher catches them via Birkhoff substitution-instance reasoning; engine cannot recover them via rewriting. Matcher variable-disjoint contribution to combined coverage: 30,010 / 8,173,585 = 0.367% of GT TRUE. Phase 5 union must keep matcher's variable-disjoint pairs as a separate union element."
+  },
+  "rewrite_chain_validation": {
+    "description": "Run safe_search at d_max=6 over the full rewrite-chain corpus. Compare to the original rewrite-chain study's 83% (which used the unsafe engine).",
+    "corpus_size": 1636,
+    "no_valid_rule_from_e1 (variable-disjoint E1)": 915,
+    "solved": 340,
+    "frontier_died": 379,
+    "depth_exhausted": 2,
+    "solved_fraction_overall": 0.2079,
+    "solved_fraction_within_ceiling": 0.4716,
+    "interpretation": "Unsafe engine's 83% in the rewrite-chain study was substantially driven by rule-var leakage. Safe engine: 20.79% overall, 47.16% of within-ceiling subset. Depth sweep in Phase 3 will quantify how much d_max=8 lifts this."
+  },
+  "harness_smoke_test": {
+    "description": "Smoke test on 500 within-ceiling pairs from the sample.",
+    "solved": 238,
+    "frontier_died": 258,
+    "depth_exhausted": 4,
+    "wall_clock_seconds": 1.2
+  }
+}
