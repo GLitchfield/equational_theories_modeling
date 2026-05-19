@@ -1,0 +1,32 @@
+{
+  "config": {
+    "sample_size_per_e1": 30,
+    "seed": 42,
+    "n_equations": 4694
+  },
+  "completion_union": {
+    "ordered_completed": 2129,
+    "plain_completed": 1005,
+    "plain_only_not_ordered": 9,
+    "union_completed": 2138
+  },
+  "residual": {
+    "n_e1_residual": 2556,
+    "n_e1_residual_variable_disjoint": 1656,
+    "n_e1_residual_within_ceiling": 900,
+    "n_true_pairs_in_residual": 5058118,
+    "n_true_pairs_residual_variable_disjoint": 4407831,
+    "n_true_pairs_residual_within_ceiling": 650287
+  },
+  "sample": {
+    "n_pairs": 67070,
+    "n_within_ceiling": 19982,
+    "n_variable_disjoint": 47088
+  },
+  "ceiling_estimate": {
+    "description": "rough preview of the structural ceiling",
+    "gt_true_total_off_diag": 8173585,
+    "gt_true_in_variable_disjoint_rows": 4407831,
+    "gt_true_fraction_in_variable_disjoint_rows": 0.539277563027729
+  }
+}
