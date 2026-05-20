@@ -1,0 +1,20 @@
+{
+  "config": {
+    "engine_results": "data/processed/coverage_measurement/engine_results_within_ceiling_d8.parquet",
+    "spot_check_n": 50,
+    "seed": 42
+  },
+  "n_pairs_in_engine_output": 19982,
+  "n_pairs_solved_by_engine": 2836,
+  "soundness_check": {
+    "n_disagreements": 0,
+    "passed": true,
+    "description": "Every solved pair must be GT TRUE. n=0 is the target."
+  },
+  "replay_spot_check": {
+    "n_sampled": 50,
+    "n_replay_ok": 50,
+    "n_replay_mismatch": 0,
+    "passed": true
+  }
+}
