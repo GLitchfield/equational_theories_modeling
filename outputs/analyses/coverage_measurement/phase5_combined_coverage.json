@@ -1,0 +1,48 @@
+{
+  "gt_truth_totals": {
+    "gt_true": 8173585,
+    "gt_false": 13855357,
+    "off_diag_pairs": 22028942
+  },
+  "matcher_breakdown": {
+    "total": 49586,
+    "variable_disjoint_e1": 30010,
+    "within_ceiling_e1": 19576,
+    "completed_e1_overlap_with_completion": 15834,
+    "not_completed_within_ceiling_overlap_with_engine": 3742
+  },
+  "engine_within_ceiling": {
+    "sample_size": 19982,
+    "solved_in_sample": 2836,
+    "sample_solve_rate": 0.14192773496146532,
+    "pair_level_estimated_solved": 8780,
+    "pair_level_fraction_of_gt_true": 0.0010741920466967676,
+    "within_ceiling_residual_total_gt_true": 650287
+  },
+  "completion": {
+    "total_true_correct": 495801,
+    "ordered_kb_true_correct": 495584,
+    "plain_only_kb_true_correct": 217,
+    "fraction_of_gt_true": 0.06065893974308703
+  },
+  "combined_pair_estimate": {
+    "sum": 534591,
+    "fraction_of_gt_true": 0.06540471531157993,
+    "structural_ceiling": 3765754,
+    "structural_ceiling_fraction_of_gt_true": 0.46072243697227105,
+    "fraction_of_structural_ceiling": 0.1419612114864646
+  },
+  "per_e1_stratification": {
+    "n_e1_within_ceiling": 900,
+    "n_e1_solved_at_least_one": 638,
+    "n_e1_solved_zero": 262,
+    "solve_rate_median": 0.1,
+    "solve_rate_mean": 0.2982453465962237,
+    "solve_rate_p25": 0.0,
+    "solve_rate_p75": 0.5,
+    "corr_row_density_solve_rate": -0.37117442316398697
+  },
+  "future_work": [
+    "Cross-cut by proof-survey category (substitution/rewrite-chain/Vampire/Egg) \u2014 requires joining the per-equation category labels from the proof survey. Skipped here; can be done in Phase 6 if useful."
+  ]
+}
