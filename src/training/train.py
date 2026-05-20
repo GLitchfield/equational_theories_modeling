@@ -29,7 +29,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from src.data.dataset import make_loaders
+from lib.data.dataset import make_loaders
 from src.model.aux_heads import (
     AuxiliaryHeads,
     HEAD_SPECS as AUX_HEAD_SPECS,

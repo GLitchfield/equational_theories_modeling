@@ -26,7 +26,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from torch_geometric.data import Batch, Data
 
-from src.data.parser import EDGE_FEATURE_DIM, NODE_FEATURE_DIM
+from lib.data.parser import EDGE_FEATURE_DIM, NODE_FEATURE_DIM
 
 # Order MUST match HEAD_SPECS in src/model/aux_heads.py — collate
 # emits dicts keyed by these names so the train loop can hand them

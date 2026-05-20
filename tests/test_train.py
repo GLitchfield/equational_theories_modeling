@@ -14,12 +14,12 @@ if _REPO_ROOT not in sys.path:
 
 import numpy as np  # noqa: E402
 
-from src.data.dataset import (  # noqa: E402
+from lib.data.dataset import (  # noqa: E402
     AUX_HEAD_NAMES,
     ImplicationPairsDataset,
     collate_pairs,
 )
-from src.data.parser import equation_to_pyg  # noqa: E402
+from lib.data.parser import equation_to_pyg  # noqa: E402
 from src.model.aux_heads import AuxiliaryHeads  # noqa: E402
 from src.model.encoder import EquationEncoder  # noqa: E402
 from src.model.jepa import JEPA  # noqa: E402

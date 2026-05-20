@@ -3,8 +3,8 @@ terms."""
 
 from __future__ import annotations
 
-from src.data.parser import Op, Var, parse_equation
-from src.rewrite.lpo import lpo_compare, lpo_gt, orient
+from lib.data.parser import Op, Var, parse_equation
+from lib.rewrite.lpo import lpo_compare, lpo_gt, orient
 
 
 def _t(text: str):

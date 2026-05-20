@@ -45,7 +45,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from src.completion.ordered import OrderedStatus, ordered_complete  # noqa: E402
-from src.data.parser import Term, parse_equation  # noqa: E402
+from lib.data.parser import Term, parse_equation  # noqa: E402
 
 
 def _abs(p: str) -> str:

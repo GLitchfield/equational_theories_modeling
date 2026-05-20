@@ -35,7 +35,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.data.parser import parse_equation  # noqa: E402
+from lib.data.parser import parse_equation  # noqa: E402
 from src.decoder.tokenizer import build_normalized_proof, tokenize  # noqa: E402
 from src.matcher.matcher import ordered_vars  # noqa: E402
 

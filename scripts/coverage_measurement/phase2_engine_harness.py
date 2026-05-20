@@ -70,7 +70,7 @@ def worker_init(equations_path: str, d_max: int, size_cap: int | None,
     """Pool initializer. Each worker parses equations.txt and stashes
     params in module globals."""
     sys.setrecursionlimit(20000)
-    from src.data.parser import parse_equation
+    from lib.data.parser import parse_equation
     global _WORKER_EQS, _WORKER_PARAMS
     with open(_abs(equations_path)) as f:
         lines = [ln.rstrip('\n') for ln in f if ln.strip()]

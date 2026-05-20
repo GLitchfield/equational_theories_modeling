@@ -60,7 +60,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from src.completion.kb import normalize  # noqa: E402
-from src.data.parser import OPERATOR, Op, Term, Var, parse_equation  # noqa: E402
+from lib.data.parser import OPERATOR, Op, Term, Var, parse_equation  # noqa: E402
 
 
 class _PerE1Timeout(Exception):

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.data.parser import parse_equation
+from lib.data.parser import parse_equation
 from src.matcher.matcher import (
     Match,
     match,

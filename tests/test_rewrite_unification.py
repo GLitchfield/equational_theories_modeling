@@ -3,8 +3,8 @@ unification with occurs-check."""
 
 from __future__ import annotations
 
-from src.data.parser import Op, Var, parse_equation
-from src.rewrite.unification import (
+from lib.data.parser import Op, Var, parse_equation
+from lib.rewrite.unification import (
     apply_subst,
     collect_vars,
     occurs,

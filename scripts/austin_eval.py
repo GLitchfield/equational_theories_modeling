@@ -70,7 +70,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.data.dataset import load_graph_cache  # noqa: E402
+from lib.data.dataset import load_graph_cache  # noqa: E402
 from src.model.encoder import EquationEncoder  # noqa: E402
 from src.model.jepa import JEPA  # noqa: E402
 from src.model.predictor import ImplicationPredictor  # noqa: E402

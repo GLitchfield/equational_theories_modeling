@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.data.parser import Op, Var, parse_equation
+from lib.data.parser import Op, Var, parse_equation
 from src.completion.kb import normalize as plain_normalize
 from src.completion.ordered import (
     OrderedStatus,

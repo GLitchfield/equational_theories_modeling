@@ -28,7 +28,7 @@ from typing import Any
 
 import torch
 
-from src.data.dataset import make_loaders
+from lib.data.dataset import make_loaders
 from src.model.encoder import EquationEncoder
 from src.model.jepa import JEPA
 from src.model.predictor import ImplicationPredictor

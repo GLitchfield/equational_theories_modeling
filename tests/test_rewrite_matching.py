@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.data.parser import Op, Var, parse_equation
-from src.rewrite.matching import (
+from lib.data.parser import Op, Var, parse_equation
+from lib.rewrite.matching import (
     all_rewrites,
     first_order_match,
     rewrite_at,

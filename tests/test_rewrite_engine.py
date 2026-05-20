@@ -11,7 +11,7 @@ Cover the cases the engine must handle to be useful:
 
 from __future__ import annotations
 
-from src.data.parser import parse_equation
+from lib.data.parser import parse_equation
 from src.rewrite.engine import (
     EnumerationResult,
     ProofPath,
@@ -21,7 +21,7 @@ from src.rewrite.engine import (
     find_path,
     search,
 )
-from src.rewrite.matching import term_size
+from lib.rewrite.matching import term_size
 
 
 def _e(text: str):
@@ -117,7 +117,7 @@ def test_search_size_cap_blocks_both_directions():
 
 def test_default_size_cap_uses_max():
     """default_size_cap = max(50, 5 × max(|lhs|, |rhs|))."""
-    from src.rewrite.matching import term_size
+    from lib.rewrite.matching import term_size
     lhs = parse_equation('x = x').lhs
     assert default_size_cap(lhs, lhs) == 50   # small → 50 floor
     # Build a term big enough that 5× exceeds 50 (need |t| ≥ 11).

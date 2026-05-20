@@ -38,9 +38,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from src.data.parser import Term
-from src.rewrite.matching import all_rewrites, term_size
-from src.rewrite.unification import collect_vars
+from lib.data.parser import Term
+from lib.rewrite.matching import all_rewrites, term_size
+from lib.rewrite.unification import collect_vars
 
 
 class TerminateReason(str, Enum):

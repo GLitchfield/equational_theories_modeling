@@ -19,7 +19,7 @@ not unifiable.
 
 from __future__ import annotations
 
-from src.data.parser import Op, Term, Var
+from lib.data.parser import Op, Term, Var
 
 Substitution = dict[Var, Term]
 

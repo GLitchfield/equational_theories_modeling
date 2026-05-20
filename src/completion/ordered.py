@@ -40,10 +40,10 @@ from src.completion.kb import (
     critical_pairs,
     non_var_positions,
 )
-from src.data.parser import Term, Var
-from src.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, lpo_gt, lpo_gt_total
-from src.rewrite.matching import all_rewrites, term_size
-from src.rewrite.unification import collect_vars
+from lib.data.parser import Term, Var
+from lib.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, lpo_gt, lpo_gt_total
+from lib.rewrite.matching import all_rewrites, term_size
+from lib.rewrite.unification import collect_vars
 
 
 Rule = tuple[Term, Term]

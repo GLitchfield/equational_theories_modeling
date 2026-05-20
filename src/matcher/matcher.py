@@ -30,7 +30,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.data.parser import Equation, Op, Term, Var, canonical_var_ids
+from lib.data.parser import Equation, Op, Term, Var, canonical_var_ids
 
 
 # --- core structural match ---------------------------------------------------

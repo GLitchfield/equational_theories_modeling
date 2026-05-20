@@ -12,7 +12,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.data.parser import (  # noqa: E402
+from lib.data.parser import (  # noqa: E402
     EDGE_FEATURE_DIM,
     NODE_FEATURE_DIM,
     equation_to_pyg,
@@ -294,7 +294,7 @@ def test_bidirectional_edges_propagate_root_from_leaf_in_one_layer():
     """
     from torch_geometric.nn import GATv2Conv
 
-    from src.data.parser import EDGE_FEATURE_DIM, equation_to_pyg
+    from lib.data.parser import EDGE_FEATURE_DIM, equation_to_pyg
 
     # Three nodes: op (0), var x (1), var y (2). Bidirectional edges mean
     # the op node has incoming edges from both leaves.

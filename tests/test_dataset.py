@@ -14,14 +14,14 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.data.dataset import (  # noqa: E402
+from lib.data.dataset import (  # noqa: E402
     AUX_HEAD_NAMES,
     ImplicationPairsDataset,
     collate_pairs,
     derive_train_indices,
     make_loaders,
 )
-from src.data.parser import NODE_FEATURE_DIM, equation_to_pyg  # noqa: E402
+from lib.data.parser import NODE_FEATURE_DIM, equation_to_pyg  # noqa: E402
 
 
 def _synthetic():

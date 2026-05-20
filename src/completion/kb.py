@@ -33,10 +33,10 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 
-from src.data.parser import Op, Term, Var
-from src.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, orient
-from src.rewrite.matching import all_rewrites, term_size
-from src.rewrite.unification import (
+from lib.data.parser import Op, Term, Var
+from lib.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, orient
+from lib.rewrite.matching import all_rewrites, term_size
+from lib.rewrite.unification import (
     apply_subst,
     rename_vars,
     unify,

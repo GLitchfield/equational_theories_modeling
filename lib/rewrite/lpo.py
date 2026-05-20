@@ -50,8 +50,8 @@ This file is a Phase 1 component of the completion exploration plan.
 
 from __future__ import annotations
 
-from src.data.parser import Op, Term, Var
-from src.rewrite.unification import collect_vars
+from lib.data.parser import Op, Term, Var
+from lib.rewrite.unification import collect_vars
 
 # Default variable precedence — alphabetical over the ETP alphabet.
 DEFAULT_VAR_PRECEDENCE: tuple[str, ...] = ('u', 'v', 'w', 'x', 'y', 'z')

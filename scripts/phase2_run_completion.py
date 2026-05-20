@@ -75,7 +75,7 @@ from src.completion.kb import (  # noqa: E402
     CompletionStatus,
     complete,
 )
-from src.data.parser import Term, parse_equation  # noqa: E402
+from lib.data.parser import Term, parse_equation  # noqa: E402
 
 
 def _abs(p: str) -> str:

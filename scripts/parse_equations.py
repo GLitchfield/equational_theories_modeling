@@ -28,7 +28,7 @@ if _REPO_ROOT not in sys.path:
 
 import torch  # noqa: E402
 
-from src.data.parser import (  # noqa: E402
+from lib.data.parser import (  # noqa: E402
     EDGE_FEATURE_DIM,
     NODE_FEATURE_DIM,
     NUM_VAR_SLOTS,

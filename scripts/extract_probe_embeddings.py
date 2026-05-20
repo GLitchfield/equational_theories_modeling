@@ -46,7 +46,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from src.data.dataset import load_graph_cache  # noqa: E402
+from lib.data.dataset import load_graph_cache  # noqa: E402
 from src.model.encoder import EquationEncoder  # noqa: E402
 
 

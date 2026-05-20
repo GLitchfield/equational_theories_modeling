@@ -60,9 +60,9 @@ from src.completion.kb import (  # noqa: E402
     CompletionStatus,
     complete,
 )
-from src.data.parser import parse_equation  # noqa: E402
-from src.rewrite.lpo import lpo_gt  # noqa: E402
-from src.rewrite.unification import collect_vars  # noqa: E402
+from lib.data.parser import parse_equation  # noqa: E402
+from lib.rewrite.lpo import lpo_gt  # noqa: E402
+from lib.rewrite.unification import collect_vars  # noqa: E402
 
 
 def _abs(p: str) -> str:

@@ -40,7 +40,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.data.splits import random_pair_holdout  # noqa: E402
+from lib.data.splits import random_pair_holdout  # noqa: E402
 
 
 def _abs(path: str) -> str:

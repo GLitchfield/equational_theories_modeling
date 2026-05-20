@@ -20,7 +20,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.data.parser import (  # noqa: E402
+from lib.data.parser import (  # noqa: E402
     EDGE_FEATURE_DIM,
     NODE_FEATURE_DIM,
     NUM_VAR_SLOTS,
@@ -294,7 +294,7 @@ def test_parse_full_corpus():
 
 def test_pyg_data_smoke():
     try:
-        from src.data.parser import equation_to_pyg
+        from lib.data.parser import equation_to_pyg
     except ImportError:
         return
     try:

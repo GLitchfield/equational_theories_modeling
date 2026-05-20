@@ -43,9 +43,9 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.data.parser import OPERATOR, Op, Term, Var, parse_equation  # noqa: E402
-from src.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, lpo_gt, lpo_gt_total  # noqa: E402
-from src.rewrite.matching import all_rewrites  # noqa: E402
+from lib.data.parser import OPERATOR, Op, Term, Var, parse_equation  # noqa: E402
+from lib.rewrite.lpo import DEFAULT_VAR_PRECEDENCE, lpo_gt, lpo_gt_total  # noqa: E402
+from lib.rewrite.matching import all_rewrites  # noqa: E402
 
 
 class _PerE1Timeout(Exception):

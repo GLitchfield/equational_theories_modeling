@@ -22,8 +22,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.data.parser import Term
-from src.rewrite.matching import all_rewrites, term_size
+from lib.data.parser import Term
+from lib.rewrite.matching import all_rewrites, term_size
 
 
 @dataclass(frozen=True)
