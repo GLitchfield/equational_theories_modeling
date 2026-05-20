@@ -1,8 +1,10 @@
 # CLAUDE.md — Equational Implication
 
-**No active plan.** The coverage measurement (`coverage_measurement_plan.md`) is **complete**, delivering the fifth durable artifact: the precise reach of the full deterministic stack (matcher + rewrite engine + completion) over the 22M-pair TRUE side. Output: `outputs/analyses/coverage_measurement/coverage_measurement_synthesis.md`. Headlines: combined sound TRUE coverage **6.54% of GT TRUE**; structural ceiling 46.07%; combined / ceiling = 14.20%. Architectural distribution: completion 92.8% of combined, matcher 5.6%, safe rewrite engine 1.6%. TRUE/FALSE asymmetry: TRUE side concentrates engineering complexity for less coverage; FALSE side larger by pair count, sits on validated completion logic. The honest deliverable is a bounding result, not an extension.
+**Active plan:** `proof_investigation_plan.md` — Phase 8 intermediate-term analysis on hard TRUE proofs. Tests three hypotheses on the within-ceiling dense-row residual that frontier-dies under safe rewriting: higher-variable (do intermediates introduce fresh vars beyond E2), pattern learnability (low-entropy intermediate shapes per E1?), density connection (intermediate complexity vs row density). Extracts intermediate-term records from Vampire/Egg/complex category proofs in `~/git/equational_theories/` to characterize what a successor method would need to produce.
 
-Previous plans (completion exploration, rewrite-chain study, proof_decoder phase 1, matcher, proof corpus survey, JEPA training) all complete and archived.
+Previous plan (coverage measurement) is **complete**, delivering the fifth durable artifact: the precise reach of the full deterministic stack (matcher + rewrite engine + completion) over the 22M-pair TRUE side. Output: `outputs/analyses/coverage_measurement/coverage_measurement_synthesis.md`. Headlines: combined sound TRUE coverage **6.54% of GT TRUE**; structural ceiling 46.07%; combined / ceiling = 14.20%. Architectural distribution: completion 92.8% of combined, matcher 5.6%, safe rewrite engine 1.6%. TRUE/FALSE asymmetry: TRUE side concentrates engineering complexity for less coverage; FALSE side larger by pair count, sits on validated completion logic. The honest deliverable is a bounding result, not an extension.
+
+Previous-previous plans (completion exploration, rewrite-chain study, proof_decoder phase 1, matcher, proof corpus survey, JEPA training) all complete and archived.
 
 The two completed phases left two durable artifacts:
 
