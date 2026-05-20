@@ -72,3 +72,7 @@ trash/*
 
 # Notebook checkpoints
 .ipynb_checkpoints/
+
+# et_studies/*/data — generated parquets per study, large binaries
+et_studies/*/data/*
+!et_studies/*/data/.gitkeep
