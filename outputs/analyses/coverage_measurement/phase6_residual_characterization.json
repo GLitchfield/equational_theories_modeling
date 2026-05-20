@@ -1,0 +1,140 @@
+{
+  "depth_coverage_curve": {
+    "4": {
+      "n_solved": 2826,
+      "fraction_solved": 0.14142728455610049,
+      "terminate_reasons": {
+        "solved": 2826,
+        "frontier_died": 17132,
+        "depth_exhausted": 24
+      }
+    },
+    "6": {
+      "n_solved": 2832,
+      "fraction_solved": 0.1417275547993194,
+      "terminate_reasons": {
+        "solved": 2832,
+        "frontier_died": 17132,
+        "depth_exhausted": 18
+      }
+    },
+    "8": {
+      "n_solved": 2836,
+      "fraction_solved": 0.14192773496146532,
+      "terminate_reasons": {
+        "solved": 2836,
+        "frontier_died": 17132,
+        "depth_exhausted": 13,
+        "wall_timeout": 1
+      }
+    }
+  },
+  "per_e1_by_row_density": {
+    "1-10": {
+      "n_e1": 222,
+      "mean_solve_rate": 0.7978299728299728,
+      "median_solve_rate": 1.0,
+      "n_sampled": 1246,
+      "n_solved": 855,
+      "sample_solve_rate": 0.6861958266452648,
+      "pair_level_extrapolated_solved": 855.0,
+      "pair_level_in_bucket": 1246.0,
+      "pair_level_solve_rate": 0.6861958266452648
+    },
+    "11-50": {
+      "n_e1": 181,
+      "mean_solve_rate": 0.3469754583886599,
+      "median_solve_rate": 0.23809523809523808,
+      "n_sampled": 3826,
+      "n_solved": 1126,
+      "sample_solve_rate": 0.29430214323052795,
+      "pair_level_extrapolated_solved": 1271.3666666666668,
+      "pair_level_in_bucket": 4610.0,
+      "pair_level_solve_rate": 0.2757845263919017
+    },
+    "51-200": {
+      "n_e1": 168,
+      "mean_solve_rate": 0.11547619047619047,
+      "median_solve_rate": 0.06666666666666667,
+      "n_sampled": 5040,
+      "n_solved": 582,
+      "sample_solve_rate": 0.11547619047619048,
+      "pair_level_extrapolated_solved": 2195.1000000000004,
+      "pair_level_in_bucket": 15973.0,
+      "pair_level_solve_rate": 0.13742565579415267
+    },
+    "201-1000": {
+      "n_e1": 179,
+      "mean_solve_rate": 0.04860335195530726,
+      "median_solve_rate": 0.0,
+      "n_sampled": 5370,
+      "n_solved": 261,
+      "sample_solve_rate": 0.04860335195530726,
+      "pair_level_extrapolated_solved": 3243.1666666666674,
+      "pair_level_in_bucket": 69138.0,
+      "pair_level_solve_rate": 0.046908598262412386
+    },
+    "1001-4693": {
+      "n_e1": 150,
+      "mean_solve_rate": 0.002666666666666667,
+      "median_solve_rate": 0.0,
+      "n_sampled": 4500,
+      "n_solved": 12,
+      "sample_solve_rate": 0.0026666666666666666,
+      "pair_level_extrapolated_solved": 1215.4,
+      "pair_level_in_bucket": 559320.0,
+      "pair_level_solve_rate": 0.0021729957805907175
+    }
+  },
+  "per_e1_overall": {
+    "n_e1": 900,
+    "corr_row_density_solve_rate": -0.37117442316398697,
+    "mean_solve_rate": 0.2982453465962237,
+    "median_solve_rate": 0.1,
+    "n_e1_zero_solves": 262,
+    "n_e1_with_solves": 638
+  },
+  "category_cross_cut": {
+    "uncategorized_transitive": {
+      "n_total": 18511,
+      "n_solved": 1946,
+      "solve_rate": 0.10512668143266166
+    },
+    "a_variable_substitution": {
+      "n_total": 785,
+      "n_solved": 785,
+      "solve_rate": 1.0
+    },
+    "e_vampire_superposition": {
+      "n_total": 350,
+      "n_solved": 8,
+      "solve_rate": 0.022857142857142857
+    },
+    "e_egg_combinator": {
+      "n_total": 186,
+      "n_solved": 1,
+      "solve_rate": 0.005376344086021506
+    },
+    "c_rewrite_chain": {
+      "n_total": 123,
+      "n_solved": 76,
+      "solve_rate": 0.6178861788617886
+    },
+    "a_trivial_rfl": {
+      "n_total": 20,
+      "n_solved": 20,
+      "solve_rate": 1.0
+    },
+    "e_complex_construction": {
+      "n_total": 7,
+      "n_solved": 0,
+      "solve_rate": 0.0
+    }
+  },
+  "variable_disjoint_stratum": {
+    "n_pairs": 47088,
+    "n_solved": 0,
+    "n_no_valid_rule_from_e1": 47088,
+    "fraction_short_circuited": 1.0
+  }
+}
