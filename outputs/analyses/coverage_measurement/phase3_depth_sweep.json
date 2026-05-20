@@ -1,0 +1,60 @@
+{
+  "config": {
+    "depth_settings": [4, 6, 8],
+    "wall_seconds": 30,
+    "pool_size": 12,
+    "within_ceiling_sample_size": 19982,
+    "variable_disjoint_sample_size": 47088
+  },
+  "variable_disjoint_confirmation": {
+    "d_max_used": 6,
+    "n_pairs": 47088,
+    "no_valid_rule_from_e1": 47088,
+    "fraction_short_circuited": 1.0,
+    "wall_seconds": 0.2,
+    "interpretation": "100% of variable-disjoint pairs short-circuit on no_valid_rule_from_e1 at rule-construction time. The structural ceiling is confirmed empirically. No further depth runs needed for this stratum."
+  },
+  "within_ceiling_depth_sweep": {
+    "d_max_4": {
+      "solved": 2826, "fraction_solved": 0.1414,
+      "frontier_died": 17132, "fraction_frontier_died": 0.8574,
+      "depth_exhausted": 24,  "fraction_depth_exhausted": 0.0012,
+      "wall_timeout": 0
+    },
+    "d_max_6": {
+      "solved": 2832, "fraction_solved": 0.1417,
+      "frontier_died": 17132, "fraction_frontier_died": 0.8574,
+      "depth_exhausted": 18,  "fraction_depth_exhausted": 0.0009,
+      "wall_timeout": 0
+    },
+    "d_max_8": {
+      "solved": 2836, "fraction_solved": 0.1419,
+      "frontier_died": 17132, "fraction_frontier_died": 0.8574,
+      "depth_exhausted": 13,  "fraction_depth_exhausted": 0.0007,
+      "wall_timeout": 1
+    },
+    "delta_d4_to_d8": {
+      "additional_solved": 10,
+      "additional_solved_fraction": 0.0005,
+      "interpretation": "Depth is NOT the binding constraint. Adding 4 levels of depth (d_max 4 -> 8) adds only 10 solves of 19,982 pairs (0.05%). The curve plateaued before d_max=4."
+    }
+  },
+  "wall_timeout_sensitivity": {
+    "description": "Re-ran 100 d=8 frontier_died pairs at 60s wall_timeout.",
+    "n_pairs": 100,
+    "wall_seconds": 60,
+    "solved_at_60s": 0,
+    "all_frontier_died": true,
+    "interpretation": "Wall timeout is not binding. The engine finishes via frontier_died in microseconds, not by hitting the wall. Stay at 30s for the main run."
+  },
+  "dominant_failure_mode": {
+    "name": "frontier_died",
+    "fraction_at_d8": 0.8574,
+    "characterization": "Both BFS frontiers run out of new states before meeting. The safe-direction rewriting on the within-ceiling residual produces a reachable set too small to bridge lhs2 and rhs2 for ~86% of pairs. Adding depth budget does not help — the small reachable set is the structural limit of safe-direction first-order rewriting on these E1s, not a search-budget artifact."
+  },
+  "headline_engine_coverage_of_within_ceiling_residual": {
+    "best_value_at_d_max_8": 2836,
+    "best_fraction_of_within_ceiling_sample": 0.1419,
+    "note": "Sample-level fraction. Pair-level (row-density-weighted) coverage is computed in Phase 5."
+  }
+}
