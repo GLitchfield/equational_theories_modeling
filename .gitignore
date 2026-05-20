@@ -76,3 +76,6 @@ trash/*
 # et_studies/*/data — generated parquets per study, large binaries
 et_studies/*/data/*
 !et_studies/*/data/.gitkeep
+
+# pyenv local
+.python-version
