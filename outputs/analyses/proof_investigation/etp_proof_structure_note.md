@@ -53,6 +53,21 @@ The distinction `explicit` vs `implicit` is exactly the closure distinction: `ex
 
 The repo's dashboard and the `export_raw_implications_5_9_2026.csv` ground truth are the resolved-to-`±3/±4` form of running this closure over the entire ~11K explicit-edge set plus the refutation Facts records. By the time a pair shows up in our ground truth as code `+3` or `+4`, the closure has been computed.
 
+## Disk-size representations of the closure
+
+The same closure information is stored in the ETP repo at several densities. Sizes from `~/git/equational_theories/`:
+
+| representation | what it stores | size |
+|---|---|---|
+| `full_entries.json` | **source model**: 10,674 explicit implication theorems + 1,698 finite-magma Facts records + 1 unconditional. The Closure module derives the 22M outcomes from this. | **~4 MB** |
+| `data/2024-11-10-outcomes.json.zip` | per-pair closure result as outcome **strings** (`"explicit_proof_true"`, `"implicit_proof_true"`, etc.) over the 4,694 × 4,694 grid | 2.1 MB compressed / **499 MB uncompressed** |
+| `data/2024-10-20-edge_list.csv.zip` | per-pair `(e1, e2, outcome)` rows for all 22M off-diagonal pairs | 57 MB compressed / **1.04 GB uncompressed** |
+| `data/raw/etp_export/export_raw_implications_5_9_2026.csv` (our project's ground truth) | the closure resolved to compact `int8` codes (`±3` / `±4`) over the 4,694 × 4,694 grid | **56 MB** uncompressed (~22 MB if stored binary as int8) |
+
+The compact form of the closure is ~4 MB — `full_entries.json` is the actual model. Pre-computed snapshots range from 22 MB (binary int8) to 1 GB (CSV with string outcomes) depending on encoding density.
+
+**The 4 MB / 22 MB ratio is the leverage of the explicit-edge set.** Each Facts record refutes thousands of anti-implications at once; each direct implication anchors a closure cone of hundreds-to-thousands of transitive consequences. The closure cone is what makes ~4 MB of evidence sufficient to certify all 22M outcomes.
+
 ## The 22M-pair picture
 
 | stratum | count | how it's certified |
@@ -93,7 +108,7 @@ This re-reads the coverage-measurement-synthesis's "embeddings-as-heuristic" fra
 
 - **Triage layer** (predict method-class per pair): unchanged — still feasible, still useful regardless of stratum.
 - **Direct-proof generator** (the "Lean output mimicking Vampire / Egg" angle): operates on the 722-pair direct-proof subset of the residual. Coverage upper bound is bounded by the absolute size of that subset, not by the within-ceiling residual at large.
-- **Chain finder over the explicit-edge graph** (new role surfaced by this note): operates on the 18,511 transitive pairs by traversing the ~11K explicit edges. This is a graph-learning problem, not a term-generation problem. May be the larger opportunity if the chains are short enough to learn.
+- **Chain finder over the explicit-edge graph** (new role surfaced by this note): operates on the 18,511 transitive pairs by traversing the ~11K explicit edges. This is a graph-learning problem, not a term-generation problem. The leverage ratio (4 MB of explicit evidence → 22M certified outcomes) sharpens the argument: the production target isn't millions of per-pair proofs, it's a small set of high-yield direct proofs whose closure cones cover the residual. A learned model predicting *which direct proofs to add to extend coverage* can multiply through the closure to a much larger pair-level improvement than its raw output size suggests. This may be the larger opportunity.
 - **Search heuristic over safe rewriting**: still ruled out — depth/wall plateaus settled this.
 
 ## Open question for after Proof Investigation
@@ -108,5 +123,8 @@ Cheaply answerable with a graph-shortest-path computation over the 11K explicit 
 - `equational_theories/Closure.lean` — the Outcome enum + closure logic.
 - `Generated/{VampireProven, MagmaEgg, SimpleRewrites, TrivialBruteforce}` — direct-proof files.
 - `Generated/{FinSearch, FinitePoly, All4x4Tables}` — refutation `Facts` records.
+- `~/git/equational_theories/full_entries.json` — the source model (~4 MB), 12,373 entries.
+- `~/git/equational_theories/data/2024-11-10-outcomes.json.zip` — pre-computed closure as strings.
+- `~/git/equational_theories/data/2024-10-20-edge_list.csv.zip` — pre-computed closure as `(e1, e2, outcome)` rows.
 - `data/processed/proof_corpus/true_corpus.parquet` — survey's per-pair category labels.
-- `data/raw/etp_export/export_raw_implications_5_9_2026.csv` — ground truth, the closure-resolved 4694×4694 outcome table.
+- `data/raw/etp_export/export_raw_implications_5_9_2026.csv` — ground truth, the closure-resolved 4694×4694 outcome table in `int8` form.
