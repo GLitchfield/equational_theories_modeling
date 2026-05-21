@@ -18,13 +18,13 @@ density. Reproducible via fixed seed.
 Reads:
   data/raw/etp/equations.txt
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
-  data/processed/completion_study/equation_completion.parquet         (Phase 2)
-  data/processed/completion_study/equation_ordered_completion.parquet (Phase 4)
-  data/processed/completion_study/equation_orientability.parquet      (Phase 0)
+  et_studies/completion_exploration/data/equation_completion.parquet         (Phase 2)
+  et_studies/completion_exploration/data/equation_ordered_completion.parquet (Phase 4)
+  et_studies/completion_exploration/data/equation_orientability.parquet      (Phase 0)
 
 Writes:
-  data/processed/coverage_measurement/residual.parquet
-  data/processed/coverage_measurement/sample.parquet
+  et_studies/coverage_measurement/data/residual.parquet
+  et_studies/coverage_measurement/data/sample.parquet
   outputs/analyses/coverage_measurement/phase1_residual_summary.json
 """
 
@@ -55,15 +55,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--ground-truth',
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--plain-completion',
-                    default='data/processed/completion_study/equation_completion.parquet')
+                    default='et_studies/completion_exploration/data/equation_completion.parquet')
     ap.add_argument('--ordered-completion',
-                    default='data/processed/completion_study/equation_ordered_completion.parquet')
+                    default='et_studies/completion_exploration/data/equation_ordered_completion.parquet')
     ap.add_argument('--orientability',
-                    default='data/processed/completion_study/equation_orientability.parquet')
+                    default='et_studies/completion_exploration/data/equation_orientability.parquet')
     ap.add_argument('--output-residual',
-                    default='data/processed/coverage_measurement/residual.parquet')
+                    default='et_studies/coverage_measurement/data/residual.parquet')
     ap.add_argument('--output-sample',
-                    default='data/processed/coverage_measurement/sample.parquet')
+                    default='et_studies/coverage_measurement/data/sample.parquet')
     ap.add_argument('--output-summary',
                     default='outputs/analyses/coverage_measurement/phase1_residual_summary.json')
     ap.add_argument('--sample-size', type=int, default=30,

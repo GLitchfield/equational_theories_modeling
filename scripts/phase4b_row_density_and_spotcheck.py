@@ -16,8 +16,8 @@ Decision rule:
             doesn't change the story; the 12% headline is the result.
 
 Reads:
-  data/processed/completion_study/phase4a_failed_cps.parquet
-  data/processed/completion_study/equation_completion.parquet
+  et_studies/completion_exploration/data/phase4a_failed_cps.parquet
+  et_studies/completion_exploration/data/equation_completion.parquet
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
@@ -46,9 +46,9 @@ def _abs(p: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--phase4a',
-                    default='data/processed/completion_study/phase4a_failed_cps.parquet')
+                    default='et_studies/completion_exploration/data/phase4a_failed_cps.parquet')
     ap.add_argument('--completions',
-                    default='data/processed/completion_study/equation_completion.parquet')
+                    default='et_studies/completion_exploration/data/equation_completion.parquet')
     ap.add_argument('--ground-truth',
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--output',

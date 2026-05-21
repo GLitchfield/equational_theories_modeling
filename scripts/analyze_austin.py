@@ -2,7 +2,7 @@
 
 Cross-reference the 820 curated Austin implications (FALSE in general,
 TRUE for every finite magma) against the model's per-pair predictions
-from outputs/failure_analysis/predictions.parquet. Reports:
+from embeddings/outputs/failure_analysis/predictions.parquet. Reports:
 
   - Austin overall accuracy + comparison to corpus FALSE accuracy
   - Whether Austin pairs are over-represented in the failure set
@@ -12,8 +12,8 @@ from outputs/failure_analysis/predictions.parquet. Reports:
     distribution and the calibrated threshold)
 
 Outputs:
-  outputs/failure_analysis/analysis/austin_analysis.json
-  outputs/failure_analysis/figures/austin_distance_distribution.png
+  embeddings/outputs/failure_analysis/analysis/austin_analysis.json
+  embeddings/outputs/failure_analysis/figures/austin_distance_distribution.png
 
 Usage:
   python scripts/analyze_austin.py
@@ -58,12 +58,12 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument(
         '--predictions',
-        default='outputs/failure_analysis/predictions.parquet',
+        default='embeddings/outputs/failure_analysis/predictions.parquet',
         help='input predictions parquet (default: %(default)s)',
     )
     p.add_argument(
         '--summary',
-        default='outputs/failure_analysis/failure_summary.json',
+        default='embeddings/outputs/failure_analysis/failure_summary.json',
         help='input failure summary JSON for the threshold (default: %(default)s)',
     )
     p.add_argument(
@@ -78,12 +78,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument(
         '--output-analysis',
-        default='outputs/failure_analysis/analysis/austin_analysis.json',
+        default='embeddings/outputs/failure_analysis/analysis/austin_analysis.json',
         help='output JSON path',
     )
     p.add_argument(
         '--output-figure',
-        default='outputs/failure_analysis/figures/austin_distance_distribution.png',
+        default='embeddings/outputs/failure_analysis/figures/austin_distance_distribution.png',
         help='output PNG path',
     )
     args = p.parse_args(argv)

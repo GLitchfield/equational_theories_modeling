@@ -12,7 +12,7 @@ Same train/test splits as the decoder (equation-level holdout,
 seed 42). σ-exact-match requires every position correct.
 
 Output:
-  outputs/runs/proof_decoder_linear_probe/eval_summary.json
+  embeddings/outputs/runs/proof_decoder_linear_probe/eval_summary.json
 """
 
 from __future__ import annotations
@@ -45,13 +45,13 @@ N_CLASSES = 7   # sentinel + {0,1,2,3,4,5}
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--embeddings-path',
-                        default='outputs/embeddings/v1.0/embeddings.npy')
+                        default='embeddings/outputs/embeddings/v1.0/embeddings.npy')
     parser.add_argument('--dataset',
-                        default='data/processed/proof_corpus/decoder_phase1_dataset.parquet')
+                        default='et_studies/proof_decoder/data/decoder_phase1_dataset.parquet')
     parser.add_argument('--matcher-proofs',
-                        default='data/processed/proof_corpus/matcher_proofs.parquet')
+                        default='et_studies/matcher_deliverable/data/matcher_proofs.parquet')
     parser.add_argument('--output',
-                        default='outputs/runs/proof_decoder_linear_probe/eval_summary.json')
+                        default='embeddings/outputs/runs/proof_decoder_linear_probe/eval_summary.json')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--batch-size', type=int, default=512)
     parser.add_argument('--lr', type=float, default=1e-2)

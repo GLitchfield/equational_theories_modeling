@@ -13,11 +13,11 @@ structural locus. If they're roughly uniform, every equation is hard
 in roughly the same way and the failure mode is interaction-dependent.
 
 Outputs:
-  outputs/failure_analysis/analysis/equation_concentration.parquet
+  embeddings/outputs/failure_analysis/analysis/equation_concentration.parquet
     one row per equation: eq_id, appearances, failures, failure_rate
-  outputs/failure_analysis/analysis/top20_failure_equations.txt
+  embeddings/outputs/failure_analysis/analysis/top20_failure_equations.txt
     human-readable report — top 20 by failure rate, with equation text
-  outputs/failure_analysis/figures/equation_failure_rate_distribution.png
+  embeddings/outputs/failure_analysis/figures/equation_failure_rate_distribution.png
     histogram + cumulative curve
 
 Usage:
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument(
         '--predictions',
-        default='outputs/failure_analysis/predictions.parquet',
+        default='embeddings/outputs/failure_analysis/predictions.parquet',
     )
     p.add_argument(
         '--equations',
@@ -60,15 +60,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument(
         '--output-parquet',
-        default='outputs/failure_analysis/analysis/equation_concentration.parquet',
+        default='embeddings/outputs/failure_analysis/analysis/equation_concentration.parquet',
     )
     p.add_argument(
         '--output-text',
-        default='outputs/failure_analysis/analysis/top20_failure_equations.txt',
+        default='embeddings/outputs/failure_analysis/analysis/top20_failure_equations.txt',
     )
     p.add_argument(
         '--output-figure',
-        default='outputs/failure_analysis/figures/equation_failure_rate_distribution.png',
+        default='embeddings/outputs/failure_analysis/figures/equation_failure_rate_distribution.png',
     )
     args = p.parse_args(argv)
 

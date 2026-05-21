@@ -1,13 +1,13 @@
 """Phase 1 of `rewrite_chain_study_plan.md` — extract the rewrite-chain
 proof bodies into a single dataset.
 
-Filters `data/processed/proof_corpus/normalized_proofs.parquet` (the
+Filters `et_studies/proof_survey/data/normalized_proofs.parquet` (the
 survey's normalized bodies) by joining against
-`data/processed/proof_corpus/true_corpus.parquet`'s
+`et_studies/proof_survey/data/true_corpus.parquet`'s
 `c_rewrite_chain` category mask on `(e1, e2)` keys. Verifies the
 1,636 count against `outputs/analyses/proof_survey/true_characterization.json`.
 
-Output: `data/processed/proof_corpus/rewrite_chain_dataset.parquet`
+Output: `et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet`
 with one row per c_rewrite_chain proof:
 
   e1, e2       int32          equation IDs (1-indexed)
@@ -41,13 +41,13 @@ def _abs(p: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--bodies',
-                        default='data/processed/proof_corpus/normalized_proofs.parquet')
+                        default='et_studies/proof_survey/data/normalized_proofs.parquet')
     parser.add_argument('--categories',
-                        default='data/processed/proof_corpus/true_corpus.parquet')
+                        default='et_studies/proof_survey/data/true_corpus.parquet')
     parser.add_argument('--survey-summary',
                         default='outputs/analyses/proof_survey/true_characterization.json')
     parser.add_argument('--output',
-                        default='data/processed/proof_corpus/rewrite_chain_dataset.parquet')
+                        default='et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 

@@ -28,7 +28,7 @@ Output: ``matched_holdout_eval.json`` next to the predictions file
 
 Usage:
   python scripts/eval_predictions_on_split.py \
-      outputs/runs/skip_h128_seed42_diag/predictions.parquet
+      embeddings/outputs/runs/skip_h128_seed42_diag/predictions.parquet
   python scripts/eval_predictions_on_split.py <pred> --split data/splits/<file>.parquet
 """
 

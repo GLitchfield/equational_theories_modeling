@@ -8,16 +8,16 @@
 #
 # After training, scripts/save_predictions.py runs the best checkpoint
 # over every off-diagonal pair (~22M) and writes per-pair predictions
-# to outputs/failure_analysis/predictions.parquet for the eight
+# to embeddings/outputs/failure_analysis/predictions.parquet for the eight
 # downstream analyses described in the plan.
 #
 # Reproduce:
 #   python scripts/train.py \
-#       --config configs/experiments/failure_analysis.yaml \
+#       --config embeddings/configs/experiments/failure_analysis.yaml \
 #       --no-holdout \
 #       --name failure_analysis
-#   python scripts/save_predictions.py outputs/checkpoints/failure_analysis/<best>.pt
-#   python scripts/save_embeddings.py  outputs/checkpoints/failure_analysis/<best>.pt
+#   python scripts/save_predictions.py embeddings/outputs/checkpoints/failure_analysis/<best>.pt
+#   python scripts/save_embeddings.py  embeddings/outputs/checkpoints/failure_analysis/<best>.pt
 
 seed: 42
 
@@ -59,7 +59,7 @@ training:
   warmup_steps: 1000
   epochs: 20
   grad_clip_norm: 1.0
-  checkpoint_dir: outputs/checkpoints
+  checkpoint_dir: embeddings/outputs/checkpoints
   max_val_batches: 200    # caps the 1M-row monitor eval per epoch
 
 loss:

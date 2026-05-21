@@ -1,7 +1,7 @@
 """Phase 1.3 of `proof_decoder_plan.md` — train the proof decoder.
 
 Trains the PrefixConditionedDecoder on the 36,339-pair training split
-of `data/processed/proof_corpus/decoder_phase1_dataset.parquet`, with
+of `et_studies/proof_decoder/data/decoder_phase1_dataset.parquet`, with
 either the v1.0 JEPA embeddings (real experiment) or seed-42 random
 vectors (control). Tracks the nested metric stack (parse rate ->
 arity-correct -> σ-exact-match) per epoch on three test subsets
@@ -13,11 +13,11 @@ experiment and the control:
 
     python scripts/train_decoder.py \
         --embedding-source jepa \
-        --output-dir outputs/runs/proof_decoder_jepa
+        --output-dir embeddings/outputs/runs/proof_decoder_jepa
 
     python scripts/train_decoder.py \
         --embedding-source random \
-        --output-dir outputs/runs/proof_decoder_random_ctl
+        --output-dir embeddings/outputs/runs/proof_decoder_random_ctl
 """
 
 from __future__ import annotations
@@ -199,11 +199,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--embedding-source', choices=['jepa', 'random'], required=True)
     parser.add_argument('--embeddings-path',
-                        default='outputs/embeddings/v1.0/embeddings.npy')
+                        default='embeddings/outputs/embeddings/v1.0/embeddings.npy')
     parser.add_argument('--dataset',
-                        default='data/processed/proof_corpus/decoder_phase1_dataset.parquet')
+                        default='et_studies/proof_decoder/data/decoder_phase1_dataset.parquet')
     parser.add_argument('--matcher-proofs',
-                        default='data/processed/proof_corpus/matcher_proofs.parquet')
+                        default='et_studies/matcher_deliverable/data/matcher_proofs.parquet')
     parser.add_argument('--output-dir', required=True)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--batch-size', type=int, default=256)

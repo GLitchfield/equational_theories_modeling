@@ -37,14 +37,14 @@ ground truth: soundness bug (the fully-completed system unsound
 for FALSE — should be impossible).
 
 Reads:
-  data/processed/completion_study/equation_completion.parquet
+  et_studies/completion_exploration/data/equation_completion.parquet
   data/raw/etp/equations.txt
   data/raw/etp_export/export_raw_implications_5_9_2026.csv (4694×4694 int8)
 
 Writes:
   outputs/analyses/completion_study/phase3_decision_coverage.json
-  data/processed/completion_study/phase3_per_e1_decisions.parquet
-  data/processed/completion_study/phase3_disagreements.parquet
+  et_studies/completion_exploration/data/phase3_per_e1_decisions.parquet
+  et_studies/completion_exploration/data/phase3_disagreements.parquet
     (any soundness violations — should be empty)
 """
 
@@ -150,15 +150,15 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--completions',
-                    default='data/processed/completion_study/equation_completion.parquet')
+                    default='et_studies/completion_exploration/data/equation_completion.parquet')
     ap.add_argument('--ground-truth',
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--output-summary',
                     default='outputs/analyses/completion_study/phase3_decision_coverage.json')
     ap.add_argument('--output-per-e1',
-                    default='data/processed/completion_study/phase3_per_e1_decisions.parquet')
+                    default='et_studies/completion_exploration/data/phase3_per_e1_decisions.parquet')
     ap.add_argument('--output-disagreements',
-                    default='data/processed/completion_study/phase3_disagreements.parquet')
+                    default='et_studies/completion_exploration/data/phase3_disagreements.parquet')
     ap.add_argument('--progress-every', type=int, default=100)
     ap.add_argument('--per-e1-timeout', type=float, default=30.0,
                     help='SIGALRM-enforced budget per E1 (decision pass over all 4693 E2s)')

@@ -11,8 +11,8 @@
 # auto-rescales to the new total_steps; warmup_steps stays at 1000
 # (~0.3% of training).
 #
-# Result: outputs/results/true_weight_1p7_30ep.json
-# Reproduce: python scripts/run_experiment.py configs/experiments/true_weight_1p7_30ep.yaml
+# Result: embeddings/outputs/results/true_weight_1p7_30ep.json
+# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/true_weight_1p7_30ep.yaml
 
 seed: 42
 
@@ -55,7 +55,7 @@ training:
   warmup_steps: 1000
   epochs: 30
   grad_clip_norm: 1.0
-  checkpoint_dir: outputs/checkpoints
+  checkpoint_dir: embeddings/outputs/checkpoints
   max_val_batches: 200
 
 loss:

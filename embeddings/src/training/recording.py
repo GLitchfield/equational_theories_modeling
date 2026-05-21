@@ -1,5 +1,5 @@
 """Run a full no-cap evaluation on a saved checkpoint and write a JSON
-record to ``outputs/results/<name>.json``.
+record to ``embeddings/outputs/results/<name>.json``.
 
 This is the function that backs both ``scripts/record_run.py`` (manual
 recording from any checkpoint) and ``scripts/run_experiment.py`` (the
@@ -60,7 +60,7 @@ def record_checkpoint(
     wandb_url: str | None = None,
     holdout: str | None = None,
     max_val_batches: int | None = None,
-    output_dir: str = 'outputs/results',
+    output_dir: str = 'embeddings/outputs/results',
     force: bool = False,
 ) -> dict[str, Any]:
     """Evaluate the checkpoint at ``checkpoint_path`` and write the JSON

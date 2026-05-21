@@ -21,15 +21,15 @@ Computes:
         compute the rest.
 
 Reads:
-  data/processed/coverage_measurement/sample.parquet
-  data/processed/coverage_measurement/engine_results_within_ceiling_d8.parquet
-  data/processed/coverage_measurement/engine_results_variable_disjoint_d6.parquet
-  data/processed/coverage_measurement/residual.parquet
-  data/processed/completion_study/equation_ordered_completion.parquet (Phase 4)
-  data/processed/completion_study/phase3_per_e1_decisions.parquet     (Phase 3 plain KB)
-  data/processed/completion_study/phase4_per_e1_decisions.parquet     (Phase 4 ordered)
-  data/processed/proof_corpus/matcher_proofs.parquet
-  data/processed/completion_study/equation_orientability.parquet      (Phase 0)
+  et_studies/coverage_measurement/data/sample.parquet
+  et_studies/coverage_measurement/data/engine_results_within_ceiling_d8.parquet
+  et_studies/coverage_measurement/data/engine_results_variable_disjoint_d6.parquet
+  et_studies/coverage_measurement/data/residual.parquet
+  et_studies/completion_exploration/data/equation_ordered_completion.parquet (Phase 4)
+  et_studies/completion_exploration/data/phase3_per_e1_decisions.parquet     (Phase 3 plain KB)
+  et_studies/completion_exploration/data/phase4_per_e1_decisions.parquet     (Phase 4 ordered)
+  et_studies/matcher_deliverable/data/matcher_proofs.parquet
+  et_studies/completion_exploration/data/equation_orientability.parquet      (Phase 0)
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
@@ -79,30 +79,30 @@ def main(argv: list[str] | None = None) -> int:
     print(f'  GT FALSE (off-diag): {n_gt_false:,}')
 
     print('loading residual + sample ...')
-    residual = pq.read_table(_abs('data/processed/coverage_measurement/residual.parquet')).to_pandas()
-    sample = pq.read_table(_abs('data/processed/coverage_measurement/sample.parquet')).to_pandas()
+    residual = pq.read_table(_abs('et_studies/coverage_measurement/data/residual.parquet')).to_pandas()
+    sample = pq.read_table(_abs('et_studies/coverage_measurement/data/sample.parquet')).to_pandas()
     print(f'  residual: {len(residual):,} E1s, sample: {len(sample):,} pairs')
 
     print('loading engine results ...')
-    engine_wc = pq.read_table(_abs('data/processed/coverage_measurement/engine_results_within_ceiling_d8.parquet')).to_pandas()
-    engine_vd = pq.read_table(_abs('data/processed/coverage_measurement/engine_results_variable_disjoint_d6.parquet')).to_pandas()
+    engine_wc = pq.read_table(_abs('et_studies/coverage_measurement/data/engine_results_within_ceiling_d8.parquet')).to_pandas()
+    engine_vd = pq.read_table(_abs('et_studies/coverage_measurement/data/engine_results_variable_disjoint_d6.parquet')).to_pandas()
     print(f'  within-ceiling at d=8: {len(engine_wc):,} ({int(engine_wc["solved"].sum()):,} solved)')
     print(f'  variable-disjoint at d=6: {len(engine_vd):,} ({int(engine_vd["solved"].sum()):,} solved)')
 
     print('loading matcher ...')
-    matcher = pq.read_table(_abs('data/processed/proof_corpus/matcher_proofs.parquet'),
+    matcher = pq.read_table(_abs('et_studies/matcher_deliverable/data/matcher_proofs.parquet'),
                             columns=['eq1_id', 'eq2_id']).to_pandas()
     print(f'  matcher pairs: {len(matcher):,}')
 
     print('loading completion records ...')
-    p4_ord = pq.read_table(_abs('data/processed/completion_study/equation_ordered_completion.parquet')).to_pandas()
+    p4_ord = pq.read_table(_abs('et_studies/completion_exploration/data/equation_ordered_completion.parquet')).to_pandas()
     ordered_completed_e1s = set(int(r) for r in p4_ord[p4_ord['status'] == 'COMPLETED']['eq_id'])
 
     # Phase 3 (plain) per-pair predictions; Phase 4 (ordered) per-pair predictions.
     # We use ordered's TRUE predictions as the completion TRUE-coverage on its base.
     # For pairs where E1 is plain-only-completed (not ordered), use plain's TRUE predictions.
-    p3_per_e1 = pq.read_table(_abs('data/processed/completion_study/phase3_per_e1_decisions.parquet')).to_pandas()
-    p4_per_e1 = pq.read_table(_abs('data/processed/completion_study/phase4_per_e1_decisions.parquet')).to_pandas()
+    p3_per_e1 = pq.read_table(_abs('et_studies/completion_exploration/data/phase3_per_e1_decisions.parquet')).to_pandas()
+    p4_per_e1 = pq.read_table(_abs('et_studies/completion_exploration/data/phase4_per_e1_decisions.parquet')).to_pandas()
     n_ord_true = int(p4_per_e1['n_true_correct'].sum())
     n_plain_only_true = 0
     plain_completed = set(int(r) for r in p3_per_e1['eq_id'])
@@ -114,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f'  completion TRUE: ordered {n_ord_true:,} + plain-only {n_plain_only_true:,} = {completion_true_total:,}')
 
     # Phase 0
-    p0 = pq.read_table(_abs('data/processed/completion_study/equation_orientability.parquet')).to_pandas()
+    p0 = pq.read_table(_abs('et_studies/completion_exploration/data/equation_orientability.parquet')).to_pandas()
     vd_e1s = set(int(r) for r in p0[p0['classification'] == 'incomparable']['eq_id'])
 
     # --- A. Matcher pair-level coverage ---

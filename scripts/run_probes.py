@@ -1,11 +1,11 @@
 """Run all six embedding probing experiments.
 
 Loops over every (checkpoint, representation_type) embedding matrix in
-``outputs/probing/embeddings/`` and applies the probes specified by
+``embeddings/outputs/probing/embeddings/`` and applies the probes specified by
 ``probing_experiments_plan.md``.
 
 Output layout:
-    outputs/probing/results/
+    embeddings/outputs/probing/results/
         exp1_structural.json
         exp2_cohom_summary.json
         exp3_cohom_cell.json
@@ -47,8 +47,8 @@ from scripts.build_equation_invariants import (  # noqa: E402
 )
 
 DATA_PROJECT = "/home/gavin/git/equational_theories_data/invariants"
-EMBED_DIR = _REPO_ROOT / "outputs/probing/embeddings"
-RESULTS_DIR = _REPO_ROOT / "outputs/probing/results"
+EMBED_DIR = _REPO_ROOT / "embeddings/outputs/probing/embeddings"
+RESULTS_DIR = _REPO_ROOT / "embeddings/outputs/probing/results"
 PAIR_TABLE = _REPO_ROOT / "data/processed/implication_pairs.parquet"
 
 

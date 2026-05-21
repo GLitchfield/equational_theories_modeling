@@ -28,14 +28,14 @@ Reports:
     is also Stage-2-submittable (small finite counter-model)?
 
 Reads:
-  data/processed/completion_study/equation_completion.parquet  (Phase 2)
-  data/processed/completion_study/phase3_per_e1_decisions.parquet  (Phase 3)
+  et_studies/completion_exploration/data/equation_completion.parquet  (Phase 2)
+  et_studies/completion_exploration/data/phase3_per_e1_decisions.parquet  (Phase 3)
   data/raw/etp/equations.txt
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
   outputs/analyses/completion_study/phase5_finite_models.json
-  data/processed/completion_study/phase5_per_e1_finite_models.parquet
+  et_studies/completion_exploration/data/phase5_per_e1_finite_models.parquet
 """
 
 from __future__ import annotations
@@ -197,13 +197,13 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--completions',
-                    default='data/processed/completion_study/equation_completion.parquet')
+                    default='et_studies/completion_exploration/data/equation_completion.parquet')
     ap.add_argument('--ground-truth',
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--output-summary',
                     default='outputs/analyses/completion_study/phase5_finite_models.json')
     ap.add_argument('--output-records',
-                    default='data/processed/completion_study/phase5_per_e1_finite_models.parquet')
+                    default='et_studies/completion_exploration/data/phase5_per_e1_finite_models.parquet')
     ap.add_argument('--max-model-size', type=int, default=50)
     ap.add_argument('--per-e1-timeout', type=float, default=15.0)
     ap.add_argument('--progress-every', type=int, default=50)

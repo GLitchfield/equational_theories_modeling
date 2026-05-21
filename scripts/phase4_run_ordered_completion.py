@@ -18,11 +18,11 @@ Pre-filters Phase 0's variable-disjoint set the same way Phase 2 did.
 
 Reads:
   data/raw/etp/equations.txt
-  data/processed/completion_study/equation_orientability.parquet
+  et_studies/completion_exploration/data/equation_orientability.parquet
 
 Writes:
   outputs/analyses/completion_study/phase4_ordered_outcomes.json
-  data/processed/completion_study/equation_ordered_completion.parquet
+  et_studies/completion_exploration/data/equation_ordered_completion.parquet
 """
 
 from __future__ import annotations
@@ -77,11 +77,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--phase0',
-                    default='data/processed/completion_study/equation_orientability.parquet')
+                    default='et_studies/completion_exploration/data/equation_orientability.parquet')
     ap.add_argument('--output-summary',
                     default='outputs/analyses/completion_study/phase4_ordered_outcomes.json')
     ap.add_argument('--output-records',
-                    default='data/processed/completion_study/equation_ordered_completion.parquet')
+                    default='et_studies/completion_exploration/data/equation_ordered_completion.parquet')
     ap.add_argument('--max-rules', type=int, default=50)
     ap.add_argument('--max-cps', type=int, default=500)
     ap.add_argument('--max-term-size', type=int, default=30)

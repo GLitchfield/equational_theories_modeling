@@ -28,11 +28,11 @@ def _abs(p: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--dataset',
-                        default='data/processed/proof_corpus/decoder_phase1_dataset.parquet')
+                        default='et_studies/proof_decoder/data/decoder_phase1_dataset.parquet')
     parser.add_argument('--matcher-proofs',
-                        default='data/processed/proof_corpus/matcher_proofs.parquet')
+                        default='et_studies/matcher_deliverable/data/matcher_proofs.parquet')
     parser.add_argument('--output',
-                        default='outputs/runs/proof_decoder_majority/eval_summary.json')
+                        default='embeddings/outputs/runs/proof_decoder_majority/eval_summary.json')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 

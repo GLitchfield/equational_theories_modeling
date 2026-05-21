@@ -24,9 +24,9 @@ belief about, and they're the right population for downstream analyses
 to focus on.
 
 Outputs:
-  outputs/failure_analysis/analysis/distance_distribution.json
-  outputs/failure_analysis/figures/distance_distributions.png
-  outputs/failure_analysis/figures/wrong_distance_zoom.png
+  embeddings/outputs/failure_analysis/analysis/distance_distribution.json
+  embeddings/outputs/failure_analysis/figures/distance_distributions.png
+  embeddings/outputs/failure_analysis/figures/wrong_distance_zoom.png
 
 Usage:
   python scripts/analyze_distances.py
@@ -55,23 +55,23 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument(
         '--predictions',
-        default='outputs/failure_analysis/predictions.parquet',
+        default='embeddings/outputs/failure_analysis/predictions.parquet',
     )
     p.add_argument(
         '--summary',
-        default='outputs/failure_analysis/failure_summary.json',
+        default='embeddings/outputs/failure_analysis/failure_summary.json',
     )
     p.add_argument(
         '--output-analysis',
-        default='outputs/failure_analysis/analysis/distance_distribution.json',
+        default='embeddings/outputs/failure_analysis/analysis/distance_distribution.json',
     )
     p.add_argument(
         '--output-figure',
-        default='outputs/failure_analysis/figures/distance_distributions.png',
+        default='embeddings/outputs/failure_analysis/figures/distance_distributions.png',
     )
     p.add_argument(
         '--output-zoom-figure',
-        default='outputs/failure_analysis/figures/wrong_distance_zoom.png',
+        default='embeddings/outputs/failure_analysis/figures/wrong_distance_zoom.png',
     )
     p.add_argument('--borderline-half-width', type=float, default=0.05)
     p.add_argument('--confident-margin', type=float, default=0.20)

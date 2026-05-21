@@ -12,7 +12,7 @@ enumeration cost, restrict to pairs with total_depth ≤ 6
 (96% of closed pairs); deeper pairs are marked as skipped.
 
 Reads:
-  data/processed/proof_corpus/rewrite_engine_traces.parquet
+  et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet
   data/raw/etp/equations.txt
 
 Writes:
@@ -68,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--traces',
-                    default='data/processed/proof_corpus/rewrite_engine_traces.parquet')
+                    default='et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet')
     ap.add_argument('--output',
                     default='outputs/analyses/rewrite_chain_study/task5_multimodality.json')
     ap.add_argument('--sample-size', type=int, default=500)

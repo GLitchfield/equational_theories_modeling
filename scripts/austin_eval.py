@@ -43,7 +43,7 @@ diagnostic.
 
 Usage:
   # One checkpoint, three-bucket Austin recall:
-  python scripts/austin_eval.py outputs/checkpoints/<name>/epoch_NNN.pt
+  python scripts/austin_eval.py embeddings/outputs/checkpoints/<name>/epoch_NNN.pt
 
   # Same plus per-pair detail (sorted by distance) for the holdout bucket:
   python scripts/austin_eval.py <ckpt> --detail
@@ -222,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('checkpoint', nargs='?', help='Single checkpoint .pt to evaluate')
     parser.add_argument('--all-records', action='store_true',
-                        help='Evaluate every result in outputs/results/ on its referenced checkpoint')
+                        help='Evaluate every result in embeddings/outputs/results/ on its referenced checkpoint')
     parser.add_argument('--detail', action='store_true',
                         help='Print per-pair distance/prediction table for the single-checkpoint mode')
     args = parser.parse_args(argv)
@@ -233,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     if args.all_records:
-        results_dir = os.path.join(_REPO_ROOT, 'outputs/results')
+        results_dir = os.path.join(_REPO_ROOT, 'embeddings/outputs/results')
         rows = []
         for fname in sorted(os.listdir(results_dir)):
             if not fname.endswith('.json'):
@@ -299,17 +299,17 @@ def main(argv: list[str] | None = None) -> int:
 
     result = _evaluate_checkpoint(args.checkpoint, austin, device=device)
     # Threshold + overall_false_recall come from a recorded result. For
-    # standard runs that's outputs/results/<name>.json (written by
+    # standard runs that's embeddings/outputs/results/<name>.json (written by
     # run_experiment / record_run). For failure-analysis no-holdout
-    # runs that's outputs/failure_analysis/failure_summary.json (written
+    # runs that's embeddings/outputs/failure_analysis/failure_summary.json (written
     # by save_predictions). Fall back to all-bucket median if neither
     # exists.
     threshold = None
     overall = None
     name = result['name']
     for candidate in (
-        os.path.join(_REPO_ROOT, 'outputs/results', f'{name}.json'),
-        os.path.join(_REPO_ROOT, 'outputs/failure_analysis/failure_summary.json'),
+        os.path.join(_REPO_ROOT, 'embeddings/outputs/results', f'{name}.json'),
+        os.path.join(_REPO_ROOT, 'embeddings/outputs/failure_analysis/failure_summary.json'),
     ):
         if not os.path.exists(candidate):
             continue

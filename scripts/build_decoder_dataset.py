@@ -10,7 +10,7 @@ Outputs:
   data/splits/decoder_eq_split_seed42.parquet
       committed; per-equation `(eq_id, is_held_out)`.
 
-  data/processed/proof_corpus/decoder_phase1_dataset.parquet
+  et_studies/proof_decoder/data/decoder_phase1_dataset.parquet
       gitignored, regenerable. One row per matched pair:
         eq1_id, eq2_id          int32
         orientation             int8 (0=direct, 1=flipped)
@@ -181,11 +181,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--equations', default='data/raw/etp/equations.txt')
     parser.add_argument('--matcher-proofs',
-                        default='data/processed/proof_corpus/matcher_proofs.parquet')
+                        default='et_studies/matcher_deliverable/data/matcher_proofs.parquet')
     parser.add_argument('--split-output',
                         default='data/splits/decoder_eq_split_seed42.parquet')
     parser.add_argument('--dataset-output',
-                        default='data/processed/proof_corpus/decoder_phase1_dataset.parquet')
+                        default='et_studies/proof_decoder/data/decoder_phase1_dataset.parquet')
     parser.add_argument('--summary-output',
                         default='outputs/analyses/proof_decoder/dataset_summary.json')
     parser.add_argument('--holdout-fraction', type=float, default=0.15)

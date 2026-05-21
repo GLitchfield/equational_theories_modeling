@@ -13,10 +13,10 @@ Cuts the residual along three dimensions:
      first-order-only rewriting bites hardest.
 
 Reads:
-  data/processed/coverage_measurement/sample.parquet
-  data/processed/coverage_measurement/engine_results_within_ceiling_d{4,6,8}.parquet
-  data/processed/coverage_measurement/engine_results_variable_disjoint_d6.parquet
-  data/processed/proof_corpus/true_corpus.parquet
+  et_studies/coverage_measurement/data/sample.parquet
+  et_studies/coverage_measurement/data/engine_results_within_ceiling_d{4,6,8}.parquet
+  et_studies/coverage_measurement/data/engine_results_variable_disjoint_d6.parquet
+  et_studies/proof_survey/data/true_corpus.parquet
 
 Writes:
   outputs/analyses/coverage_measurement/phase6_residual_characterization.json
@@ -54,15 +54,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     print('loading sample + engine results ...')
-    sample = pq.read_table(_abs('data/processed/coverage_measurement/sample.parquet')).to_pandas()
+    sample = pq.read_table(_abs('et_studies/coverage_measurement/data/sample.parquet')).to_pandas()
     er_wc = {}
     for d in [4, 6, 8]:
         er_wc[d] = pq.read_table(_abs(
-            f'data/processed/coverage_measurement/engine_results_within_ceiling_d{d}.parquet'
+            f'et_studies/coverage_measurement/data/engine_results_within_ceiling_d{d}.parquet'
         )).to_pandas()
 
     print('loading proof-survey categories from true_corpus ...')
-    tc = pq.read_table(_abs('data/processed/proof_corpus/true_corpus.parquet'),
+    tc = pq.read_table(_abs('et_studies/proof_survey/data/true_corpus.parquet'),
                        columns=['e1', 'e2', 'category']).to_pandas()
     tc['e1'] = tc['e1'].astype(int)
     tc['e2'] = tc['e2'].astype(int)
@@ -197,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print('--- (4) Variable-disjoint stratum ---')
     er_vd = pq.read_table(_abs(
-        'data/processed/coverage_measurement/engine_results_variable_disjoint_d6.parquet'
+        'et_studies/coverage_measurement/data/engine_results_variable_disjoint_d6.parquet'
     )).to_pandas()
     summary['variable_disjoint_stratum'] = {
         'n_pairs': len(er_vd),

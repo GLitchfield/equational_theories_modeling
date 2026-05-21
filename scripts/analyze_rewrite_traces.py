@@ -20,8 +20,8 @@ metric here is whether the rewrite holds the equation's term-size
 bounded vs blows it up.
 
 Reads:
-  data/processed/proof_corpus/rewrite_engine_traces.parquet
-  data/processed/proof_corpus/rewrite_chain_dataset.parquet  (for e1,e2)
+  et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet
+  et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet  (for e1,e2)
   data/raw/etp/equations.txt
 
 Writes:
@@ -86,9 +86,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--traces',
-                    default='data/processed/proof_corpus/rewrite_engine_traces.parquet')
+                    default='et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet')
     ap.add_argument('--dataset',
-                    default='data/processed/proof_corpus/rewrite_chain_dataset.parquet')
+                    default='et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet')
     ap.add_argument('--output',
                     default='outputs/analyses/rewrite_chain_study/task3_intermediate_states.json')
     ap.add_argument('--sample-size', type=int, default=500)

@@ -37,13 +37,13 @@ classification scheme refines `FAILED_ORIENT` into two sub-cases:
 
 Reads:
   data/raw/etp/equations.txt
-  data/processed/completion_study/equation_orientability.parquet
+  et_studies/completion_exploration/data/equation_orientability.parquet
     (Phase 0 output)
 
 Writes:
   outputs/analyses/completion_study/phase2_completion_outcomes.json
     (summary)
-  data/processed/completion_study/equation_completion.parquet
+  et_studies/completion_exploration/data/equation_completion.parquet
     (per-equation record + serialized rule systems for Phase 3 to read)
 """
 
@@ -112,11 +112,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--phase0',
-                    default='data/processed/completion_study/equation_orientability.parquet')
+                    default='et_studies/completion_exploration/data/equation_orientability.parquet')
     ap.add_argument('--output-summary',
                     default='outputs/analyses/completion_study/phase2_completion_outcomes.json')
     ap.add_argument('--output-records',
-                    default='data/processed/completion_study/equation_completion.parquet')
+                    default='et_studies/completion_exploration/data/equation_completion.parquet')
     ap.add_argument('--max-rules', type=int, default=50)
     ap.add_argument('--max-cps', type=int, default=500)
     ap.add_argument('--max-term-size', type=int, default=30,

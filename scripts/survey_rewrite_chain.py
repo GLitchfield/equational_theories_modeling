@@ -1,7 +1,7 @@
 """Phases 3 + 4 of `rewrite_chain_study_plan.md` — tactic-structure and
 rule-set analysis on the 1,636 rewrite-chain bodies.
 
-Reads `data/processed/proof_corpus/rewrite_chain_dataset.parquet`. Both
+Reads `et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet`. Both
 analyses parse the same raw bodies, so they share a single pass.
 
 Task 1 (tactic-structure) reports:
@@ -166,7 +166,7 @@ def _percentiles(xs: list[int], ps=(50, 75, 90, 95, 99)) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--dataset',
-                        default='data/processed/proof_corpus/rewrite_chain_dataset.parquet')
+                        default='et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet')
     parser.add_argument('--tactic-output',
                         default='outputs/analyses/rewrite_chain_study/tactic_structure.json')
     parser.add_argument('--ruleset-output',

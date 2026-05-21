@@ -9,8 +9,8 @@
 # Watch: false_recall is expected to drop somewhat — the question is
 # whether true_recall rises enough to net-improve balanced accuracy.
 #
-# Result: outputs/results/true_weight_1p7.json
-# Reproduce: python scripts/run_experiment.py configs/experiments/true_weight_1p7.yaml
+# Result: embeddings/outputs/results/true_weight_1p7.json
+# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/true_weight_1p7.yaml
 
 seed: 42
 
@@ -53,7 +53,7 @@ training:
   warmup_steps: 1000
   epochs: 10
   grad_clip_norm: 1.0
-  checkpoint_dir: outputs/checkpoints
+  checkpoint_dir: embeddings/outputs/checkpoints
   max_val_batches: 200
 
 loss:

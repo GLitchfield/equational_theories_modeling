@@ -5,7 +5,7 @@
 # Single-knob change: aux_weight 0.1 -> 5.0 (50x).
 #
 # Why: at aux_weight=0.1, cohom heads contributed ~0.08% of total loss
-# (math in outputs/runs/aux_h256_cohom_diag/diagnostics_report.md).
+# (math in embeddings/outputs/runs/aux_h256_cohom_diag/diagnostics_report.md).
 # That's rounding error relative to the contrastive simplicity-bias
 # signal it would need to fight, so the "did aux prevent drift" question
 # was not actually tested. At aux_weight=5.0, cohom contribution becomes
@@ -66,7 +66,7 @@ training:
   warmup_steps: 1000
   epochs: 10
   grad_clip_norm: 1.0
-  checkpoint_dir: outputs/checkpoints
+  checkpoint_dir: embeddings/outputs/checkpoints
   max_val_batches: 200
 
 loss:

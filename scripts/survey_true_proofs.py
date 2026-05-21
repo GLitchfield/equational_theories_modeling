@@ -29,7 +29,7 @@ to stratify by E2's spine type (Methodology Resolution 4).
 
 Output:
   - `outputs/analyses/proof_survey/true_characterization.json` (committed)
-  - `data/processed/proof_corpus/true_corpus.parquet` (gitignored,
+  - `et_studies/proof_survey/data/true_corpus.parquet` (gitignored,
     per-proof records for Task 4's clustering)
 """
 
@@ -427,7 +427,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--output-summary',
                         default='outputs/analyses/proof_survey/true_characterization.json')
     parser.add_argument('--output-corpus',
-                        default='data/processed/proof_corpus/true_corpus.parquet')
+                        default='et_studies/proof_survey/data/true_corpus.parquet')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 

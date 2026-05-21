@@ -128,9 +128,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--model', required=True, choices=sorted(MODELS),
                         help='which pair-classifier variant to train')
     parser.add_argument('--embeddings-path',
-                        default='outputs/runs/skip_h128_seed42_diag/equation_embeddings.npy')
+                        default='embeddings/outputs/runs/skip_h128_seed42_diag/equation_embeddings.npy')
     parser.add_argument('--ids-path',
-                        default='outputs/runs/skip_h128_seed42_diag/equation_embeddings_ids.npy')
+                        default='embeddings/outputs/runs/skip_h128_seed42_diag/equation_embeddings_ids.npy')
     parser.add_argument('--pair-table',
                         default='data/processed/implication_pairs.parquet')
     parser.add_argument('--split-path',

@@ -20,8 +20,8 @@ matches the per-epoch monitor logic from no-holdout training.
 ``--threshold X`` overrides.
 
 Usage:
-  python scripts/save_predictions.py outputs/checkpoints/<name>/epoch_NNN.pt
-  python scripts/save_predictions.py <ckpt> --output-dir outputs/failure_analysis
+  python scripts/save_predictions.py embeddings/outputs/checkpoints/<name>/epoch_NNN.pt
+  python scripts/save_predictions.py <ckpt> --output-dir embeddings/outputs/failure_analysis
   python scripts/save_predictions.py <ckpt> --threshold 0.7636
 """
 
@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         '--output-dir', default=None,
         help='Directory for the predictions parquet. Defaults to '
-             '``outputs/runs/<wandb.name from checkpoint>/``; pass to '
+             '``embeddings/outputs/runs/<wandb.name from checkpoint>/``; pass to '
              'override (e.g. when comparing two runs side by side).',
     )
     parser.add_argument(
@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
             or os.path.splitext(os.path.basename(args.checkpoint))[0]
         )
         del ckpt_peek
-        args.output_dir = os.path.join('outputs/runs', name_hint)
+        args.output_dir = os.path.join('embeddings/outputs/runs', name_hint)
 
     out_dir = _abs(args.output_dir)
     os.makedirs(out_dir, exist_ok=True)

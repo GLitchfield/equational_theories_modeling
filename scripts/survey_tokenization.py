@@ -1,7 +1,8 @@
 """Task 5 of `proof_corpus_survey_plan.md` — tokenization + vocabulary.
 
-Tokenizes every TRUE proof body (from data/processed/proof_corpus/
-normalized_proofs.parquet, level n1_whitespace) into Lean-shaped
+Tokenizes every TRUE proof body (from
+et_studies/proof_survey/data/normalized_proofs.parquet,
+level n1_whitespace) into Lean-shaped
 tokens, then reports:
 
   - Total vocabulary size before normalization
@@ -98,7 +99,7 @@ def cumcoverage(counts: Counter, thresholds=(0.50, 0.80, 0.90, 0.95, 0.99)) -> d
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--input',
-                        default='data/processed/proof_corpus/normalized_proofs.parquet')
+                        default='et_studies/proof_survey/data/normalized_proofs.parquet')
     parser.add_argument('--output',
                         default='outputs/analyses/proof_survey/tokenization_results.json')
     parser.add_argument('--force', action='store_true')

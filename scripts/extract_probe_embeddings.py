@@ -19,7 +19,7 @@ Usage:
         --epochs 0 3 6 \
         --include-random-init
 
-Outputs to ``outputs/probing/embeddings/``:
+Outputs to ``embeddings/outputs/probing/embeddings/``:
     eq_ids.npy                                   # [N_eq] int64
     aux_h128_seed1_diag_ep0_pooled.npy           # [N_eq, 256]
     aux_h128_seed1_diag_ep0_output.npy           # [N_eq, 512]
@@ -119,7 +119,7 @@ def save_pair(name: str, pooled: np.ndarray, output: np.ndarray, out_dir: Path) 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--run-name", required=True, help="Run name (matches outputs/checkpoints/<name>/)")
+    parser.add_argument("--run-name", required=True, help="Run name (matches embeddings/outputs/checkpoints/<name>/)")
     parser.add_argument(
         "--epochs", type=int, nargs="+", default=[0, 3, 6],
         help="Epoch numbers to probe (matches epoch_NNN.pt files)",
@@ -130,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="Seed for random-init weights (default 0).")
     parser.add_argument("--device", default="auto", help="cuda / cpu / auto")
     parser.add_argument("--graph-cache", default="data/processed/equation_graphs.pt")
-    parser.add_argument("--output-dir", default="outputs/probing/embeddings")
+    parser.add_argument("--output-dir", default="embeddings/outputs/probing/embeddings")
     args = parser.parse_args(argv)
 
     device = args.device
@@ -150,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
 
     saved_config: dict | None = None
     for ep in args.epochs:
-        ckpt_path = Path(f"outputs/checkpoints/{args.run_name}/epoch_{ep:03d}.pt")
+        ckpt_path = Path(f"embeddings/outputs/checkpoints/{args.run_name}/epoch_{ep:03d}.pt")
         if not ckpt_path.exists():
             print(f"WARN: {ckpt_path} not found, skipping")
             continue

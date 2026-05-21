@@ -1,5 +1,5 @@
 """Extract per_step_trace.csv, per_epoch_eval.csv, and diagnostic_extract.json
-from a finished wandb run, into outputs/runs/<name>/.
+from a finished wandb run, into embeddings/outputs/runs/<name>/.
 
 Usage:
     python scripts/extract_run_diagnostics.py --name aux_h256_cohom_diag
@@ -66,7 +66,7 @@ def extract(name: str, project: str, output_dir: Path | None = None) -> Path:
     run = _resolve_run(api, project, name)
     print(f"resolved run: id={run.id} name={run.name} state={run.state}")
 
-    out_dir = output_dir or (_REPO_ROOT / "outputs/runs" / name)
+    out_dir = output_dir or (_REPO_ROOT / "embeddings/outputs/runs" / name)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Full history (samples=10000 keeps everything for short runs; bump

@@ -30,7 +30,7 @@ Templates we detect:
 Output:
   - `outputs/analyses/proof_survey/false_characterization.json` —
     aggregate counts (committed).
-  - `data/processed/proof_corpus/facts_corpus.parquet` — per-theorem
+  - `et_studies/proof_survey/data/facts_corpus.parquet` — per-theorem
     structured records (gitignored).
 """
 
@@ -274,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--output-summary',
                         default='outputs/analyses/proof_survey/false_characterization.json')
     parser.add_argument('--output-corpus',
-                        default='data/processed/proof_corpus/facts_corpus.parquet')
+                        default='et_studies/proof_survey/data/facts_corpus.parquet')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 

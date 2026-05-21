@@ -13,8 +13,8 @@ should help. If the spectrum decays smoothly, the embedding space is
 already well-utilized.
 
 Usage:
-  python scripts/embedding_spectrum.py outputs/checkpoints/embed_dim_512/epoch_008.pt
-  python scripts/embedding_spectrum.py <ckpt> --output-dir outputs/figures
+  python scripts/embedding_spectrum.py embeddings/outputs/checkpoints/embed_dim_512/epoch_008.pt
+  python scripts/embedding_spectrum.py <ckpt> --output-dir embeddings/outputs/figures
 
 Outputs:
   - stdout: numerical summary (top-K singular values, cumulative variance,
@@ -145,7 +145,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     p.add_argument('checkpoint', help='Path to a JEPA checkpoint .pt')
     p.add_argument(
-        '--output-dir', default='outputs/figures',
+        '--output-dir', default='embeddings/outputs/figures',
         help='Where to save the spectrum plot (default: %(default)s)',
     )
     p.add_argument(

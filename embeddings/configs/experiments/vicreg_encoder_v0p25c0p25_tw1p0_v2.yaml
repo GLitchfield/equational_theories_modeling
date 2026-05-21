@@ -20,8 +20,8 @@
 # cutover is benign. Bonus: the new L1 holdout has ~80 Austin pairs
 # (vs 21), so a_holdout statistics improve substantially.
 #
-# Result: outputs/results/vicreg_encoder_v0p25c0p25_tw1p0_v2.json
-# Reproduce: python scripts/run_experiment.py configs/experiments/vicreg_encoder_v0p25c0p25_tw1p0_v2.yaml
+# Result: embeddings/outputs/results/vicreg_encoder_v0p25c0p25_tw1p0_v2.json
+# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/vicreg_encoder_v0p25c0p25_tw1p0_v2.yaml
 
 seed: 42
 
@@ -64,7 +64,7 @@ training:
   warmup_steps: 1000
   epochs: 10
   grad_clip_norm: 1.0
-  checkpoint_dir: outputs/checkpoints
+  checkpoint_dir: embeddings/outputs/checkpoints
   max_val_batches: 200
 
 loss:

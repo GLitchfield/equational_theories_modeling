@@ -53,7 +53,7 @@ training:
   warmup_steps: 1000
   epochs: 10
   grad_clip_norm: 1.0
-  checkpoint_dir: outputs/checkpoints
+  checkpoint_dir: embeddings/outputs/checkpoints
   max_val_batches: 200
 
 loss:

@@ -28,7 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description='JEPA training driver')
     parser.add_argument(
         '--config',
-        default='configs/default.yaml',
+        default='embeddings/configs/default.yaml',
         help='YAML config path (default: %(default)s)',
     )
     parser.add_argument(

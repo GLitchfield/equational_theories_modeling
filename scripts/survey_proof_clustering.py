@@ -21,13 +21,13 @@ cumulatively in order:
       corpus but documented for completeness).
 
 Inputs:
-  - data/processed/proof_corpus/true_corpus.parquet (10,676 proofs)
+  - et_studies/proof_survey/data/true_corpus.parquet (10,676 proofs)
   - (re-extract bodies from .lean files via the same regex used by
     survey_true_proofs.py, since the parquet stores only metadata)
 
 Output:
   - outputs/analyses/proof_survey/clustering_results.json
-  - data/processed/proof_corpus/normalized_proofs.parquet (gitignored,
+  - et_studies/proof_survey/data/normalized_proofs.parquet (gitignored,
     one row per proof with the N1..N5 normalized strings).
 """
 
@@ -195,7 +195,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--output-summary',
                         default='outputs/analyses/proof_survey/clustering_results.json')
     parser.add_argument('--output-corpus',
-                        default='data/processed/proof_corpus/normalized_proofs.parquet')
+                        default='et_studies/proof_survey/data/normalized_proofs.parquet')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 

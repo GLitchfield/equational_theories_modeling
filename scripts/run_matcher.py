@@ -11,12 +11,12 @@ Inputs:
   - data/raw/etp/equations.txt           4,694 equations, line N = Eq N
   - data/processed/implication_pairs.parquet
                                          22,028,942 (eq1_id, eq2_id, value, code)
-  - data/processed/proof_corpus/true_corpus.parquet
+  - et_studies/proof_survey/data/true_corpus.parquet
                                          the survey's 10,676 directly-proved
                                          implications (Phase 5 target)
 
 Outputs:
-  - data/processed/proof_corpus/matcher_proofs.parquet
+  - et_studies/matcher_deliverable/data/matcher_proofs.parquet
         per matched pair: eq1_id, eq2_id, orientation, substitution[6],
         lean_proof_term, lean_proof_tactic. Gitignored.
   - outputs/analyses/matcher/coverage.json
@@ -60,10 +60,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--pair-table',
                         default='data/processed/implication_pairs.parquet')
     parser.add_argument('--directly-proved-corpus',
-                        default='data/processed/proof_corpus/true_corpus.parquet',
+                        default='et_studies/proof_survey/data/true_corpus.parquet',
                         help="survey's 10,676 directly-proved-implication set")
     parser.add_argument('--output-proofs',
-                        default='data/processed/proof_corpus/matcher_proofs.parquet')
+                        default='et_studies/matcher_deliverable/data/matcher_proofs.parquet')
     parser.add_argument('--output-coverage',
                         default='outputs/analyses/matcher/coverage.json')
     parser.add_argument('--force', action='store_true')

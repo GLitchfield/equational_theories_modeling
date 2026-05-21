@@ -2,18 +2,18 @@
 
 Trains a JEPA on the supplied experiment YAML, picks the highest
 balanced-accuracy checkpoint, runs full no-cap evaluation on the val
-loader, and writes ``outputs/results/<name>.json`` — the same record
+loader, and writes ``embeddings/outputs/results/<name>.json`` — the same record
 format emitted by ``scripts/record_run.py``.
 
 Convention: the experiment name is derived from the YAML filename
-(``configs/experiments/baseline.yaml`` → ``outputs/results/baseline.json``,
-checkpoints in ``outputs/checkpoints/baseline/``). The launcher forces
+(``embeddings/configs/experiments/baseline.yaml`` → ``embeddings/outputs/results/baseline.json``,
+checkpoints in ``embeddings/outputs/checkpoints/baseline/``). The launcher forces
 ``config['wandb']['name']`` to match so wandb / checkpoints / result
 filename all share one identifier.
 
 Usage:
-  python scripts/run_experiment.py configs/experiments/baseline.yaml
-  python scripts/run_experiment.py configs/experiments/X.yaml --force
+  python scripts/run_experiment.py embeddings/configs/experiments/baseline.yaml
+  python scripts/run_experiment.py embeddings/configs/experiments/X.yaml --force
 """
 
 from __future__ import annotations
@@ -38,12 +38,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         'config',
-        help='Path to a configs/experiments/*.yaml file',
+        help='Path to a embeddings/configs/experiments/*.yaml file',
     )
     parser.add_argument(
         '--force',
         action='store_true',
-        help='Overwrite an existing outputs/results/<name>.json',
+        help='Overwrite an existing embeddings/outputs/results/<name>.json',
     )
     parser.add_argument(
         '--notes',
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         '--output-dir',
-        default='outputs/results',
+        default='embeddings/outputs/results',
         help='Directory for the JSON record (default: %(default)s)',
     )
     args = parser.parse_args(argv)

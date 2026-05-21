@@ -52,9 +52,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--checkpoint', required=True)
     parser.add_argument('--embeddings-path',
-                        default='outputs/runs/skip_h128_seed42_diag/equation_embeddings.npy')
+                        default='embeddings/outputs/runs/skip_h128_seed42_diag/equation_embeddings.npy')
     parser.add_argument('--ids-path',
-                        default='outputs/runs/skip_h128_seed42_diag/equation_embeddings_ids.npy')
+                        default='embeddings/outputs/runs/skip_h128_seed42_diag/equation_embeddings_ids.npy')
     parser.add_argument('--always-wrong',
                         default='outputs/analyses/failure_overlap/always_wrong_trained.parquet')
     parser.add_argument('--split-path',
@@ -64,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--invariants',
                         default='data/processed/equation_invariants.parquet')
     parser.add_argument('--predictions',
-                        default='outputs/runs/skip_h128_seed42_diag/predictions.parquet',
+                        default='embeddings/outputs/runs/skip_h128_seed42_diag/predictions.parquet',
                         help='JEPA predictions.parquet for matched-baseline comparison')
     parser.add_argument('--output-dir', default=None,
                         help='defaults to dirname(--checkpoint)')

@@ -87,11 +87,11 @@ def classify_token(tok: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--matcher-proofs',
-                        default='data/processed/proof_corpus/matcher_proofs.parquet')
+                        default='et_studies/matcher_deliverable/data/matcher_proofs.parquet')
     parser.add_argument('--rewrite-chain-source',
-                        default='data/processed/proof_corpus/normalized_proofs.parquet')
+                        default='et_studies/proof_survey/data/normalized_proofs.parquet')
     parser.add_argument('--rewrite-chain-categories',
-                        default='data/processed/proof_corpus/true_corpus.parquet',
+                        default='et_studies/proof_survey/data/true_corpus.parquet',
                         help='used to filter normalized_proofs to category==c_rewrite_chain')
     parser.add_argument('--output',
                         default='outputs/analyses/proof_decoder/phase2_vocab.json')
@@ -105,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- 1. matcher subset tokens (in the same v1..v6 normalized space
     # the rewrite-chain bodies use, for a fair vocab estimate) ---
-    matcher_dataset_path = 'data/processed/proof_corpus/decoder_phase1_dataset.parquet'
+    matcher_dataset_path = 'et_studies/proof_decoder/data/decoder_phase1_dataset.parquet'
     print(f'tokenizing matcher proofs (normalized, from {matcher_dataset_path}) ...')
     mp = pq.read_table(_abs(matcher_dataset_path), columns=['normalized_proof']).to_pandas()
     matcher_counter: Counter = Counter()

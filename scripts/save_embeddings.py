@@ -7,8 +7,8 @@ the parse-tree cache and writes a ``[N, embed_dim]`` matrix plus an
 ``equation_id`` ordering file.
 
 Usage:
-  python scripts/save_embeddings.py outputs/checkpoints/<name>/epoch_NNN.pt
-  python scripts/save_embeddings.py <ckpt> --output-dir outputs/failure_analysis
+  python scripts/save_embeddings.py embeddings/outputs/checkpoints/<name>/epoch_NNN.pt
+  python scripts/save_embeddings.py <ckpt> --output-dir embeddings/outputs/failure_analysis
 
 Outputs (in --output-dir):
   equation_embeddings.npy          [N, embed_dim] float32
@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         '--output-dir', default=None,
         help='Directory for the embedding files. Defaults to '
-             '``outputs/runs/<wandb.name from checkpoint>/``.',
+             '``embeddings/outputs/runs/<wandb.name from checkpoint>/``.',
     )
     parser.add_argument(
         '--batch-size', type=int, default=1024,
@@ -75,7 +75,7 @@ def main(argv: list[str] | None = None) -> int:
             or os.path.splitext(os.path.basename(args.checkpoint))[0]
         )
         del ckpt_peek
-        args.output_dir = os.path.join('outputs/runs', name_hint)
+        args.output_dir = os.path.join('embeddings/outputs/runs', name_hint)
 
     out_dir = _abs(args.output_dir)
     os.makedirs(out_dir, exist_ok=True)

@@ -22,7 +22,7 @@ rewriting-based decision procedures — a hard cluster across methods.
 
 Writes:
   outputs/analyses/completion_study/phase0_variable_inclusion.json
-  data/processed/completion_study/equation_orientability.parquet
+  et_studies/completion_exploration/data/equation_orientability.parquet
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--output-json',
                     default='outputs/analyses/completion_study/phase0_variable_inclusion.json')
     ap.add_argument('--output-parquet',
-                    default='data/processed/completion_study/equation_orientability.parquet')
+                    default='et_studies/completion_exploration/data/equation_orientability.parquet')
     ap.add_argument('--force', action='store_true')
     args = ap.parse_args(argv)
 

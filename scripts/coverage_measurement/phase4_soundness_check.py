@@ -13,12 +13,12 @@ guards against bugs in the meet-detection logic that would let the
 engine claim a solve without a real path.
 
 Reads:
-  data/processed/coverage_measurement/engine_results_within_ceiling_d8.parquet
+  et_studies/coverage_measurement/data/engine_results_within_ceiling_d8.parquet
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
   outputs/analyses/coverage_measurement/phase4_soundness.json
-  data/processed/coverage_measurement/phase4_disagreements.parquet
+  et_studies/coverage_measurement/data/phase4_disagreements.parquet
     (only written if disagreements found)
 """
 
@@ -48,14 +48,14 @@ def _abs(p: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--engine-results',
-                    default='data/processed/coverage_measurement/engine_results_within_ceiling_d8.parquet')
+                    default='et_studies/coverage_measurement/data/engine_results_within_ceiling_d8.parquet')
     ap.add_argument('--ground-truth',
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--output-summary',
                     default='outputs/analyses/coverage_measurement/phase4_soundness.json')
     ap.add_argument('--output-disagreements',
-                    default='data/processed/coverage_measurement/phase4_disagreements.parquet')
+                    default='et_studies/coverage_measurement/data/phase4_disagreements.parquet')
     ap.add_argument('--spot-check-n', type=int, default=50)
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--force', action='store_true')

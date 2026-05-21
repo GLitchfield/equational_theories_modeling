@@ -3,7 +3,7 @@
 Two modes:
 
   # Record one checkpoint as a named result.
-  python scripts/record_run.py outputs/checkpoints/baseline/epoch_006.pt \\
+  python scripts/record_run.py embeddings/outputs/checkpoints/baseline/epoch_006.pt \\
       --name baseline_phase1_l2norm \\
       --wandb-url https://wandb.ai/.../runs/fxwe85fy \\
       --notes "10 epochs, L2-normalized, default config"
@@ -75,7 +75,7 @@ def main(argv: list[str] | None = None) -> int:
         sub = argparse.ArgumentParser()
         sub.add_argument('--summary', action='store_true')
         sub.add_argument('--list', action='store_true')
-        sub.add_argument('--output-dir', default='outputs/results')
+        sub.add_argument('--output-dir', default='embeddings/outputs/results')
         args = sub.parse_args(argv)
         _summarize(args.output_dir)
         return 0
@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--holdout', default=None, help='Override holdout file from saved config')
     parser.add_argument('--max-val-batches', type=int, default=None,
                         help='Cap val batches (default: no cap — full eval)')
-    parser.add_argument('--output-dir', default='outputs/results',
+    parser.add_argument('--output-dir', default='embeddings/outputs/results',
                         help='Directory for the JSON record (default: %(default)s)')
     parser.add_argument('--force', action='store_true',
                         help='Overwrite an existing record file')

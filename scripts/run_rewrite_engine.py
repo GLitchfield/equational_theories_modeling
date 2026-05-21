@@ -5,11 +5,11 @@ distributions + the hard tail.
 
 Reads:
   data/raw/etp/equations.txt
-  data/processed/proof_corpus/rewrite_chain_dataset.parquet
+  et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet
 
 Outputs:
   outputs/analyses/rewrite_chain_study/coverage.json   (committed)
-  data/processed/proof_corpus/rewrite_engine_traces.parquet
+  et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet
       (gitignored; per-pair result for Tasks 3 and 5)
 """
 
@@ -47,11 +47,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--equations', default='data/raw/etp/equations.txt')
     parser.add_argument('--dataset',
-                        default='data/processed/proof_corpus/rewrite_chain_dataset.parquet')
+                        default='et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet')
     parser.add_argument('--output-coverage',
                         default='outputs/analyses/rewrite_chain_study/coverage.json')
     parser.add_argument('--output-traces',
-                        default='data/processed/proof_corpus/rewrite_engine_traces.parquet')
+                        default='et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet')
     parser.add_argument('--d-max', type=int, default=6)
     parser.add_argument('--size-cap', type=int, default=None,
                         help='term-size cap; default = max(50, 5*max(|lhs2|, |rhs2|)) per implication')

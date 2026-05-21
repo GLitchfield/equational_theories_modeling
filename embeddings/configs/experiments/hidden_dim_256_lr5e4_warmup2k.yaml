@@ -18,8 +18,8 @@
 #
 # Otherwise identical to hidden_dim_256.yaml.
 #
-# Result: outputs/results/hidden_dim_256_lr5e4_warmup2k.json
-# Reproduce: python scripts/run_experiment.py configs/experiments/hidden_dim_256_lr5e4_warmup2k.yaml
+# Result: embeddings/outputs/results/hidden_dim_256_lr5e4_warmup2k.json
+# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/hidden_dim_256_lr5e4_warmup2k.yaml
 
 seed: 42
 
@@ -62,7 +62,7 @@ training:
   warmup_steps: 2000
   epochs: 10
   grad_clip_norm: 1.0
-  checkpoint_dir: outputs/checkpoints
+  checkpoint_dir: embeddings/outputs/checkpoints
   max_val_batches: 200
 
 loss:

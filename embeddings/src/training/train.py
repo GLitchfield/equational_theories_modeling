@@ -430,7 +430,7 @@ def _resolve_checkpoint_dir(config: dict) -> str:
     don't clobber each other. Falls back to a flat ``<base>/`` when no
     name is set, preserving legacy behavior for ad-hoc training calls.
     """
-    base = config['training'].get('checkpoint_dir', 'outputs/checkpoints')
+    base = config['training'].get('checkpoint_dir', 'embeddings/outputs/checkpoints')
     name = config.get('wandb', {}).get('name')
     if name:
         return os.path.join(base, name)

@@ -1,7 +1,7 @@
 """Linear-probe utilities for the embedding probing experiments.
 
 Functions return result dicts that get serialized straight to the
-``outputs/probing/results/*.json`` files. Convention:
+``embeddings/outputs/probing/results/*.json`` files. Convention:
 
   - ``probe_classification`` reports both plain and balanced accuracy
     (relevant when targets are class-imbalanced — see

@@ -12,8 +12,8 @@
 # Naming / output convention adopted here (2026-05-10):
 #   - "stable_*" prefix marks the stability-investigation track
 #   - Run artifacts (predictions, embeddings, analysis JSONs, figures)
-#     land under outputs/runs/<run-name>/ rather than the older
-#     outputs/failure_analysis*/ layout
+#     land under embeddings/outputs/runs/<run-name>/ rather than the older
+#     embeddings/outputs/failure_analysis*/ layout
 #
 # Configuration is identical to failure_analysis_m1p5_vic0p1.yaml
 # except log_every: 50 → 25 (more wandb resolution on the per-step
@@ -59,7 +59,7 @@ training:
   warmup_steps: 1000
   epochs: 10
   grad_clip_norm: 1.0
-  checkpoint_dir: outputs/checkpoints
+  checkpoint_dir: embeddings/outputs/checkpoints
   max_val_batches: 200
 
 loss:

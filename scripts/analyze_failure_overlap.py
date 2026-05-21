@@ -1,6 +1,6 @@
 """Compute failure-overlap analysis across runs' per-pair predictions.
 
-Reads each run's ``outputs/runs/<name>/predictions.parquet`` (produced
+Reads each run's ``embeddings/outputs/runs/<name>/predictions.parquet`` (produced
 by ``scripts/save_predictions.py``) plus its ``failure_summary.json``,
 computes which pairs each run got wrong, and aggregates into:
 
@@ -637,7 +637,7 @@ def render_readme(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        '--runs-glob', default='outputs/runs/*/predictions.parquet',
+        '--runs-glob', default='embeddings/outputs/runs/*/predictions.parquet',
         help='glob for per-run predictions parquets (default: %(default)s)',
     )
     parser.add_argument(

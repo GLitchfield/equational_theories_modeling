@@ -124,9 +124,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--sample',
-                    default='data/processed/coverage_measurement/sample.parquet')
+                    default='et_studies/coverage_measurement/data/sample.parquet')
     ap.add_argument('--output',
-                    default='data/processed/coverage_measurement/engine_results.parquet')
+                    default='et_studies/coverage_measurement/data/engine_results.parquet')
     ap.add_argument('--d-max', type=int, default=6)
     ap.add_argument('--size-cap', type=int, default=None,
                     help='per-pair term-size cap; default = safe_search.default_size_cap')

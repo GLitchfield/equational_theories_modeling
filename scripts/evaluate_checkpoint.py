@@ -1,12 +1,12 @@
 """Evaluate a saved JEPA checkpoint on a holdout split.
 
-Loads ``outputs/checkpoints/<name>.pt``, rebuilds the JEPA from the
+Loads ``embeddings/outputs/checkpoints/<name>.pt``, rebuilds the JEPA from the
 config snapshot stored in the checkpoint, and runs ``evaluate`` over the
 full validation DataLoader (no batch cap by default). Prints the same
 metrics as in-training eval.
 
 Usage:
-  python scripts/evaluate_checkpoint.py outputs/checkpoints/epoch_006.pt
+  python scripts/evaluate_checkpoint.py embeddings/outputs/checkpoints/epoch_006.pt
   python scripts/evaluate_checkpoint.py <ckpt> --max-val-batches 200
   python scripts/evaluate_checkpoint.py <ckpt> --holdout <path>   # alt split
 """
