@@ -43,7 +43,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from lib.data.parser import parse_equation  # noqa: E402
-from src.rewrite.engine import default_size_cap, find_path  # noqa: E402
+from et_studies.rewrite_chain_study.code.engine import default_size_cap, find_path  # noqa: E402
 from lib.rewrite.matching import term_size  # noqa: E402
 
 

@@ -12,7 +12,7 @@ Cover the cases the engine must handle to be useful:
 from __future__ import annotations
 
 from lib.data.parser import parse_equation
-from src.rewrite.engine import (
+from et_studies.rewrite_chain_study.code.engine import (
     EnumerationResult,
     ProofPath,
     SearchResult,
