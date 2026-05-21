@@ -1,158 +1,128 @@
 # CLAUDE.md — Equational Implication
 
-**Active plan:** `proof_investigation_plan.md` — Phase 8 intermediate-term analysis on hard TRUE proofs. Tests three hypotheses on the within-ceiling dense-row residual that frontier-dies under safe rewriting: higher-variable (do intermediates introduce fresh vars beyond E2), pattern learnability (low-entropy intermediate shapes per E1?), density connection (intermediate complexity vs row density). Extracts intermediate-term records from Vampire/Egg/complex category proofs in `~/git/equational_theories/` to characterize what a successor method would need to produce.
+**Active phase:** **Proof generation pilot** — the three deterministic methods (matcher, completion, safe rewrite engine) have been carved out of their studies and ported to `proof_generation_pilot/methods/`. The pilot plan markdown will land at `proof_generation_pilot/pilot_plan.md`; when it does, this section gets updated to point at it.
 
-Previous plan (coverage measurement) is **complete**, delivering the fifth durable artifact: the precise reach of the full deterministic stack (matcher + rewrite engine + completion) over the 22M-pair TRUE side. Output: `outputs/analyses/coverage_measurement/coverage_measurement_synthesis.md`. Headlines: combined sound TRUE coverage **6.54% of GT TRUE**; structural ceiling 46.07%; combined / ceiling = 14.20%. Architectural distribution: completion 92.8% of combined, matcher 5.6%, safe rewrite engine 1.6%. TRUE/FALSE asymmetry: TRUE side concentrates engineering complexity for less coverage; FALSE side larger by pair count, sits on validated completion logic. The honest deliverable is a bounding result, not an extension.
+**Just completed:** project refactor (Phases 1–8). Top-level layout reorganized into four areas: `lib/`, `embeddings/`, `et_studies/`, `proof_generation_pilot/`. See `outputs/refactor/phase1_inventory.md` for the full mapping (Phase 8 will archive it).
 
-Previous-previous plans (completion exploration, rewrite-chain study, proof_decoder phase 1, matcher, proof corpus survey, JEPA training) all complete and archived.
+## Repository layout
 
-The two completed phases left two durable artifacts:
+```
+data/                       # raw + processed (shared, stays at root)
+  raw/                      # symlinks to external projects; never modified
+  processed/                # generated PyG cache + invariants + pair table
+  splits/                   # holdout split indices, committed for reproducibility
+lib/                        # shared primitives (parser, matching, unification, LPO)
+  data/                     # parser, dataset, splits modules
+  rewrite/                  # matching, unification, lpo modules
+  scripts/                  # parse_equations.py, build_pair_table.py, build_equation_invariants.py
+embeddings/                 # JEPA work, frozen v1.0 embeddings, MLP classifier
+  src/                      # model/, training/, probing/, baselines/, evaluation/
+  scripts/                  # train, evaluate, save_embeddings, save_predictions, analyze_*
+  configs/                  # default.yaml + experiments/*.yaml
+  outputs/                  # checkpoints, runs, embeddings/v1.0, probing, results, figures, logs
+et_studies/                 # frozen studies — see et_studies/README.md for the index
+  proof_survey/             # ETP proof characterization
+  matcher_deliverable/      # first-order matcher coverage
+  proof_decoder/            # Phase 1 research decoder (incl. code/)
+  rewrite_chain_study/      # 1,636 c_rewrite_chain proof characterization (incl. code/)
+  completion_exploration/   # plain + ordered KB completion
+  coverage_measurement/     # deterministic-stack TRUE coverage
+  failure_overlap/          # cross-run JEPA failure overlap
+  etp_structure_analysis/   # ETP closure architecture note
+  proof_investigation/      # PAUSED — Phase 8 intermediate-term analysis
+proof_generation_pilot/     # active phase
+  methods/{matcher, completion, safe_engine}/  # ported methods
+  scripts/, data/, outputs/, notebooks/        # empty pending the pilot plan
+tests/                      # flat layout, repo-root
+archive/                    # archived plans (every completed plan ends up here)
+wandb/, trash/              # local-only state and reversible-removal staging
+outputs/refactor/           # working inventory through the refactor; Phase 8 archives it
+```
 
-1. **v1.0 embeddings** at `outputs/embeddings/v1.0/` — frozen 768-dim equation embeddings, the JEPA-phase deliverable.
-2. **Proof-corpus characterization** at `outputs/analyses/proof_survey/README.md` — survey of the ETP Lean proofs with an architecture recommendation for the proof generator.
+`lib/` has no upward dependencies. Everything else can import from `lib/`. Cross-area imports (e.g., embeddings/ importing from pilot/) are not expected.
 
-The JEPA training phase is **complete and wrapped**. From here on, downstream work consumes the v1.0 embeddings as a frozen input; we don't expect to retrain the JEPA unless a downstream task surfaces a specific deficiency.
+## Five durable deliverables
 
-The proof-corpus survey is **complete and wrapped**. Its three-track architecture recommendation (permutation predictor → tactic-sequence generator → upstream-tool delegation, plus a search-based FALSE generator) is the starting point for the next plan.
+1. **v1.0 embeddings** at `embeddings/outputs/embeddings/v1.0/` — frozen 768-dim equation embeddings; `MODEL_CARD.md` ships with the .pt source checkpoint.
+2. **Proof-corpus characterization** at `et_studies/proof_survey/outputs/README.md` — three-track recommendation (matcher / rewrite-chain decoder / upstream-tool delegation) + brute-force `Fin n` FALSE search.
+3. **Rewrite-chain decision** at `et_studies/rewrite_chain_study/outputs/synthesis_report.md` — 83.13% deterministic-search coverage at d_max=6; recommend neural-guided search on the 17% hard tail.
+4. **Completion-based decision procedure** at `et_studies/completion_exploration/outputs/synthesis_report.md` — 13.46% of 22M decided soundly (TRUE from ordered, FALSE from plain); 3.28% of GT FALSE come with `Fin n ≤ 6` counter-models for free.
+5. **Coverage measurement** at `et_studies/coverage_measurement/outputs/coverage_measurement_synthesis.md` — combined sound TRUE coverage 6.54% of GT TRUE; structural ceiling 46.07%; engine plateau 14.20% of ceiling; `frontier_died` at 85.74% of within-ceiling residual.
 
 ## v1.0 embeddings (current deliverable)
 
-- **Spec**: 4694 × 768 float32, L2-normalized; produced by the context encoder of `skip_h128_seed42_diag` epoch 9.
-- **Files**: `outputs/embeddings/v1.0/embeddings.npy` (gitignored, regenerable), `outputs/embeddings/v1.0/eq_ids.npy` (gitignored), `outputs/embeddings/v1.0/source_checkpoint.pt` (committed), `outputs/embeddings/v1.0/MODEL_CARD.md` (committed).
-- **JEPA bal_acc (matched 10% holdout)**: 0.9841 (essentially identical to the 0.9840 full-corpus number).
-- **Frozen-embedding MLP head bal_acc (matched holdout)**: 0.9996. The MLP recovers 91.37% of the "always-wrong-trained" subset (TRUE-by-vacuity cases the JEPA distance metric structurally couldn't represent). Downstream classifiers operating on these embeddings can pick that signal up.
-- **Full model card** with sha256s, reproduction recipe, and known limitations: `outputs/embeddings/v1.0/MODEL_CARD.md`.
+- **Spec:** 4694 × 768 float32, L2-normalized; produced by the context encoder of `skip_h128_seed42_diag` epoch 9.
+- **Files:** `embeddings/outputs/embeddings/v1.0/embeddings.npy` (gitignored, regenerable), `eq_ids.npy` (gitignored), `source_checkpoint.pt` (committed), `MODEL_CARD.md` (committed).
+- **JEPA bal_acc (matched 10% holdout):** 0.9841 (essentially identical to the 0.9840 full-corpus number).
+- **Frozen-embedding MLP head bal_acc (matched holdout):** 0.9996. The MLP recovers 91.37% of the "always-wrong-trained" subset (TRUE-by-vacuity cases the JEPA distance metric structurally couldn't represent).
+- **Full model card** with sha256s, reproduction recipe, and known limitations: `embeddings/outputs/embeddings/v1.0/MODEL_CARD.md`.
 
 ## JEPA-phase recap (historical)
 
-All JEPA plans are in `archive/`. In rough order:
+All JEPA plans live in `archive/`: `jepa_engineering_plan.md`, `aux_heads_implementation_plan.md`, `probing_experiments_plan.md`, `dual_encoder_plan.md` (deferred), `skip_connection_plan.md` (delivered v1.0), `mlp_classifier_plan.md` (validated v1.0).
 
-- `archive/jepa_engineering_plan.md` — original Phase 1–4 plan; Phase 1 (architecture sweep + loss) is complete.
-- `trash/testing_plan_phase2.md` — failure-analysis plan that produced the diagnostic infrastructure and the `outputs/runs/stable_*` series.
-- `archive/aux_heads_implementation_plan.md` — delivered `aux_h128_seed1_diag` at 0.9619 (prior best before skip).
-- `archive/probing_experiments_plan.md` — showed cohomology features are linearly accessible in the embeddings to 80–88%.
-- `archive/dual_encoder_plan.md` — deferred pending the skip-connection result; in-progress code in `archive/dual_encoder/`. Skip ended up not preserving cohom features either, so this remains relevant if a future task needs cohom in the embedding.
-- `archive/skip_connection_plan.md` — delivered the current v1.0 embeddings (`skip_h128_seed42_diag`, 0.9840 full corpus / 0.9841 matched holdout).
-- `archive/mlp_classifier_plan.md` — frozen-embedding MLP head; validated the v1.0 embeddings (0.9996 holdout, 91.37% vacuity).
-- `archive/proof_corpus_survey_plan.md` — surveyed the ETP Lean proofs to inform the generator architecture. Output: `outputs/analyses/proof_survey/README.md` with the three-track recommendation.
-- `archive/matcher_plan.md` — deterministic first-order matcher; solves Track 1 with 59.8% coverage of the directly-proved set, 0 false positives. Output: `outputs/analyses/matcher/README.md`, 49,586-row proof dataset.
-- `archive/proof_decoder_plan.md` — phase 1 research decoder; both-novel σ-exact 96.32% with random-embedding control at 5.6% (+90.7pp gap). Established that JEPA embeddings preserve the proof witness for the variable-substitution category. Output: `outputs/runs/proof_decoder_*/`, full writeup in `outputs/runs/proof_decoder_jepa/diagnostics_report.md`.
-- `archive/rewrite_chain_study_plan.md` — deep characterization of the 1,636 c_rewrite_chain proofs. Headline: 83.13% deterministic-search coverage at d_max=6, 99.7% rule set within {h, ← h}, 87% unimodal proofs. Output: `outputs/analyses/rewrite_chain_study/synthesis_report.md` with prover-architecture recommendation (neural-guided search targeting the 17% hard tail, after trying d_max=8/10 and tighter size caps first). Engine in `src/rewrite/` (matching.py + engine.py with search/find_path/enumerate_chains), 36 tests.
-- `archive/completion_exploration_plan.md` — KB completion (plain + ordered/unfailing) on the 22M-pair problem. Headline: 13.46% sound combined coverage of 22M (TRUE from ordered, FALSE from plain). Ordered completion adds a sound TRUE-coverage capability plain KB structurally lacks (3× lift). FALSE side of ordered completion is unsound (precedence-dependent rewriting). 3.28% of GT FALSE pairs come with a Stage-2-ready finite counter-model. Output: `outputs/analyses/completion_study/synthesis_report.md`. Engines in `src/completion/kb.py` (plain) and `src/completion/ordered.py` (ordered); rewrite primitives extended in `src/rewrite/lpo.py` (strict + total LPO) and `src/rewrite/unification.py` (Robinson). 99 new tests.
-- `archive/coverage_measurement_plan.md` — TRUE-side coverage of the deterministic stack (matcher + rewrite engine + completion) over the 22M-pair corpus. Headline: combined sound TRUE coverage 6.54% of GT TRUE; structural ceiling 46.07%; ratio 14.20%. Distribution: completion 92.8% of combined coverage, matcher 5.6% (variable-disjoint slice it uniquely catches), safe rewrite engine 1.6%. Depth sweep showed depth not the constraint (curve plateaus at d=4); dominant failure mode `frontier_died` at 85.74% of within-ceiling residual — structural reachability of safe first-order rewriting, not search-budget. Vampire/Egg category cross-cut bottoms at 2.29% and 0.54% solve rate — confirms safe rewriting can't substitute for narrowing/superposition. Output: `outputs/analyses/coverage_measurement/coverage_measurement_synthesis.md`. Engine in `src/coverage/safe_search.py` (direction-restricted bidirectional BFS). 8 new tests.
-
-Cross-run failure-overlap analysis (8 trained models, partitioned per Rule B): `outputs/analyses/failure_overlap/`. Reproducer: `scripts/analyze_failure_overlap.py`. Headline: a stable set of 32,496 always-wrong-trained pairs (99.99% TRUE), dominated by the "TRUE-by-vacuity" pattern; an MLP on the v1.0 embeddings recovers 91% of them.
-
-## Matcher recap (Track 1 — complete)
-
-`archive/matcher_plan.md` (now archived). Deterministic first-order matcher for the variable-substitution category. Outputs:
-
-- **Coverage** (`outputs/analyses/matcher/`):
-  - Directly-proved set: 6,374 / 10,658 = 59.8%
-  - Full TRUE corpus: 49,586 / 8,173,585 = 0.607%
-  - **FALSE positives: 0 / 13,855,357 ✓** (the correctness gate)
-- Wall clock: 58.8 s on a single core, pure Python (~375K pairs/sec).
-- Ground-truth proof dataset at `data/processed/proof_corpus/matcher_proofs.parquet` (49,586 rows, gitignored, regenerable).
-- Reproducer: `scripts/run_matcher.py`; module: `src/matcher/matcher.py`; 27 unit tests.
-- Methodology note: 59.8% vs the survey's 62.5% prediction is a methodology difference (survey counted proofs whose source body LOOKS like arg-permutation by regex; matcher counts equations where E2 IS a substitution instance of E1). Worth ~2.7pp; not a bug.
-- Stage 2 submission format pinned against `tests/fixtures/answers/accepted_true_basic.answer.json` in the Stage 2 repo: `import JudgeProblem\n\ndef submission : Goal := by\n  intro G _ h\n  <body>`. Live-judge verification deferred to when a built Stage 2 env (Lean 4.30.0-rc2) is available.
-
-## Proof decoder (phase 1, research track) — complete
-
-`archive/proof_decoder_plan.md`. Trained an autoregressive decoder
-on the matcher's 49,586 verified proofs to test whether the JEPA v1.0
-embeddings encode the proof witness (σ) despite training on TRUE/FALSE
-only. Pure embeddings-only conditioning, equation-level split, nested
-metric stack (parse → arity-correct → σ-exact), random-embedding
-control, linear probe for mechanism localization.
-
-Headline result: **both-novel σ-exact 96.32%** (JEPA decoder) vs **5.6%**
-(random-embedding control) vs **0.0%** (majority baseline). A 90.7pp
-gap that decisively answers the research question YES — the
-contrastive embedding preserves the proof witness.
-
-Mechanism reframing (per the preservation-vs-discovery memory): σ is
-a deterministic function of the two parse trees (it's what the matcher
-computes structurally), so the finding isn't "contrastive learning
-mystically learned theorem-proving" — it's "the contrastive loss
-preserved enough structure that σ remains recoverable from
-`(z_e1, z_e2)`." Linear probe localizes the work cleanly: per-position
-σ accuracy is ~88-93% linearly accessible (positions approximately
-independent in linear space, +1pp deltas vs independence inversion for
-arities 3-5), so the decoder's 40pp lift over linear is specifically
-about modeling inter-position consistency constraints — the
-structural-walk invariants the matcher exploits.
-
-Outputs at `outputs/runs/proof_decoder_jepa/`,
-`outputs/runs/proof_decoder_random_ctl/`,
-`outputs/runs/proof_decoder_linear_probe/`,
-`outputs/runs/proof_decoder_majority/`. Full writeup in
-`outputs/runs/proof_decoder_jepa/diagnostics_report.md`.
-
-## Proof-corpus survey recap
-
-Survey of ETP's Lean proofs at `outputs/analyses/proof_survey/` (READ THIS BEFORE designing the proof generator — it captures the recommended architecture). Reproducers in `scripts/survey_*.py`. Key findings:
-
-- **62.5% of TRUE proofs are arg-permutation closes** (`λ x y => h x y x`-style). The generator for that majority is a structured-prediction model emitting a `(hypothesis_id, permutation_tuple)`. Training data: 6,567 examples already in the corpus.
-- **15.3% are rewrite chains.** Intermediate states are equations, which v1.0 embeddings already represent natively. Generator: small transformer over a ~100-token Lean tactic vocab, conditioned on v1.0 embeddings.
-- **22% are machine output from Vampire (14.1%) or Egg (7.5%).** Don't try to learn these — delegate by invoking the upstream tool directly.
-- **0.5% genuinely diverse complex.** Skip / corner-case.
-- **FALSE side: Stage 2 accepts only Fin-n matrix counterexamples**, so the FALSE generator is a brute-force search over small `Fin n` magmas regardless of how the ETP corpus's proof shapes look (which are 74.6% lifting-family proofs at the source level).
-- Vocab is small: 119 tokens cover 95% of TRUE proof usage. Proof length is bimodal — median 10 tokens, mean 102 (Vampire/Egg long tail).
-- Lean version skew: ETP uses 4.20.1, Stage 2 judge uses 4.30.0-rc2. Most term-mode proofs port; tactic-mode may need adjustment. LeanDojo compatibility unverified; assess with a small extraction before committing to it.
-
-**Updated architecture (matcher replaces Track 1 for the competition track):**
-  1. **Deterministic matcher** (62.5% TRUE) — `archive/matcher_plan.md`, complete. Pure symbolic computation on parse trees; no embeddings, no learned model. Exact correctness by construction. Outputs at `outputs/analyses/matcher/` + the 49,586-row `data/processed/proof_corpus/matcher_proofs.parquet`.
-  2. Short tactic-sequence generator (15% TRUE — rewrite chains) — v1.0 embeddings condition this; still a learned model.
-  3. Upstream-tool delegation (22% TRUE — Vampire / Egg) — wrap, don't learn.
-  + Brute-force FALSE counterexample search over small Fin n magmas.
-
-**Research track (parallel to the competition cascade):** `proof_decoder_plan.md`. Train an autoregressive decoder on the matcher's 49,586 verified proofs to test the research question — do the JEPA embeddings encode the proof witness even though they were trained only on TRUE/FALSE? Pure embeddings-only conditioning; equation-level train/test split; nested metric stack; random-embedding control. The decoder is not the competition path (the matcher already solves this category exactly) — its value is the scientific claim and the eventual extension to rewrite chains where no deterministic shortcut exists.
-
-The v1.0 embeddings have **no competition-track role in the variable-substitution category** after the matcher subsumes it. They are central to the research-track decoder (phase 1) and to Track 2 of the competition cascade (rewrite chains, where intermediate states are equations the JEPA encoder handles natively).
-
-Numbers convention: all `bal_acc` figures in this document are full-corpus re-evaluations from `outputs/runs/<name>/failure_summary.json` (`scripts/save_predictions.py` on all 22M pairs, threshold calibrated on a 1M-sample). The per-epoch monitor values in `per_epoch_eval.csv` differ by ~0.0002–0.0004 from val-batch subsampling — use the former for cross-run comparison, the latter for per-epoch trajectory analysis.
-
-A few JEPA-internal results worth knowing if we ever return to training:
+JEPA-internal results worth remembering if we ever return to training:
 
 - **h=128 is the reliable recipe.** Two-seed mean 0.9810 (seed=1 → 0.9779, seed=42 → 0.9840), seed sensitivity +0.61pp.
-- **h=256 is unreliable** — `aux_h256_diag` hit 0.9636 via a regime-B phase transition that did NOT reproduce under seed=1 (reverted to 0.9488). The h=256 simplicity-bias drift problem (TRUE-recall → 0.99, FALSE-recall → 0.87) is unresolved on the aux-head path.
-- **20-epoch extension underperformed** the 10-epoch run (`skip_h128_seed42_20ep_diag` peaked at 0.9774); see that run's diagnostics_report for the cosine-LR-scaling explanation (untested directly, called out in its Limitations section).
+- **h=256 is unreliable** — `aux_h256_diag` hit 0.9636 via a regime-B phase transition that did NOT reproduce under seed=1 (reverted to 0.9488). The simplicity-bias drift problem (TRUE-recall → 0.99, FALSE-recall → 0.87) at h=256 is unresolved on the aux-head path.
+- **20-epoch extension underperformed** the 10-epoch run (`skip_h128_seed42_20ep_diag` peaked at 0.9774); cosine-LR-scaling explanation called out in its Limitations section, not retested directly.
 
-`CHANGELOG.md` records deviations from the plans and explains *why* each archived plan reads the way it does — read it whenever a plan or commit references a CHANGELOG entry.
+## Studies — one-line each
 
-When you deviate from the active plan, update it to match reality AND add a CHANGELOG.md entry explaining why, in the same commit as the deviating code.
+See `et_studies/README.md` for the full index. Quick summary:
 
-**Always read planning markdown files critically before implementing.** When the user adds a plan or experiment-design `.md`, scrutinize it like a code reviewer scrutinizes a PR: look for broken methodology (missing baselines, class-imbalance metrics, ill-defined CV), inconsistencies with existing code (wrong constants, paths, function signatures), and ambiguities a reasonable implementer could get wrong. Raise concerns ranked by severity BEFORE starting implementation; wait for the user's resolution on criticals at minimum. Don't be performatively skeptical — only flag issues that would actually change the implementation or interpretation.
+- **proof_survey** — 62.5% TRUE proofs are arg-permutation; 15.3% rewrite chains; 22% Vampire/Egg. Three-track architecture recommendation.
+- **matcher_deliverable** — 59.8% of directly-proved set, 0 false positives across 13.8M GT FALSE. The matcher subsumes Track 1.
+- **proof_decoder** — both-novel σ-exact 96.32% (JEPA) vs 5.6% (random ctl). Established JEPA embeddings preserve the proof witness; reframed as preservation, not discovery (σ is a deterministic function of the parse trees).
+- **rewrite_chain_study** — 83.13% at d_max=6, 99.7% rules within {h, ← h}, 87% unimodal. Recommend neural-guided search on the hard tail.
+- **completion_exploration** — 13.46% combined sound TRUE/FALSE; ordered KB lifts TRUE 3× over plain KB.
+- **coverage_measurement** — 6.54% combined TRUE / 46.07% structural ceiling / 14.20% engine plateau; `frontier_died` dominates residual.
+- **failure_overlap** — 32,496 always-wrong-trained pairs (99.99% TRUE), TRUE-by-vacuity dominant; MLP head recovers 91.37%.
+- **etp_structure_analysis** — ~11K direct proofs + Closure.lean derives 8M+ transitive labels from ~4 MB source evidence.
+- **proof_investigation** — PAUSED at Phase 1; tests three hypotheses on the dense-row residual; may resume.
 
 ## Operational rules
 
-- Do NOT modify files in `data/raw/`. All processing goes to `data/processed/` or `data/splits/`.
+- Do NOT modify files in `data/raw/`. All processing goes to `data/processed/` or `data/splits/` or per-study `et_studies/X/data/`.
+- Never `rm` files — move to `trash/` so removals are reversible.
 - Use `wandb` for ALL experiment tracking. Every training run must be logged.
 - Always report metrics per holdout level separately: L1, L2 one-unknown, L2 both-unknown, L3. Never average across levels — the gaps BETWEEN levels are the headline finding.
 - Save holdout split indices to `data/splits/` so experiments are reproducible. Every experiment log must reference which split file was used.
-- Run baselines (1–4 in `archive/jepa_engineering_plan.md`) before training the JEPA. Without baselines you can't interpret the JEPA results.
-- The equation parser is the critical path — if parsing is wrong, everything downstream is wrong. Test it thoroughly against known equations before any training.
+- The equation parser (`lib/data/parser.py`) is the critical path — if parsing is wrong, everything downstream is wrong.
 - Hardware: RTX 4080, 16 GB VRAM. Monitor and reduce batch size if OOM.
-- Any committed analysis output (parquet, CSV, summary markdown, figure) must be reproducible from committed code in the same commit — a script in `scripts/` or a notebook in `notebooks/`. README prose describing the methodology doesn't count as a reproducer. If the analysis was ad-hoc, write the script first, then commit script + outputs together.
-- README.md and CLAUDE.md must stay in sync. When CLAUDE.md changes the active plan, the current stable best, or other project-state facts, update README.md in the same commit. The two should never disagree on what the active plan is or which run holds the current best.
+- Any committed analysis output (parquet, CSV, summary markdown, figure) must be reproducible from committed code in the same commit — a script in the relevant area's `scripts/`. README prose describing the methodology doesn't count as a reproducer. If the analysis was ad-hoc, write the script first, then commit script + outputs together.
+- README.md and CLAUDE.md must stay in sync. When CLAUDE.md changes the active plan, the current stable best, or other project-state facts, update README.md in the same commit. The two should never disagree.
+- Commit at granular logical breakpoints, not in giant batches.
+- Never edit an active plan markdown unilaterally — raise problems as questions and let the user decide.
+- When you deviate from an active plan, update the plan to match reality AND add a CHANGELOG.md entry explaining why, in the same commit as the deviating code.
 - Keep checkpoints small — encoder weights + full JEPA state, skip optimizer state unless resuming from a crash.
-- Every completed training run gets recorded artifacts (`outputs/runs/<name>/` with `diagnostics_report.md`, `diagnostic_extract.json`, `per_step_trace.csv`, `per_epoch_eval.csv`) AND a commit with the message pattern `Phase N: record <run_name> — <one-line takeaway>`. Run records are part of the run's deliverable, not a separate request.
+- Every completed training run gets recorded artifacts (`embeddings/outputs/runs/<name>/` with `diagnostics_report.md`, `diagnostic_extract.json`, `per_step_trace.csv`, `per_epoch_eval.csv`) AND a commit with message pattern `Phase N: record <run_name> — <one-line takeaway>`. Run records are part of the run's deliverable, not a separate request.
+- **Always read planning markdown files critically before implementing.** When the user adds a plan or experiment-design `.md`, scrutinize it like a code reviewer scrutinizes a PR: look for broken methodology (missing baselines, class-imbalance metrics, ill-defined CV), inconsistencies with existing code (wrong constants, paths, function signatures), and ambiguities a reasonable implementer could get wrong. Raise concerns ranked by severity BEFORE starting implementation; wait for the user's resolution on criticals at minimum. Don't be performatively skeptical — only flag issues that would actually change the implementation or interpretation.
 
 ## JEPA implementation reference (historical, for if we ever return to training)
 
-VICReg (`src/training/losses.py::vicreg_terms`) was the production regularizer. Active via `loss.vicreg_var_weight` and `loss.vicreg_cov_weight` in any config. Works robustly at h=128 (0.9619 bal_acc with structural aux heads, 0.9582 stable from prior seed); degrades into TRUE-bias drift at h=256.
+Most modules live at `embeddings/src/`. References below use that prefix.
 
-SIGReg (`src/training/sigreg.py`) is implemented and verified (9 unit tests pass) but **shelved as not-a-fit for our task**. Three variants tested at h=256 — see commits `4fec7a3` → `cf5e00a` and `outputs/runs/stable_h256_*sigreg*/`, `outputs/runs/stable_h256_lejepa_3ep_diag/`. Failure modes: with L2-norm, SIGReg's pre-norm Gaussian target → uniform on sphere, conflicts with contrastive's TRUE-clustering need (cl_TRUE pinned at 1.97 = random unit-sphere distance²); without L2-norm, SIGReg's globally-coherent spread direction beats contrastive in clip-saturated steps (cl_TRUE = K = orthogonal-pair distance). Code stays in repo as a known-correct implementation for future setups where the prediction loss isn't margin-based contrastive. Don't re-attempt without revisiting the linked diagnostics_report.md files.
+VICReg (`embeddings/src/training/losses.py::vicreg_terms`) was the production regularizer. Active via `loss.vicreg_var_weight` and `loss.vicreg_cov_weight` in any config. Works robustly at h=128 (0.9619 bal_acc with structural aux heads, 0.9582 stable from prior seed); degrades into TRUE-bias drift at h=256.
+
+SIGReg (`embeddings/src/training/sigreg.py`) is implemented and verified (9 unit tests pass) but **shelved as not-a-fit for our task**. Three variants tested at h=256 — see commits `4fec7a3` → `cf5e00a` and run records under `embeddings/outputs/runs/stable_h256_*sigreg*/`, `embeddings/outputs/runs/stable_h256_lejepa_3ep_diag/`. Failure modes: with L2-norm, SIGReg's pre-norm Gaussian target → uniform on sphere, conflicts with contrastive's TRUE-clustering need (cl_TRUE pinned at 1.97 = random unit-sphere distance²); without L2-norm, SIGReg's globally-coherent spread direction beats contrastive in clip-saturated steps (cl_TRUE = K = orthogonal-pair distance). Code stays in repo as a known-correct implementation for future setups where the prediction loss isn't margin-based contrastive. Don't re-attempt without revisiting the linked diagnostics_report.md files.
 
 The `model.l2_normalize_outputs` config flag (default `true`) routes through `JEPA.forward(normalize_outputs=...)` to drop the L2-norm on encoder/predictor outputs — added for the SIGReg LeJEPA-style attempt; safe to leave at default for any contrastive-with-margin recipe.
 
-Auxiliary heads (`src/model/aux_heads.py`) attach single-layer linear probes to the encoder's pooled rep. Active when `loss.aux_weight > 0` and `data.aux_labels_path` is set. `HEAD_SPECS` defines all 18 heads (10 structural + 8 cohomology); `loss.aux_heads` selects the active subset — accepts `"structural"`, `"cohom"`, `"all"` (named subsets in `HEAD_SUBSETS`), or an explicit list of head names. Defaults to all heads when omitted. Reproducing pre-cohom runs requires `loss.aux_heads: structural`.
+Auxiliary heads (`embeddings/src/model/aux_heads.py`) attach single-layer linear probes to the encoder's pooled rep. Active when `loss.aux_weight > 0` and `data.aux_labels_path` is set. `HEAD_SPECS` defines all 18 heads (10 structural + 8 cohomology); `loss.aux_heads` selects the active subset — accepts `"structural"`, `"cohom"`, `"all"` (named subsets in `HEAD_SUBSETS`), or an explicit list of head names. Defaults to all heads when omitted. Reproducing pre-cohom runs requires `loss.aux_heads: structural`.
 
-## Data layout
+## Numbers convention
+
+All `bal_acc` figures are full-corpus re-evaluations from `embeddings/outputs/runs/<name>/failure_summary.json` (`embeddings/scripts/save_predictions.py` on all 22M pairs, threshold calibrated on a 1M-sample). The per-epoch monitor values in `per_epoch_eval.csv` differ by ~0.0002–0.0004 from val-batch subsampling — use the former for cross-run comparison, the latter for per-epoch trajectory analysis.
+
+## Data layout (post-refactor)
 
 - `data/raw/etp/` → symlink to the Equational Theories Project's `data/` directory. Source of `equations.txt`, the `Austin_implications.txt` curated subset, and other ETP artifacts.
-- `data/raw/etp_export/` → exports from the ETP project (not symlinked). Currently holds `export_raw_implications_5_9_2026.csv`, the **authoritative ground truth** for every off-diagonal implication pair (see CHANGELOG 2026-05-09). The pair table is built from this, not from the older `2025-08-11-vampire.json.gz` (which left 1,062 pairs unresolved).
-- `data/raw/invariants/` → symlink to the sibling invariants project's `assembly/output/` directory. Currently empty until that project is run.
-- `data/processed/` → derived caches (parsed-tree PyG `Data` cache, pair-table parquet). Not committed.
+- `data/raw/etp_export/` → exports from the ETP project (not symlinked). Currently holds `export_raw_implications_5_9_2026.csv`, the **authoritative ground truth** for every off-diagonal implication pair (see CHANGELOG 2026-05-09).
+- `data/raw/invariants/` → symlink to the sibling invariants project's `assembly/output/` directory.
+- `data/processed/` → shared derived caches (parsed-tree PyG `Data` cache, pair-table parquet, equation-invariants parquet). Not committed.
 - `data/splits/` → holdout split index files. Committed, for reproducibility.
+- `et_studies/X/data/` → per-study processed parquets (matcher_proofs, normalized_proofs, true_corpus, etc.). Gitignored.
+- `embeddings/outputs/X/` → JEPA-era outputs (checkpoints, runs, embeddings, results, figures, logs, probing, failure_analysis). Most binaries gitignored; small JSONs + MD reports committed.
+
+`CHANGELOG.md` records deviations from the plans and explains *why* each archived plan reads the way it does — read it whenever a plan or commit references a CHANGELOG entry.
