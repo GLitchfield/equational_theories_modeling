@@ -1,0 +1,2 @@
+-- Pilot Phase 1 Lean shim — imports ETP's equations and tactics; per-pair proofs
+-- live under PilotShim/. The lib's root file is intentionally empty.

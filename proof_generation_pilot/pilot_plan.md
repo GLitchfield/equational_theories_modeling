@@ -35,7 +35,7 @@ For each sampled pair, run **three** tools and produce a tactic-mode Lean proof 
 
 1. **Matcher** (`proof_generation_pilot/methods/matcher/`) — finds σ; tactic-mode `by intro G _ h ...; exact h <σ-args>`. PyPantograph captures the post-intro state.
 2. **Vampire** (via ETP's `vampire_proofs.py` + `Superposition.lean`) — re-run per pair; tactic-mode `by` block with multiple `have eqN ... := superpose ...` lines + closing tactic. PyPantograph captures per-superposition state.
-3. **lean-egg** (Lean tactic) — `by egg [h]` single-tactic proof. PyPantograph captures the post-egg state.
+3. **`grind`** (Lean core tactic) — `by grind [h]` single-tactic proof. PyPantograph captures the post-grind state. (Replaces the earlier lean-egg plan, which is officially deprecated in favor of grind.)
 
 **Completion is deferred to Phase 2.** Completion structurally produces no proof on variable-disjoint inputs (`NO_RULES_FROM_INPUT`), so including it here adds work without contributing proofs. Phase 2 will broaden the sample to non-variable-disjoint pairs where completion naturally yields rewrite chains — the right home for the stratification question.
 
@@ -46,7 +46,7 @@ For each sampled pair, run **three** tools and produce a tactic-mode Lean proof 
 - **Q3** (Lean validation environment): **Lean 4.20.1** (ETP's version). Reasoning: compatibility with ETP's Vampire/Egg adapters and tooling, and LeanDojo is more likely to work on the older version. Caveat: Stage 2 judge runs 4.30.0-rc2 — a porting step (4.20.1 → 4.30.0-rc2) will be needed at the submission boundary in a later phase. Later Lean versions may make downstream work easier; revisit when it becomes the bottleneck.
 - **Q4** (Vampire / Egg sourcing): **Vampire re-runs via ETP's existing driver; "Egg" substituted by `lean-egg`** (the Lean tactic, not the external Rust MagmaEgg).
    - **Vampire**: re-run on the 1k sample using `equational_theories/Generated/VampireProven/src/vampire_proofs.py` — ETP's TPTP encoder + `leanify()` translator already produce tactic-mode Lean that uses ETP's `superpose` tactic (`Superposition.lean`). Install the Vampire binary locally (the driver expects `~/Downloads/vampire`). Tactic-mode output gives LeanDojo intermediate states.
-   - **Egg → lean-egg**: original plan had MagmaEgg (Rust crate in external repo). Recon (`outputs/q12_recon.md`) showed MagmaEgg's runner is in a separate Rust repo with undocumented input format — significant setup cost for an uncertain pilot benefit, and its native Lean output is term-mode (no intermediate states for LeanDojo without rewrapping). **Substituted with `lean-egg`** — Rossel's Lean tactic, already used in ETP's `Subgraph.lean` for 86 proofs. As a Lean tactic it lives in the Lean toolchain, requires no separate runner, and `theorem ... := by egg [h]`-style proofs are tactic-mode → LeanDojo-friendly. If we later want MagmaEgg-specific data we add it as a follow-on.
+   - **Egg → `grind`** (Lean core). Two prior substitutions: MagmaEgg (external Rust crate, undocumented input format, expensive setup) → lean-egg (Lean tactic, used in ETP's `Subgraph.lean`) → **`grind`** (Lean's built-in e-graph-based tactic). lean-egg is officially deprecated; its own README recommends `grind`. Same e-graph reasoning, no external Lake dep, actively maintained as Lean core. Same atomic shape from PyPantograph's view (one tactic call = one transition); the value of this slot is "e-graph-based proof shape in the dataset," not per-step traces.
    - Open sub-question: once all 4 tools have outputs on the same pair, do we use Vampire/lean-egg's proof for pairs where a "simpler" tool (matcher) also succeeded? Deferred until we see what the outputs look like.
 - **Q5** (intermediate proof-state capture): **use PyPantograph directly at Pantograph commit `3ce335eb` (Lean 4.20.1)** — skip LeanDojo entirely. Capture the goal state after each tactic step for tactic-mode proofs. Rationale: intermediate states are needed to determine the **minimum token grammar** for the downstream proof-generation model. Schema requirement is specific: capture **raw textual** tactic + goal-state output, not just a structured AST. Setup is a Phase 1 step: pin Pantograph submodule, build the REPL via `lake build repl` against Lean 4.20.1, install PyPantograph against that pinned source, smoke-test on one proof end-to-end before sampling begins.
 
@@ -70,7 +70,7 @@ For each sampled pair, run **three** tools and produce a tactic-mode Lean proof 
 - **Q9** (Code layout): under `proof_generation_pilot/`:
    - `methods/matcher/to_lean.py` — wraps `matcher_proofs.parquet:lean_proof_tactic` in `def submission := by intro G _ h <vars>; <existing tactic>`.
    - `methods/vampire/` — new subdir; thin wrapper around ETP's `vampire_proofs.py` (TPTP encoder + `leanify()` translator already exist). Installs/configures the binary.
-   - `methods/lean_egg/` — new subdir; even thinner. lean-egg is a Lean tactic, so there's no Python runner per se — just a Lean-file template that emits `def submission := by egg [h]` and we invoke Lean to validate.
+   - `methods/grind/` — new subdir; thin. `grind` is a Lean core tactic (no external dep), so this is just a Lean-file template emitting `def submission := by grind [h]` invoked through Lean for validation. (Replaces the earlier `methods/lean_egg/`.)
    - `methods/completion/` — exists from the refactor but **not used in Phase 1**. Phase 2 wires it in.
    - `scripts/sample_pairs.py` — builds the 1k sample from the 30K matcher-solvable variable-disjoint pool with a fixed seed.
    - `scripts/build_phase1_dataset.py` — orchestration: per-pair, run all 4 tools, validate in Lean 4.20.1 via LeanDojo, capture intermediate states, write parquet rows.
@@ -103,16 +103,28 @@ Surfaced during decision walk-through; tracked here so they're visible before im
 
 4. **Vampire `leanify()` may raise `NotImplementedError`** on uncommon proof patterns (superposition + backward demodulation + equality resolution are handled; others may not be). Per-pair failures will be tracked and characterized in Phase 1 outputs.
 
-5. **Vampire/lean-egg setup cost.** Vampire binary install + lean-egg as a Lake dep — each requires verification before Phase 1 sampling begins.
+5. **Vampire setup cost.** Vampire binary install — verified working (v4.9, ETP's `leanify()`-compatible format) before Phase 1 sampling. `grind` requires no separate install (Lean core).
+
+6. **ETP's `lean-toolchain` patched locally** from `v4.20.1` → `v4.20.0` to match Mathlib's pinned cache (same Lean binary; the v4.20.1 toolchain string was a republish of the same v4.20.0 release). The patch is in `~/git/equational_theories/lean-toolchain` — a local modification to the sibling repo. Not pushed upstream; not in our repo. To reproduce: `cp .lake/packages/mathlib/lean-toolchain ./lean-toolchain` in the ETP checkout after `lake update`.
 
 These are issues to *manage*, not blockers. The plan proceeds; we revisit if any turn out worse than expected during the 100-pair smoke run.
+
+## Phase 1 setup status
+
+| Item | Status |
+|---|---|
+| elan + Lean 4.20.0 + Lean 4.20.1 | ✓ installed (Lean 4.20.0 binary is the same as v4.20.1 — toolchain string republish) |
+| Vampire 4.9 binary at `~/Downloads/vampire` | ✓ installed; smoke test produces clean leanify-compatible output |
+| Pantograph + PyPantograph (Pantograph pinned to commit `3ce335eb`) | ✓ built; `pip install -e ~/git/PyPantograph` succeeded; `Server()` smoke import OK |
+| ETP `lake update` + Mathlib cache fetch + `lake build` | ✓ 4334 modules compiled (Mathlib cache used) |
+| Lean project shim at `proof_generation_pilot/lean_project/` | ✓ `PilotShim` lib builds; `Smoke.lean` proves `Equation2 → Equation1` |
+| `grind` Lean core tactic | ✓ no install needed (built into Lean 4.20.1) |
 
 ## Deferred to Phase 2
 
 - **Completion as a proof producer.** Move sample to non-variable-disjoint pairs (or a stratified mix) where completion structurally contributes via rewrite chains. The Phase 1 completion code stays in `proof_generation_pilot/methods/completion/` ready to wire in.
 - **Stratification / sample-shape questions.** Mixing variable-disjoint and non-variable-disjoint pairs introduces heterogeneity that Phase 1's clean single-category focus deliberately avoids. Phase 2 owns this.
 - **Birkhoff substitution inside completion** (option (d) from the design discussion). Real engineering that converges on Vampire-style paramodulation. Out of scope unless Phase 2 surfaces a specific need.
-- **Q12** (ETP wrapper recon): **research task, runs first before implementation.** Read `~/git/equational_theories/` to locate (per tool): (a) the runner / invocation script, (b) the input serialization (TPTP for Vampire; e-graph spec for Egg), (c) the output → Lean translator (if it exists), (d) the targeted Lean version. If a translator is missing or unusable, escalate as "build our own" before Phase 1 implementation.
 
 ## Phase 1 work breakdown (post-decisions)
 

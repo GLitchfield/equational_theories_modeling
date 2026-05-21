@@ -79,3 +79,8 @@ et_studies/*/data/*
 
 # pyenv local
 .python-version
+
+# Lean Lake build artifacts
+.lake/
+lake-packages/
+*.olean
