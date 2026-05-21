@@ -1,6 +1,35 @@
 # Changelog
 
-Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The active plan is currently `rewrite_chain_study_plan.md`; prior plans are archived.
+Deviations from the active plan and other notable project decisions, in reverse-chronological order. The plan itself is updated to reflect the new reality; entries here explain *why* a deviation was made and on what evidence, so a fresh session can understand the plan's current state without digging through git history. The current active phase is the **proof generation pilot** (`proof_generation_pilot/pilot_plan.md` pending); all prior plans are archived.
+
+---
+
+## 2026-05-21 — Project refactor complete (Phases 1–8)
+
+Reorganized the top-level layout from `src/ + scripts/ + configs/ + outputs/` into four areas:
+
+- `lib/` — shared primitives (parser, matching, unification, LPO). No upward dependencies.
+- `embeddings/` — JEPA work, frozen v1.0 embeddings, MLP classifier, all training infrastructure.
+- `et_studies/` — nine frozen studies, each with its own `outputs/`, `scripts/`, `data/`, and where applicable `code/`.
+- `proof_generation_pilot/` — active phase, methods/{matcher,completion,safe_engine}/ ported in from their source studies.
+
+The refactor planned in eight phases (1: survey, 2: skeleton, 3: studies, 4: pilot methods, 5: embeddings code + configs + outputs, 6: path audit + script moves, 7: READMEs, 8: verify+archive). Verified by Phase 8 checks: 383 tests pass, all areas smoke-import cleanly, `data/raw/invariants` symlink still resolves.
+
+**Deviations from the original plan:**
+
+- **Phase 4 split into 4a/4b/4c** to keep import-update surfaces manageable. 4a moved shared primitives → `lib/` (43 import sites). 4b moved pilot methods → `proof_generation_pilot/methods/` (14 sites). 4c moved the unsafe rewrite engine → `et_studies/rewrite_chain_study/code/` (4 sites).
+- **Phase 5 split into 5a/5b/5c**. 5a moved `src/` subpackages (incl. R1's `decoder/` → `et_studies/proof_decoder/code/`). 5b moved `configs/`. 5c moved `outputs/` subdirs and rewrote `.gitignore` rules from `outputs/X/` to `embeddings/outputs/X/`.
+- **Phase 6 split into 6a/6b**. 6a was the path-string audit in `.py`/`.yaml` files (`data/processed/<study>/` + `outputs/X/` + `configs/X/` → new locations). 6b moved 51 scripts to per-area homes.
+- **`_REPO_ROOT` repair** (not in original plan). Every moved script used a `__file__`-relative idiom that broke when the script's depth-from-root changed. Repaired per location group: +1 pardir for `lib/scripts/` and `embeddings/scripts/`, +2 pardir for `et_studies/X/scripts/` (or +1 for `coverage_measurement/scripts/` which already had 2). Verified by importing one script per group and confirming `_REPO_ROOT` resolves correctly.
+- **R-resolutions** locked in pre-execution: `lib/` chosen over `core/`; `matcher`/`completion`/`safe_engine` method names; `et_studies/` chosen over `analyses/`; `tests/` stays at root with flat layout; `proof_survey/` used as the compact form of `proof_corpus_survey/`; `outputs/refactor/` stayed at root through the refactor (R13(b)), archived in Phase 8.
+- **Path-audit scope** limited to `.py` and `.yaml` files. Frozen synthesis reports in `et_studies/*/outputs/*.md` and `archive/*.md` left untouched per the "broken-but-readable" convention — they document historical state and rewriting them risks editing history. Phase 7 wrote fresh READMEs against the post-refactor layout instead.
+- **`trash/` mixed git tracking**: Phase 3's first commit accidentally `git mv`'d some `.gitkeep` files into `trash/`, tracking them. Subsequent phases either left those tracked (consistent with Phase 3) or used plain `mv` for new trash additions (so the safety-net copies stay on disk but not in git). Mixed pattern; no functional impact.
+
+Git history preserved via `git mv` for every tracked file. Gitignored binaries (1.4 GB checkpoints, 1.6 GB runs) moved with plain `mv` since git wouldn't see them either way.
+
+Working artifacts archived: `outputs/refactor/phase1_inventory.md` → `archive/project_refactor_inventory.md`; `project_refactor_plan.md` (root) → `archive/project_refactor_plan.md`. `outputs/` retired entirely.
+
+The active phase is now the proof generation pilot. `pilot_plan.md` will land at `proof_generation_pilot/pilot_plan.md` when written; the methods are already ported and tested.
 
 ---
 
