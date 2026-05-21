@@ -36,7 +36,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from lib.data.parser import parse_equation  # noqa: E402
-from src.decoder.tokenizer import build_normalized_proof, tokenize  # noqa: E402
+from et_studies.proof_decoder.code.tokenizer import build_normalized_proof, tokenize  # noqa: E402
 from proof_generation_pilot.methods.matcher.matcher import ordered_vars  # noqa: E402
 
 

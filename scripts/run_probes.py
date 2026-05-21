@@ -33,7 +33,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from src.probing.probes import (  # noqa: E402
+from embeddings.src.probing.probes import (  # noqa: E402
     majority_class_baseline,
     probe_classification,
     probe_classification_with_mask,

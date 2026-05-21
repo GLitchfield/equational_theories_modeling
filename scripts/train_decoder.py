@@ -37,9 +37,9 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.decoder.decoder import PrefixConditionedDecoder, loss_for_batch  # noqa: E402
-from src.decoder.eval_helpers import TripleMetrics, parse_proof_tokens  # noqa: E402
-from src.decoder.tokenizer import BOS_ID, EOS_ID, PAD_ID  # noqa: E402
+from et_studies.proof_decoder.code.decoder import PrefixConditionedDecoder, loss_for_batch  # noqa: E402
+from et_studies.proof_decoder.code.eval_helpers import TripleMetrics, parse_proof_tokens  # noqa: E402
+from et_studies.proof_decoder.code.tokenizer import BOS_ID, EOS_ID, PAD_ID  # noqa: E402
 
 
 def _abs(p: str) -> str:

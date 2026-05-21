@@ -20,11 +20,11 @@ from lib.data.dataset import (  # noqa: E402
     collate_pairs,
 )
 from lib.data.parser import equation_to_pyg  # noqa: E402
-from src.model.aux_heads import AuxiliaryHeads  # noqa: E402
-from src.model.encoder import EquationEncoder  # noqa: E402
-from src.model.jepa import JEPA  # noqa: E402
-from src.model.predictor import ImplicationPredictor  # noqa: E402
-from src.training.train import calibrate_threshold, evaluate  # noqa: E402
+from embeddings.src.model.aux_heads import AuxiliaryHeads  # noqa: E402
+from embeddings.src.model.encoder import EquationEncoder  # noqa: E402
+from embeddings.src.model.jepa import JEPA  # noqa: E402
+from embeddings.src.model.predictor import ImplicationPredictor  # noqa: E402
+from embeddings.src.training.train import calibrate_threshold, evaluate  # noqa: E402
 
 
 # --- calibrate_threshold ----------------------------------------------------

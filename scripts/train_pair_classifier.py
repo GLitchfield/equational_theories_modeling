@@ -40,7 +40,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.model.pair_classifier import MODELS, build_model  # noqa: E402
+from embeddings.src.model.pair_classifier import MODELS, build_model  # noqa: E402
 
 
 def _abs(p: str) -> str:

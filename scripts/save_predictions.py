@@ -45,10 +45,10 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from lib.data.dataset import load_graph_cache  # noqa: E402
-from src.model.encoder import EquationEncoder  # noqa: E402
-from src.model.jepa import JEPA  # noqa: E402
-from src.model.predictor import ImplicationPredictor  # noqa: E402
-from src.training.train import calibrate_threshold  # noqa: E402
+from embeddings.src.model.encoder import EquationEncoder  # noqa: E402
+from embeddings.src.model.jepa import JEPA  # noqa: E402
+from embeddings.src.model.predictor import ImplicationPredictor  # noqa: E402
+from embeddings.src.training.train import calibrate_threshold  # noqa: E402
 
 
 def _build_jepa(config: dict) -> JEPA:

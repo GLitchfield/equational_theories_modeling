@@ -31,7 +31,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.decoder.tokenizer import BOS_ID, EOS_ID, PAD_ID, VOCAB_SIZE
+from et_studies.proof_decoder.code.tokenizer import BOS_ID, EOS_ID, PAD_ID, VOCAB_SIZE
 
 
 class PrefixConditionedDecoder(nn.Module):

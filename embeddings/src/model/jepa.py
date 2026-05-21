@@ -26,8 +26,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.model.encoder import EquationEncoder
-from src.model.predictor import ImplicationPredictor
+from embeddings.src.model.encoder import EquationEncoder
+from embeddings.src.model.predictor import ImplicationPredictor
 
 
 class JEPA(nn.Module):

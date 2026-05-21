@@ -24,10 +24,10 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from lib.data.dataset import make_loaders  # noqa: E402
-from src.model.encoder import EquationEncoder  # noqa: E402
-from src.model.jepa import JEPA  # noqa: E402
-from src.model.predictor import ImplicationPredictor  # noqa: E402
-from src.training.train import evaluate  # noqa: E402
+from embeddings.src.model.encoder import EquationEncoder  # noqa: E402
+from embeddings.src.model.jepa import JEPA  # noqa: E402
+from embeddings.src.model.predictor import ImplicationPredictor  # noqa: E402
+from embeddings.src.training.train import evaluate  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:

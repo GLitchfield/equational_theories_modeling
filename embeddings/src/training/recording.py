@@ -29,10 +29,10 @@ from typing import Any
 import torch
 
 from lib.data.dataset import make_loaders
-from src.model.encoder import EquationEncoder
-from src.model.jepa import JEPA
-from src.model.predictor import ImplicationPredictor
-from src.training.train import evaluate
+from embeddings.src.model.encoder import EquationEncoder
+from embeddings.src.model.jepa import JEPA
+from embeddings.src.model.predictor import ImplicationPredictor
+from embeddings.src.training.train import evaluate
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 

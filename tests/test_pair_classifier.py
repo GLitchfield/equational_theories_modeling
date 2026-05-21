@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from src.model.pair_classifier import (
+from embeddings.src.model.pair_classifier import (
     MODELS,
     PairLinear,
     PairMLPConcat,

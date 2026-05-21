@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from src.decoder.eval_helpers import (
+from et_studies.proof_decoder.code.eval_helpers import (
     ParsedProof,
     TripleMetrics,
     parse_proof_tokens,
 )
-from src.decoder.tokenizer import tokenize
+from et_studies.proof_decoder.code.tokenizer import tokenize
 
 
 def _tok(s: str) -> list[int]:

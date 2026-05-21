@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.decoder.tokenizer import (
+from et_studies.proof_decoder.code.tokenizer import (
     BOS_ID,
     EOS_ID,
     PAD_ID,

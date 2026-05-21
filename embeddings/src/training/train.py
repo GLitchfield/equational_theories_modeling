@@ -30,19 +30,19 @@ import torch
 import torch.nn.functional as F
 
 from lib.data.dataset import make_loaders
-from src.model.aux_heads import (
+from embeddings.src.model.aux_heads import (
     AuxiliaryHeads,
     HEAD_SPECS as AUX_HEAD_SPECS,
     resolve_head_names,
     auxiliary_accuracy,
     auxiliary_loss,
 )
-from src.model.encoder import EquationEncoder
-from src.model.jepa import JEPA
-from src.model.predictor import ImplicationPredictor
-from src.training.losses import contrastive_loss, effective_rank, vicreg_terms
-from src.training.sigreg import sigreg
-from src.training.scheduler import cosine_tau, cosine_warmup_lr_multiplier
+from embeddings.src.model.encoder import EquationEncoder
+from embeddings.src.model.jepa import JEPA
+from embeddings.src.model.predictor import ImplicationPredictor
+from embeddings.src.training.losses import contrastive_loss, effective_rank, vicreg_terms
+from embeddings.src.training.sigreg import sigreg
+from embeddings.src.training.scheduler import cosine_tau, cosine_warmup_lr_multiplier
 
 
 # --- threshold calibration / evaluation -------------------------------------

@@ -15,8 +15,8 @@ from __future__ import annotations
 import pytest
 import torch
 
-from src.decoder.decoder import PrefixConditionedDecoder, loss_for_batch
-from src.decoder.tokenizer import BOS_ID, EOS_ID, PAD_ID, VOCAB_SIZE
+from et_studies.proof_decoder.code.decoder import PrefixConditionedDecoder, loss_for_batch
+from et_studies.proof_decoder.code.tokenizer import BOS_ID, EOS_ID, PAD_ID, VOCAB_SIZE
 
 
 def _make_model(**kwargs):

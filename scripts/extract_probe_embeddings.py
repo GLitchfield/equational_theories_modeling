@@ -47,7 +47,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from lib.data.dataset import load_graph_cache  # noqa: E402
-from src.model.encoder import EquationEncoder  # noqa: E402
+from embeddings.src.model.encoder import EquationEncoder  # noqa: E402
 
 
 def build_encoder(config: dict, seed: int | None = None) -> EquationEncoder:

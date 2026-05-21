@@ -16,7 +16,7 @@ import math
 import pytest
 import torch
 
-from src.training.sigreg import sigreg
+from embeddings.src.training.sigreg import sigreg
 
 
 def test_returns_tensor_of_expected_shape():

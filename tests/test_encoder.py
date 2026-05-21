@@ -17,7 +17,7 @@ from lib.data.parser import (  # noqa: E402
     NODE_FEATURE_DIM,
     equation_to_pyg,
 )
-from src.model.encoder import EquationEncoder  # noqa: E402
+from embeddings.src.model.encoder import EquationEncoder  # noqa: E402
 
 
 def _example_batch() -> Batch:

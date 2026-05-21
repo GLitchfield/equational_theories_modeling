@@ -8,7 +8,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from src.model.aux_heads import (
+from embeddings.src.model.aux_heads import (
     HEAD_SPECS,
     HEAD_SUBSETS,
     AuxiliaryHeads,

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.decoder.tokenizer import (
+from et_studies.proof_decoder.code.tokenizer import (
     BOS_ID, EOS_ID, ID_TO_TOKEN, PAD_ID, TOKEN_TO_ID,
 )
 

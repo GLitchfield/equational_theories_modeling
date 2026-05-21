@@ -11,7 +11,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.model.predictor import ImplicationPredictor  # noqa: E402
+from embeddings.src.model.predictor import ImplicationPredictor  # noqa: E402
 
 
 def test_predictor_forward_shape():
@@ -63,7 +63,7 @@ def test_predictor_param_count():
 
 def test_predictor_smaller_than_encoder():
     """Plan's hard constraint: predictor must be smaller than the encoder."""
-    from src.model.encoder import EquationEncoder
+    from embeddings.src.model.encoder import EquationEncoder
     enc = EquationEncoder()
     pred = ImplicationPredictor()
     assert pred.num_parameters() < enc.num_parameters()
