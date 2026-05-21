@@ -31,34 +31,34 @@ data/processed/*
 # data/splits — committed (small JSON, needed for reproducibility),
 #               so NOT ignored.
 
-# Outputs — checkpoints, figures, probing-results: generated, not committed
-outputs/checkpoints/*
-outputs/probing_results/*
-outputs/figures/*
-!outputs/checkpoints/.gitkeep
-!outputs/probing_results/.gitkeep
-!outputs/figures/.gitkeep
+# Outputs — checkpoints + figures: generated, not committed.
+# (Path repointed Phase 5c: outputs/ → embeddings/outputs/.)
+embeddings/outputs/checkpoints/*
+embeddings/outputs/figures/*
+!embeddings/outputs/checkpoints/.gitkeep
+!embeddings/outputs/figures/.gitkeep
 
-# outputs/embeddings/ holds promoted embedding artifacts. The .npy
-# embeddings are large + regenerable from the source checkpoint, so
-# they stay out of git. The model card AND the source checkpoint (.pt)
-# travel with the artifact so it's fully reproducible from git alone.
-outputs/embeddings/**/*.npy
+# embeddings/outputs/embeddings/ holds promoted embedding artifacts.
+# The .npy embeddings are large + regenerable from the source
+# checkpoint, so they stay out of git. The model card AND the source
+# checkpoint (.pt) travel with the artifact so it's fully reproducible
+# from git alone.
+embeddings/outputs/embeddings/**/*.npy
 
 # per-run artifacts: large parquet + npy stay out of git (regenerable
 # from checkpoints via scripts/save_predictions.py and save_embeddings.py);
 # the small JSON summaries, analysis outputs, and figures are tracked.
-# Patterns cover both layouts: legacy outputs/failure_analysis*/ and
-# the new outputs/runs/<name>/ convention adopted 2026-05-10.
-outputs/failure_analysis*/*.parquet
-outputs/failure_analysis*/*.npy
-outputs/runs/*/*.parquet
-outputs/runs/*/*.npy
+# Patterns cover both layouts: legacy failure_analysis*/ and
+# the runs/<name>/ convention adopted 2026-05-10.
+embeddings/outputs/failure_analysis*/*.parquet
+embeddings/outputs/failure_analysis*/*.npy
+embeddings/outputs/runs/*/*.parquet
+embeddings/outputs/runs/*/*.npy
 
 # Probing embeddings — large (~55 MB), regenerable from
 # scripts/extract_probe_embeddings.py. Probe-result JSONs in
-# outputs/probing/results/ ARE committed (small, the actual deliverable).
-outputs/probing/embeddings/*.npy
+# embeddings/outputs/probing/results/ ARE committed (the actual deliverable).
+embeddings/outputs/probing/embeddings/*.npy
 
 # wandb local logs
 wandb/
