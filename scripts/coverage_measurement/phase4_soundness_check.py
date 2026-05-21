@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print(f'spot-check: replay {args.spot_check_n} random solved pairs …')
     from lib.data.parser import parse_equation
-    from src.coverage.safe_search import safe_search
+    from proof_generation_pilot.methods.safe_engine.safe_search import safe_search
     with open(_abs(args.equations)) as f:
         lines = [ln.rstrip('\n') for ln in f if ln.strip()]
     eqs = [parse_equation(ln) for ln in lines]

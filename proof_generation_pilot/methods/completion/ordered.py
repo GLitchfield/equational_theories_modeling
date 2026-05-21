@@ -34,7 +34,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 
-from src.completion.kb import (
+from proof_generation_pilot.methods.completion.kb import (
     _CompletionTimeout,
     _alarm_handler,
     critical_pairs,

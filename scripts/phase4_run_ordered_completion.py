@@ -44,7 +44,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.completion.ordered import OrderedStatus, ordered_complete  # noqa: E402
+from proof_generation_pilot.methods.completion.ordered import OrderedStatus, ordered_complete  # noqa: E402
 from lib.data.parser import Term, parse_equation  # noqa: E402
 
 

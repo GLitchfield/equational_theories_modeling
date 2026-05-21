@@ -40,7 +40,7 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from lib.data.parser import parse_equation  # noqa: E402
-from src.matcher.matcher import match, ordered_vars  # noqa: E402
+from proof_generation_pilot.methods.matcher.matcher import match, ordered_vars  # noqa: E402
 
 
 def _abs(p: str) -> str:

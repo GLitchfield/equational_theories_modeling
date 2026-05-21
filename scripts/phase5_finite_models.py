@@ -59,7 +59,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.completion.kb import normalize  # noqa: E402
+from proof_generation_pilot.methods.completion.kb import normalize  # noqa: E402
 from lib.data.parser import OPERATOR, Op, Term, Var, parse_equation  # noqa: E402
 
 

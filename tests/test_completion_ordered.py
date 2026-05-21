@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from lib.data.parser import Op, Var, parse_equation
-from src.completion.kb import normalize as plain_normalize
-from src.completion.ordered import (
+from proof_generation_pilot.methods.completion.kb import normalize as plain_normalize
+from proof_generation_pilot.methods.completion.ordered import (
     OrderedStatus,
     equation_to_rules,
     ordered_complete,

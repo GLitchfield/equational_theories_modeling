@@ -4,7 +4,7 @@ bidirectional BFS for the coverage measurement."""
 from __future__ import annotations
 
 from lib.data.parser import Var, parse_equation
-from src.coverage.safe_search import (
+from proof_generation_pilot.methods.safe_engine.safe_search import (
     SafeSearchResult,
     TerminateReason,
     _safe_rules,

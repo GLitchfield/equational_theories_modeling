@@ -16,7 +16,7 @@ from __future__ import annotations
 import pytest
 
 from lib.data.parser import parse_equation
-from src.matcher.matcher import (
+from proof_generation_pilot.methods.matcher.matcher import (
     Match,
     match,
     ordered_vars,

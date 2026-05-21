@@ -19,7 +19,7 @@ Phase 3; here we just check structural outputs.
 from __future__ import annotations
 
 from lib.data.parser import Op, Var, parse_equation
-from src.completion.kb import (
+from proof_generation_pilot.methods.completion.kb import (
     CompletionStatus,
     complete,
     critical_pairs,

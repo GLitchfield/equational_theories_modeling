@@ -71,7 +71,7 @@ _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from src.completion.kb import (  # noqa: E402
+from proof_generation_pilot.methods.completion.kb import (  # noqa: E402
     CompletionStatus,
     complete,
 )

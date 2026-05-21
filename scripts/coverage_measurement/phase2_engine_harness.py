@@ -82,7 +82,7 @@ def worker_init(equations_path: str, d_max: int, size_cap: int | None,
 
 def worker_run(pair_tuple: tuple[int, int]) -> dict:
     """Process one (e1, e2) pair. Returns a record dict."""
-    from src.coverage.safe_search import safe_search, TerminateReason
+    from proof_generation_pilot.methods.safe_engine.safe_search import safe_search, TerminateReason
     e1, e2 = pair_tuple
     d_max, size_cap, wall_seconds = _WORKER_PARAMS
     eq1 = _WORKER_EQS[e1 - 1]
