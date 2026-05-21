@@ -1,6 +1,6 @@
 # VICReg v1c1: variance + covariance regularization at the locked frame.
 #
-# Diagnostic finding (scripts/embedding_spectrum.py): the locked-in
+# Diagnostic finding (embeddings/scripts/embedding_spectrum.py): the locked-in
 # embed_dim_512 reference run uses an effective rank of ~9 out of 512
 # nominal dimensions. Top 10 singular values hold 89% of variance; top
 # 50 hold 99.98%. Effective rank stays at ~9-10 across the whole
@@ -52,7 +52,7 @@
 # optimization recipe, 10 epochs.
 #
 # Result: embeddings/outputs/results/vicreg_v1c1.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/vicreg_v1c1.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/vicreg_v1c1.yaml
 
 seed: 42
 

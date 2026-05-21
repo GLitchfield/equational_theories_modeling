@@ -1,8 +1,8 @@
 """Run a full no-cap evaluation on a saved checkpoint and write a JSON
 record to ``embeddings/outputs/results/<name>.json``.
 
-This is the function that backs both ``scripts/record_run.py`` (manual
-recording from any checkpoint) and ``scripts/run_experiment.py`` (the
+This is the function that backs both ``embeddings/scripts/record_run.py`` (manual
+recording from any checkpoint) and ``embeddings/scripts/run_experiment.py`` (the
 one-command launcher that calls it on the best epoch automatically).
 
 The record format is the contract for ``record_run.py --summary`` and

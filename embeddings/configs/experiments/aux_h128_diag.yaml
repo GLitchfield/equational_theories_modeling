@@ -22,7 +22,7 @@ data:
   graph_cache_path: data/processed/equation_graphs.pt
   holdout_path: null
   num_workers: 4
-  # Built by scripts/build_equation_invariants.py from the sibling
+  # Built by lib/scripts/build_equation_invariants.py from the sibling
   # equational_theories_data project. Per-equation labels for the 10
   # auxiliary heads (spine, lhs_structure, num_variables, 7 magma bits).
   aux_labels_path: data/processed/equation_invariants.parquet

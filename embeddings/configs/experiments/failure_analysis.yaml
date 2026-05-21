@@ -6,18 +6,18 @@
 # 2× the epochs for fuller convergence. Per-epoch capped val uses an
 # in-sample 1M-pair monitor subset for threshold calibration only.
 #
-# After training, scripts/save_predictions.py runs the best checkpoint
+# After training, embeddings/scripts/save_predictions.py runs the best checkpoint
 # over every off-diagonal pair (~22M) and writes per-pair predictions
 # to embeddings/outputs/failure_analysis/predictions.parquet for the eight
 # downstream analyses described in the plan.
 #
 # Reproduce:
-#   python scripts/train.py \
+#   python embeddings/scripts/train.py \
 #       --config embeddings/configs/experiments/failure_analysis.yaml \
 #       --no-holdout \
 #       --name failure_analysis
-#   python scripts/save_predictions.py embeddings/outputs/checkpoints/failure_analysis/<best>.pt
-#   python scripts/save_embeddings.py  embeddings/outputs/checkpoints/failure_analysis/<best>.pt
+#   python embeddings/scripts/save_predictions.py embeddings/outputs/checkpoints/failure_analysis/<best>.pt
+#   python embeddings/scripts/save_embeddings.py  embeddings/outputs/checkpoints/failure_analysis/<best>.pt
 
 seed: 42
 

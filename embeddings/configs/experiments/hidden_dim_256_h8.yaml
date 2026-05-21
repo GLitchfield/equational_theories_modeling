@@ -25,7 +25,7 @@
 # worse, ruling out the "LR too high" branch.
 #
 # Result: embeddings/outputs/results/hidden_dim_256_h8.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/hidden_dim_256_h8.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/hidden_dim_256_h8.yaml
 
 seed: 42
 

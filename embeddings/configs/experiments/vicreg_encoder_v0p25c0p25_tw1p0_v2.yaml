@@ -21,7 +21,7 @@
 # (vs 21), so a_holdout statistics improve substantially.
 #
 # Result: embeddings/outputs/results/vicreg_encoder_v0p25c0p25_tw1p0_v2.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/vicreg_encoder_v0p25c0p25_tw1p0_v2.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/vicreg_encoder_v0p25c0p25_tw1p0_v2.yaml
 
 seed: 42
 

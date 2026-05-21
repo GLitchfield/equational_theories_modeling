@@ -133,7 +133,7 @@ def effective_rank(z: torch.Tensor) -> float:
     ``s_i`` are the singular values of ``z``. Resilient to scale; gives
     a single-scalar measure of "how many directions are effectively
     used" that correlates with the more visual k-for-99%-variance
-    quantity reported by ``scripts/embedding_spectrum.py``.
+    quantity reported by ``embeddings/scripts/embedding_spectrum.py``.
 
     Returns a Python float so it logs cleanly without keeping the
     autograd graph alive.

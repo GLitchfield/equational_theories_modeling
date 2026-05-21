@@ -19,7 +19,7 @@
 # Otherwise identical to vicreg_encoder_v0p25c0p25.yaml.
 #
 # Result: embeddings/outputs/results/vicreg_encoder_v0p25c0p25_tw1p0.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/vicreg_encoder_v0p25c0p25_tw1p0.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/vicreg_encoder_v0p25c0p25_tw1p0.yaml
 
 seed: 42
 

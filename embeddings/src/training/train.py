@@ -392,7 +392,7 @@ def _corpus_effective_ranks(
     ``skip`` (slices of the pre-norm embedding) so we can detect
     one-channel collapse.
 
-    Mirrors ``scripts/embedding_spectrum.py`` so the per-epoch metric is
+    Mirrors ``embeddings/scripts/embedding_spectrum.py`` so the per-epoch metric is
     directly comparable to the offline diagnostic. Eval mode + no_grad
     so dropout is disabled and the autograd graph isn't held.
     """
@@ -458,7 +458,7 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         raise ValueError(
             'loss.aux_weight > 0 but data.aux_labels_path is unset; '
             'aux heads need a label parquet (build with '
-            'scripts/build_equation_invariants.py).'
+            'lib/scripts/build_equation_invariants.py).'
         )
     # Optional subset of HEAD_SPECS to actually train. Accepts a string
     # (named subset like "structural" / "cohom" / "all") or an explicit
@@ -799,7 +799,7 @@ def train(config: dict, sanity_check: bool = False) -> dict:
         # graph cache through the context encoder (eval mode, batched),
         # compute Roy-Vetterli effective rank on the resulting [N, embed_dim]
         # matrix for both pre- and post-L2-normalization. This is the
-        # diagnostic from scripts/embedding_spectrum.py, run per epoch so
+        # diagnostic from embeddings/scripts/embedding_spectrum.py, run per epoch so
         # the collapse-resolve trajectory is visible in real time. In
         # skip-pooled mode, also report per-channel ranks. Cheap
         # (~5 forward passes on 1024 graphs each on a 4080).

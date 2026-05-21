@@ -14,7 +14,7 @@
 # baseline: 10 epochs, true_weight=1.7).
 #
 # Result: embeddings/outputs/results/embed_dim_128.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/embed_dim_128.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/embed_dim_128.yaml
 
 seed: 42
 

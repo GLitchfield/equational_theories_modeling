@@ -16,13 +16,13 @@ Heads (all single ``nn.Linear``, no hidden, no activation):
   - ``cohom_mean_h2_{2,3,5,7}``             : 5/6/6/6-class (binned mean dim H², null bin for count==0)
 
 The 5 sparse magma bits (5, 8, 9, 10, 11) are dropped at the
-data-pipeline stage; see ``scripts/build_equation_invariants.py``.
+data-pipeline stage; see ``lib/scripts/build_equation_invariants.py``.
 
 The cohomology summary heads were added in a follow-up to test whether
 per-prime cohomological structure (count of satisfying (a,b) pairs over
 F_p, mean dim H² across satisfying pairs) provides additional anchoring
 beyond syntactic structural invariants. Bin edges and class names live in
-``scripts/build_equation_invariants.py::COHOM_COUNT_BINS / COHOM_MEAN_BINS``.
+``lib/scripts/build_equation_invariants.py::COHOM_COUNT_BINS / COHOM_MEAN_BINS``.
 
 The heads are training-time-only anchors. They do NOT participate in
 inference (the contrastive distance still drives prediction).

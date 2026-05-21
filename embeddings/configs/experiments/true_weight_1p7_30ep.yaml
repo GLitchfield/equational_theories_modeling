@@ -12,7 +12,7 @@
 # (~0.3% of training).
 #
 # Result: embeddings/outputs/results/true_weight_1p7_30ep.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/true_weight_1p7_30ep.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/true_weight_1p7_30ep.yaml
 
 seed: 42
 

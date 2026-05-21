@@ -25,7 +25,7 @@
 # param count, and the relational stack isn't changing here.
 #
 # Result: embeddings/outputs/results/embed_dim_512.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/embed_dim_512.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/embed_dim_512.yaml
 
 seed: 42
 

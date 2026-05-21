@@ -34,12 +34,12 @@
 # Monitoring: val/corpus_eff_rank (post-L2-norm) and
 # val/corpus_eff_rank_raw (pre-L2-norm) logged each epoch on the full
 # 4,694-equation corpus — directly comparable to
-# scripts/embedding_spectrum.py.
+# embeddings/scripts/embedding_spectrum.py.
 #
 # Otherwise identical to embed_dim_512.yaml.
 #
 # Result: embeddings/outputs/results/vicreg_encoder_v0p25c0p25.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/vicreg_encoder_v0p25c0p25.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/vicreg_encoder_v0p25c0p25.yaml
 
 seed: 42
 

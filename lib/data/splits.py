@@ -1,7 +1,7 @@
 """Holdout split construction for the implication pair table.
 
 This module provides the pure index-sampling logic. CLI driver lives in
-``scripts/build_splits.py``. Splits are saved under ``data/splits/`` and
+``embeddings/scripts/build_splits.py``. Splits are saved under ``data/splits/`` and
 committed for reproducibility.
 
 Split levels (engineering plan §"Holdout Strategy"):

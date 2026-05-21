@@ -175,13 +175,13 @@ def load_graph_cache(cache_path: str) -> dict[int, Data]:
         raise RuntimeError(
             f'stale cache at {cache_path}: '
             f"node_feature_dim={meta.get('node_feature_dim')} vs parser's {NODE_FEATURE_DIM}. "
-            f'Rebuild via scripts/parse_equations.py.'
+            f'Rebuild via lib/scripts/parse_equations.py.'
         )
     if meta.get('edge_feature_dim') != EDGE_FEATURE_DIM:
         raise RuntimeError(
             f'stale cache at {cache_path}: '
             f"edge_feature_dim={meta.get('edge_feature_dim')} vs parser's {EDGE_FEATURE_DIM}. "
-            f'Rebuild via scripts/parse_equations.py.'
+            f'Rebuild via lib/scripts/parse_equations.py.'
         )
     return cache['graphs']
 
@@ -197,7 +197,7 @@ def load_holdout_indices(parquet_path: str) -> np.ndarray:
 def load_aux_labels(parquet_path: str) -> np.ndarray:
     """Load the per-equation auxiliary labels parquet into an int64 array.
 
-    Built by ``scripts/build_equation_invariants.py``. The returned
+    Built by ``lib/scripts/build_equation_invariants.py``. The returned
     array has shape ``[N_eq, len(AUX_HEAD_NAMES)]`` indexed by
     ``eq_id - 1`` (eq IDs in the corpus are 1-based, the array is 0-based)
     with columns in ``AUX_HEAD_NAMES`` order.

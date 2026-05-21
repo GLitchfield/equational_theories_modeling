@@ -34,7 +34,7 @@
 # reference at 0.8908).
 #
 # Result: embeddings/outputs/results/hidden_dim_256_vicreg.json
-# Reproduce: python scripts/run_experiment.py embeddings/configs/experiments/hidden_dim_256_vicreg.yaml
+# Reproduce: python embeddings/scripts/run_experiment.py embeddings/configs/experiments/hidden_dim_256_vicreg.yaml
 
 seed: 42
 
