@@ -101,3 +101,60 @@ Phase 1 deliberately fixed three things that Phase 2 will reopen:
 - `transitions.parquet` — 11,000 rows; one per (state_before, tactic, state_after) step; columns: pair_id, eq1_id, eq2_id, tool, step_idx, state_before, tactic, state_after, is_terminal
 
 Reproducer: `proof_generation_pilot/scripts/build_phase1_dataset.py` against `proof_generation_pilot/data/processed/phase1_sample_1k.parquet`.
+
+## Follow-up findings (post-hoc analysis)
+
+### Vampire tactic templates: 140, not 1,450
+
+The raw "1,450 distinct Vampire tactics" number conflated two kinds of variability — per-pair *identifiers* (equation indices `eq42`, Skolem witnesses `sK0`/`sK1`, TPTP universals `X0`/`X1`) and the *underlying tactic shapes*. After canonical renaming (collapse `eqN → eqI`, `sKN → sK`, `XN → X`), the 7,000 Vampire transitions reduce to **140 distinct templates**.
+
+Breakdown of the 140:
+
+- **4 invariant scaffolding templates**, each appearing in every proof: `intro G _ h` (1000×), `by_contra nh` (1000×), `simp only [not_forall] at nh` (1000×), `subsumption eqI eqI` (1000×). These are the fixed shape of the per-superposition refutation.
+- **~7 arity-stratified `obtain` templates**: `obtain ⟨sK, ..., nh⟩ := nh` with 2, 3, 4, 5 Skolem positions (433× / 367× / 131× / 55× respectively for the most common arities).
+- **~125 `have eqI ... := mod_symm nh|h..` templates**: vary by the statement's term-tree shape. The long tail is genuine — each Vampire proof's two `have` lines reflect the specific axiom-vs-negated-conjecture pair.
+
+This is much more learnable than 1,450 raw tactics: a transformer has to span ~140 shapes, with most repetition concentrated in the scaffolding.
+
+### σ-space concentration: 334 patterns ceiling the matcher's diversity
+
+Across the **full 30,010-pair matcher-solvable variable-disjoint pool** (not just our 1k sample), the matcher's `lean_proof_tactic` takes only **334 distinct values** — mean **~90 pairs per distinct σ pattern**. The 1k sample we used hit 172 of those 334 patterns (51.5% coverage), missing only the long-tail rare patterns.
+
+Top 10 σ patterns each cover 745–787 pairs out of 30,010:
+
+```
+787  exact fun x y => h x x x y
+787  exact fun x y z => h x x y z
+783  exact fun x y => h x x y y
+775  exact fun x y => h x x y x
+775  exact fun x y z => h x y x z
+769  exact fun x y z => h x y y z
+765  exact fun x y z => h x y z y
+758  exact fun x y z => h x y z x
+755  exact fun x y => h x y y x
+746  exact fun x y => h x y x y
+```
+
+The matcher's σ-space is concentrated by construction (small permutation/repetition patterns reused across many pairs).
+
+### Stage 2 submission-port assessment
+
+Per-tool portability to the Stage 2 judge environment (Lean 4.30.0-rc2, Mathlib + 4 local libs, no ETP-side imports):
+
+| Tool | Port to Stage 2 | Why |
+|---|---|---|
+| matcher | ✓ Mechanical | `intro G _ h; exact fun ... => h ...` is pure Lean core |
+| grind | ✓ Mechanical | `intro G _ h; grind` is pure Lean core |
+| **Vampire** | ✗ **Not mechanical** | Uses `mod_symm`, `subsumption`, `superpose` from ETP's `Superposition.lean`; the Stage 2 judge doesn't bundle those. Proofs would need translation (inline the tactic definitions as local lemmas, OR rewrite to core/Mathlib-only tactics) |
+
+The Vampire-style proofs are great for *training* (rich grammar signal) but not directly *submittable* as-is. A translation layer becomes Phase 3 (submission infrastructure) work.
+
+### Pipeline throughput-as-gift
+
+The 32-second runtime for 1k × 3 tools inverts a Phase 1 assumption. We'd budgeted for "few overnight runs"; actual was a coffee-break run. Implications for Phase 2:
+
+- A 100k-sample run is feasible in ~1 hour
+- A 1M-sample run is feasible in ~9 hours
+- **The constraint shifts from compute to dataset design.** Phase 2's question is "what diversity does the sample buy us?", not "what can we afford to run?"
+- Storage starts to matter at 1M scale: transitions.parquet at ~11M rows would be hundreds of MB (state-text strings dominate)
+
