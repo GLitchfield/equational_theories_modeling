@@ -186,7 +186,7 @@ These are the next questions to resolve. Each gets folded into a "Decisions log"
 - **P2Q2 — Sample size.** Phase 1 was 1k; throughput says 10k–100k is feasible. What scale gives diminishing returns?
    - Drives by how many distinct *templates* the sample exposes — if 10k captures all 140 Vampire templates + all 334 σ patterns + comparable completion shape diversity, no need for 100k.
 
-- **P2Q3 — Tool set additions.** Bring completion back (it'll contribute on non-var-disjoint pairs)? Add MagmaEgg (the Rust runner we deferred in Phase 1)? Both? Neither?
+- **P2Q3 — Tool set additions.** Phase 1 ran 3 tools (matcher, Vampire, grind); completion was deliberately *dropped* from that pipeline per Q8 because the variable-disjoint slice produces `NO_RULES_FROM_INPUT` for every pair. Completion's *code* is in `proof_generation_pilot/methods/completion/` and ready to wire in. Phase 2's sample may include non-variable-disjoint pairs where completion contributes (orientable E1 → rule set → normalization). The question: **add completion to Phase 2's orchestration pipeline as a 4th tool**, given the new sample? And separately: revisit MagmaEgg (the external Rust runner we passed over in Phase 1 in favor of grind)?
 
 - **P2Q4 — Vampire→core translator.** Build it in Phase 2 (so Vampire proofs become Stage-2-submittable now), or defer to Phase 3?
 
