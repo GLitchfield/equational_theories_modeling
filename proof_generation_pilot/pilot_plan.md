@@ -152,6 +152,59 @@ These are issues to *manage*, not blockers. The plan proceeds; we revisit if any
 8. **1k full run.** Production Phase 1 dataset.
 9. **Synthesis.** Short writeup at `proof_generation_pilot/outputs/phase1_synthesis.md` — what each tool produced, intermediate-state vocab discovered, surprises, recommended next steps.
 
-## Phase 2+ (placeholder)
+## Phase 2 — broader dataset + model-ready signal
 
-Subsequent phases — full dataset construction, model design, training — depend on what Phase 1 reveals. Plan extends once Phase 1 closes.
+**Status:** in-design. Phase 1 closed cleanly; now resolving Phase 2 decisions before any implementation.
+
+### What Phase 1 taught us that reshapes Phase 2
+
+1. **Compute is no longer the bottleneck.** 32s for 1k × 3 tools means 10k → ~5 min, 100k → ~1 hr, 1M → ~9 hr. Sample design and storage become the binding constraints, not execution.
+2. **The variable-disjoint matcher-solvable slice is structurally homogeneous.** Vampire's proofs are uniformly 7 tactics; matcher's σ-space has only 334 distinct patterns; grind fails on ~55% by structural-heuristic limit. Phase 2 needs deliberately heterogeneous sampling, not just "more of the same."
+3. **Completion was inert on Phase 1's slice** (variable-disjoint = NO_RULES_FROM_INPUT for every pair). Phase 2 reopens completion's role on samples where it contributes.
+4. **Vampire's proofs aren't directly Stage-2-submittable.** They use ETP's `Superposition.lean` tactics (`superpose`, `mod_symm`, `subsumption`) the judge environment doesn't bundle. Translation is a future-phase item.
+5. **Per-step grammar after canonicalization is ~140 templates** (not 1,450) for Vampire. This is the *real* learning surface — tractable for a small transformer.
+
+### Goal
+
+Produce a dataset that gives a downstream proof-generation model:
+- **Genuine structural variety** in proof shape (multi-step rewriting + substitution + e-graph reasoning + paramodulation, not all collapsed to one shape)
+- **Coverage of multiple equation orientability classes** (variable-disjoint AND `lhs_to_rhs`/`rhs_to_lhs`/`both`)
+- **Negative training signal** (proofs that didn't work, tactic-state pairs where a step failed) at a comparable scale to positives
+- A scale large enough (10k–100k transitions per training class) to fine-tune a small transformer to test the architecture before committing to larger runs
+
+### Open decisions
+
+These are the next questions to resolve. Each gets folded into a "Decisions log" once locked.
+
+- **P2Q1 — Sample design.** Which slice(s) does Phase 2 target?
+   - (A) 19,576-pair matcher∩completion intersection (matcher AND completion both prove)
+   - (B) Wider TRUE corpus: stratified by orientability class × proof-survey category (substitution / rewrite-chain / Vampire-shaped / Egg-shaped)
+   - (C) Specifically the *hard* pairs not solved by matcher (the 8.17M − 49,586 = ~8.1M pairs where matcher fails) — where multi-step proofs actually live
+   - (D) A mix: small N from each of several slices to compare structural diversity, then commit the main sample
+   - Recommend: (D) for a small pre-sample characterization, then a deliberate choice.
+
+- **P2Q2 — Sample size.** Phase 1 was 1k; throughput says 10k–100k is feasible. What scale gives diminishing returns?
+   - Drives by how many distinct *templates* the sample exposes — if 10k captures all 140 Vampire templates + all 334 σ patterns + comparable completion shape diversity, no need for 100k.
+
+- **P2Q3 — Tool set additions.** Bring completion back (it'll contribute on non-var-disjoint pairs)? Add MagmaEgg (the Rust runner we deferred in Phase 1)? Both? Neither?
+
+- **P2Q4 — Vampire→core translator.** Build it in Phase 2 (so Vampire proofs become Stage-2-submittable now), or defer to Phase 3?
+
+- **P2Q5 — Lean version policy.** Stay at 4.29.1 (current stable for our stack), or bump to 4.30.0-rc2 when ETP upstream does the next bump (closer to Stage 2)? The bump is small but unblocked by ETP, not us.
+
+- **P2Q6 — Pre-sample characterization.** Run small N=100 against 2–3 candidate samples (e.g., (A), a completion-only slice, a wider stratified slice) to measure structural diversity before committing the Phase 2 main sample. Worth doing before P2Q1 finalizes?
+
+- **P2Q7 — Model design / training.** Does Phase 2 stop at "produce the dataset" and Phase 3 owns model design, or does Phase 2 train a baseline tokenizer + small transformer on the Phase 1 dataset to surface dataset-design issues early?
+
+- **P2Q8 — Storage at scale.** If we go 10k+, the transitions parquet hits hundreds of MB (state-text strings dominate). Split per-tool? Compress state strings as separate column with dedup? Move data dir under `et_studies/X/data/` (gitignored) instead of `proof_generation_pilot/outputs/` (currently committed)?
+
+### Phase 2 work breakdown (sketch, post-decisions)
+
+1. **Pre-sample characterization** — small-N runs against candidate slices to inform P2Q1
+2. **Tool additions** — bring completion (and optionally MagmaEgg) back online, smoke-test
+3. **Sample build** — Phase 2 main sample per the P2Q1 / P2Q2 resolution
+4. **Orchestration update** — adapt build_phase1_dataset.py for additional tools / larger scale (resumability, per-pair caching)
+5. **Production run** — full Phase 2 dataset
+6. **Synthesis writeup** — what's structurally new vs Phase 1; readiness for model training
+7. **(Conditional on P2Q4)** — Vampire→core translator
+8. **(Conditional on P2Q7)** — baseline tokenizer + model design notes
