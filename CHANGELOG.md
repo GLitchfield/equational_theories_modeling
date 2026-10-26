@@ -4,6 +4,15 @@ Deviations from the active plan and other notable project decisions, in reverse-
 
 ---
 
+## 2026-10-26 — Public-release prep
+
+Cleanup ahead of making the repository public. History is kept as-is (a scan of all commits found no credentials).
+
+- **Ground truth is now committed.** `data/ground_truth/export_raw_implications_5_9_2026.csv.gz` is the ETP raw-implications export, gzip-compressed byte-for-byte (58 MB → 437 KB; redistributed under ETP's Apache-2.0 license, provenance and sha256 in `data/ground_truth/README.md`). `lib/scripts/build_pair_table.py` reads it by default instead of the gitignored `data/raw/etp_export/` copy; the rebuilt `implication_pairs.parquet` is identical to the previous one (all 22,028,942 rows).
+- **Correction to the 2026-05-09 entry's code legend.** ±4 does not mean "special / structural": in the ETP explorer's export encoding, ±4 is *explicitly* proven/refuted (a direct proof or counterexample exists for that pair) and ±3 is *implicitly* proven/refuted (transitive closure of explicit results). The 10,657 `+4` entries line up with the proof survey's 10,676 explicit-implication proofs. The binary `value` label (`code > 0`) is unaffected. The 2026-05-09 entry is left as written; the `build_pair_table.py` docstring is corrected.
+
+---
+
 ## 2026-05-21 — Project refactor complete (Phases 1–8)
 
 Reorganized the top-level layout from `src/ + scripts/ + configs/ + outputs/` into four areas:

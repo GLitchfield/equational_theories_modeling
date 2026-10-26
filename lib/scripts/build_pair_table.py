@@ -1,16 +1,24 @@
 """Build a parquet pair table from the ETP raw-implications CSV.
 
-Reads:  data/raw/etp_export/export_raw_implications_5_9_2026.csv
+Reads:  data/ground_truth/export_raw_implications_5_9_2026.csv.gz
 Writes: data/processed/implication_pairs.parquet
+
+The input is the ETP raw-implications export, committed gzip-compressed;
+see data/ground_truth/README.md for provenance. An uncompressed copy
+works too (``--input path/to/file.csv``).
 
 The CSV is a 4694×4694 dense int8 matrix where ``M[i, j]`` encodes the
 relationship between equation ``i+1`` and equation ``j+1`` (1-indexed
 into ``equations.txt``). Codes::
 
-   3   TRUE   — implication holds (regular proof)
-   4   TRUE   — implication holds (special / structural)  ~10K entries
-  -3   FALSE  — implication fails (regular counterexample)
-  -4   FALSE  — implication fails (special / structural)  ~590K entries
+   4   TRUE   — explicitly proven (direct proof for this pair)  ~10K entries
+   3   TRUE   — implicitly proven (transitive closure of explicit results)
+  -4   FALSE  — explicitly refuted (direct counterexample for this pair)  ~590K entries
+  -3   FALSE  — implicitly refuted (transitive closure of explicit results)
+
+These follow the ETP implications explorer's export encoding
+(``downloadRawImplicationsCSV`` in ETP ``home_page/implications/script.js``);
+its conjectured (±1, ±2) and unknown (0) codes do not occur.
 
 The Austin-implications file is a curated subset of the FALSE pairs;
 "Austin" pairs split across both ``-3`` and ``-4`` codes.
@@ -140,8 +148,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         '--input',
-        default='data/raw/etp_export/export_raw_implications_5_9_2026.csv',
-        help='input CSV (4694×4694 int8 matrix; default: %(default)s)',
+        default='data/ground_truth/export_raw_implications_5_9_2026.csv.gz',
+        help='input CSV, optionally .gz (4694×4694 int8 matrix; default: %(default)s)',
     )
     parser.add_argument(
         '--output',
