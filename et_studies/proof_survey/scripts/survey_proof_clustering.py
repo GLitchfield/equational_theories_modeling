@@ -43,6 +43,8 @@ from collections import Counter
 import pandas as pd
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
+# Sibling ETP checkout by default; override with $ETP_ROOT.
+_ETP_ROOT = os.environ.get('ETP_ROOT', os.path.normpath(os.path.join(_REPO_ROOT, os.pardir, 'equational_theories')))
 
 
 def _abs(p: str) -> str:
@@ -191,7 +193,7 @@ def cluster_and_report(strings: list[str], top_k_list: list[int] = (10, 20, 50, 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('--etp-root', default='/home/gavin/git/equational_theories/equational_theories')
+    parser.add_argument('--etp-root', default=os.path.join(_ETP_ROOT, 'equational_theories'))
     parser.add_argument('--output-summary',
                         default='et_studies/proof_survey/outputs/clustering_results.json')
     parser.add_argument('--output-corpus',

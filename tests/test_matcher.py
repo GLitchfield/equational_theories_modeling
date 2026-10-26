@@ -13,6 +13,8 @@ Cover the algorithm cases the plan calls out:
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from lib.data.parser import parse_equation
@@ -23,6 +25,8 @@ from proof_generation_pilot.methods.matcher.matcher import (
     structural_match,
     _match_oriented,
 )
+
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
 # ---------- ordered_vars ----------
@@ -290,7 +294,10 @@ def test_corpus_example_equation12_implies_equation10():
     appears repeatedly).
     """
     # equations.txt is 1-indexed (line N = Equation N).
-    with open('/home/gavin/git/equational_theories/data/equations.txt') as f:
+    path = os.path.join(_REPO_ROOT, 'data', 'raw', 'etp', 'equations.txt')
+    if not os.path.exists(path):
+        pytest.skip('data/raw/etp symlink not configured')
+    with open(path) as f:
         lines = f.readlines()
     eq12 = parse_equation(lines[11].strip())  # line 12
     eq10 = parse_equation(lines[9].strip())   # line 10

@@ -8,14 +8,13 @@ Thin wrapper around ETP's Vampire pipeline:
   4. Wrap in `def submission := by ...`
 
 The encoder + leanify logic is adapted from
-`~/git/equational_theories/equational_theories/Generated/VampireProven/
-src/vampire_proofs.py`. We re-implement the small functions here rather
+ETP's `equational_theories/Generated/VampireProven/src/vampire_proofs.py`. We re-implement the small functions here rather
 than importing that script (it has module-load side effects). We do
 import the `eqs` table + `count_vars` from ETP's `scripts/generate_eqs_list.py`
 since that's a clean pure-computation module.
 
 Public API:
-    make_submission(eq1_id, eq2_id, vampire_bin='~/Downloads/vampire',
+    make_submission(eq1_id, eq2_id, vampire_bin=$VAMPIRE_BIN or 'vampire',
                     timeout_s=1) -> dict
         Returns {'status': 'proved' | 'no_proof' | 'timeout' | 'error',
                  'lean': str | None, 'vampire_output': str | None,
@@ -30,8 +29,12 @@ import subprocess
 import sys
 import time
 
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
+
 # ETP's pure-computation eqs generator (no side effects on import).
-_ETP_SCRIPTS = '/home/gavin/git/equational_theories/scripts'
+# Sibling ETP checkout by default; override with $ETP_ROOT.
+_ETP_ROOT = os.environ.get('ETP_ROOT', os.path.normpath(os.path.join(_REPO_ROOT, os.pardir, 'equational_theories')))
+_ETP_SCRIPTS = os.path.join(_ETP_ROOT, 'scripts')
 if _ETP_SCRIPTS not in sys.path:
     sys.path.insert(0, _ETP_SCRIPTS)
 from generate_eqs_list import eqs, count_vars  # type: ignore  # noqa: E402
@@ -140,7 +143,7 @@ def _leanify(vampire_output: str, eq1_id: int, eq2_id: int) -> str:
 def make_submission(
     eq1_id: int,
     eq2_id: int,
-    vampire_bin: str = "~/Downloads/vampire",
+    vampire_bin: str = os.environ.get("VAMPIRE_BIN", "vampire"),
     timeout_s: int = 1,
 ) -> dict:
     """Run Vampire on the (E1, E2) pair and translate the proof to a Lean

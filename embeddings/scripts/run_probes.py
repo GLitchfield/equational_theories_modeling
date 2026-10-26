@@ -43,10 +43,10 @@ from embeddings.src.probing.probes import (  # noqa: E402
 )
 from lib.scripts.build_equation_invariants import (  # noqa: E402
     COHOM_PRIMES, COHOM_OFFSETS, COHOM_COUNT_BINS, COHOM_MEAN_BINS,
-    _bin_count, _bin_mean,
+    _bin_count, _bin_mean, _DATA_PROJECT,
 )
 
-DATA_PROJECT = "/home/gavin/git/equational_theories_data/invariants"
+DATA_PROJECT = _DATA_PROJECT
 EMBED_DIR = _REPO_ROOT / "embeddings/outputs/probing/embeddings"
 RESULTS_DIR = _REPO_ROOT / "embeddings/outputs/probing/results"
 PAIR_TABLE = _REPO_ROOT / "data/processed/implication_pairs.parquet"

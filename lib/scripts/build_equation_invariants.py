@@ -39,7 +39,11 @@ import numpy as np
 import pandas as pd
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-_DATA_PROJECT = "/home/gavin/git/equational_theories_data/invariants"
+# Sibling equational_theories_data checkout by default; override with $INVARIANTS_ROOT.
+_DATA_PROJECT = os.environ.get(
+    "INVARIANTS_ROOT",
+    os.path.normpath(os.path.join(_REPO_ROOT, os.pardir, "equational_theories_data", "invariants")),
+)
 
 # String -> int mapping for spine_type. 6 classes; deterministic order
 # so subsequent runs reproduce the same labels.

@@ -30,6 +30,8 @@ from collections import Counter
 from pathlib import Path
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
+# Sibling ETP checkout by default; override with $ETP_ROOT.
+_ETP_ROOT = os.environ.get('ETP_ROOT', os.path.normpath(os.path.join(_REPO_ROOT, os.pardir, 'equational_theories')))
 
 
 def _abs(p: str) -> str:
@@ -215,9 +217,9 @@ def inventory(etp_root: str, registry_path: str) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('--etp-root', default='/home/gavin/git/equational_theories/equational_theories',
+    parser.add_argument('--etp-root', default=os.path.join(_ETP_ROOT, 'equational_theories'),
                         help='path to the ETP equational_theories/ Lean source directory')
-    parser.add_argument('--registry', default='/home/gavin/git/equational_theories/full_entries.json',
+    parser.add_argument('--registry', default=os.path.join(_ETP_ROOT, 'full_entries.json'),
                         help='path to full_entries.json')
     parser.add_argument('--output', default='et_studies/proof_survey/outputs/inventory.json')
     parser.add_argument('--force', action='store_true', help='overwrite existing inventory')

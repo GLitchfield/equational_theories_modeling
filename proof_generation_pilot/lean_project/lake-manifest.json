@@ -6,7 +6,7 @@
    "name": "equational_theories",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
-   "dir": "/home/gavin/git/equational_theories",
+   "dir": "../../../equational_theories",
    "configFile": "lakefile.toml"},
   {"url": "https://github.com/PatrickMassot/checkdecls.git",
    "type": "git",
