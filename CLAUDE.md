@@ -1,13 +1,14 @@
 # CLAUDE.md — Equational Implication
 
-**Active phase:** **Proof generation pilot** — the three deterministic methods (matcher, completion, safe rewrite engine) have been carved out of their studies and ported to `proof_generation_pilot/methods/`. The pilot plan markdown will land at `proof_generation_pilot/pilot_plan.md`; when it does, this section gets updated to point at it.
+**Active phase:** **Proof generation pilot** — plan at `proof_generation_pilot/pilot_plan.md`, proof-output spec at `proof_generation_pilot/proof_spec.md`. Phase 1 is complete (1k-pair matcher/Vampire/grind transition dataset, synthesis at `proof_generation_pilot/outputs/phase1_synthesis.md`); Phase 2 is in design (open decisions P2Q1–P2Q8 in the plan).
 
-**Just completed:** project refactor (Phases 1–8). Top-level layout reorganized into four areas: `lib/`, `embeddings/`, `et_studies/`, `proof_generation_pilot/`. See `outputs/refactor/phase1_inventory.md` for the full mapping (Phase 8 will archive it).
+**Recently completed:** public-release prep (2026-10-26; see CHANGELOG) and the project refactor (Phases 1–8) that reorganized the top level into `lib/`, `embeddings/`, `et_studies/`, `proof_generation_pilot/` (inventory archived at `archive/project_refactor_inventory.md`).
 
 ## Repository layout
 
 ```
 data/                       # raw + processed (shared, stays at root)
+  ground_truth/             # committed ETP raw-implications export (.csv.gz) — the label source
   raw/                      # symlinks to external projects; never modified
   processed/                # generated PyG cache + invariants + pair table
   splits/                   # holdout split indices, committed for reproducibility
@@ -30,13 +31,13 @@ et_studies/                 # frozen studies — see et_studies/README.md for th
   failure_overlap/          # cross-run JEPA failure overlap
   etp_structure_analysis/   # ETP closure architecture note
   proof_investigation/      # PAUSED — Phase 8 intermediate-term analysis
-proof_generation_pilot/     # active phase
-  methods/{matcher, completion, safe_engine}/  # ported methods
-  scripts/, data/, outputs/, notebooks/        # empty pending the pilot plan
+proof_generation_pilot/     # active phase — pilot_plan.md, proof_spec.md
+  methods/{matcher, completion, safe_engine, vampire, grind}/  # provers + Lean adapters
+  lean_project/                                 # PilotShim Lake project (Lean 4.29.1, requires sibling ETP)
+  scripts/, data/processed/, outputs/           # Phase 1 sampling + orchestration, samples, dataset
 tests/                      # flat layout, repo-root
 archive/                    # archived plans (every completed plan ends up here)
-wandb/, trash/              # local-only state and reversible-removal staging
-outputs/refactor/           # working inventory through the refactor; Phase 8 archives it
+wandb/, trash/              # local-only state and reversible-removal staging (both gitignored)
 ```
 
 `lib/` has no upward dependencies. Everything else can import from `lib/`. Cross-area imports (e.g., embeddings/ importing from pilot/) are not expected.
@@ -89,6 +90,7 @@ See `et_studies/README.md` for the full index. Quick summary:
 - Always report metrics per holdout level separately: L1, L2 one-unknown, L2 both-unknown, L3. Never average across levels — the gaps BETWEEN levels are the headline finding.
 - Save holdout split indices to `data/splits/` so experiments are reproducible. Every experiment log must reference which split file was used.
 - The equation parser (`lib/data/parser.py`) is the critical path — if parsing is wrong, everything downstream is wrong.
+- The repo is public-facing: never hardcode absolute machine paths (`/home/...`, `~/...`) in code or configs. External checkouts resolve as sibling directories of this repo, overridable by `ETP_ROOT` (teorth/equational_theories), `INVARIANTS_ROOT` (`equational_theories_data/invariants`), and `VAMPIRE_BIN`; follow that pattern for any new external dependency.
 - Hardware: RTX 4080, 16 GB VRAM. Monitor and reduce batch size if OOM.
 - Any committed analysis output (parquet, CSV, summary markdown, figure) must be reproducible from committed code in the same commit — a script in the relevant area's `scripts/`. README prose describing the methodology doesn't count as a reproducer. If the analysis was ad-hoc, write the script first, then commit script + outputs together.
 - README.md and CLAUDE.md must stay in sync. When CLAUDE.md changes the active plan, the current stable best, or other project-state facts, update README.md in the same commit. The two should never disagree.
@@ -118,8 +120,8 @@ All `bal_acc` figures are full-corpus re-evaluations from `embeddings/outputs/ru
 ## Data layout (post-refactor)
 
 - `data/raw/etp/` → symlink to the Equational Theories Project's `data/` directory. Source of `equations.txt`, the `Austin_implications.txt` curated subset, and other ETP artifacts.
-- `data/raw/etp_export/` → exports from the ETP project (not symlinked). Currently holds `export_raw_implications_5_9_2026.csv`, the **authoritative ground truth** for every off-diagonal implication pair (see CHANGELOG 2026-05-09).
-- `data/raw/invariants/` → symlink to the sibling invariants project's `assembly/output/` directory.
+- `data/ground_truth/export_raw_implications_5_9_2026.csv.gz` → **authoritative ground truth** for every off-diagonal implication pair: the ETP explorer's raw-implications export, committed gzip-compressed (provenance + sha256 in `data/ground_truth/README.md`; see CHANGELOG 2026-05-09 and 2026-10-26). Codes ±4 = explicitly proven/refuted, ±3 = implied by transitive closure. `lib/scripts/build_pair_table.py` reads it by default.
+- Per-equation invariants come from the sibling `equational_theories_data` checkout (`$INVARIANTS_ROOT`, default `../equational_theories_data/invariants`), read by `lib/scripts/build_equation_invariants.py` and `embeddings/scripts/run_probes.py`. That project is not yet public.
 - `data/processed/` → shared derived caches (parsed-tree PyG `Data` cache, pair-table parquet, equation-invariants parquet). Not committed.
 - `data/splits/` → holdout split index files. Committed, for reproducibility.
 - `et_studies/X/data/` → per-study processed parquets (matcher_proofs, normalized_proofs, true_corpus, etc.). Gitignored.
