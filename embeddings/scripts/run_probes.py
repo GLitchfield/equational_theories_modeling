@@ -41,7 +41,7 @@ from embeddings.src.probing.probes import (  # noqa: E402
     probe_regression_with_mask,
     top_k_nn_accuracy,
 )
-from scripts.build_equation_invariants import (  # noqa: E402
+from lib.scripts.build_equation_invariants import (  # noqa: E402
     COHOM_PRIMES, COHOM_OFFSETS, COHOM_COUNT_BINS, COHOM_MEAN_BINS,
     _bin_count, _bin_mean,
 )
