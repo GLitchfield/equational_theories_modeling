@@ -1,7 +1,7 @@
 [project]
-name = "jepa-equational-implication"
+name = "equational-theories-modeling"
 version = "0.1.0"
-description = "JEPA for equational implication geometry over magmas"
+description = "Equation embeddings, deterministic provers, and proof generation over the Equational Theories Project implication graph"
 requires-python = ">=3.10"
 readme = "README.md"
 
