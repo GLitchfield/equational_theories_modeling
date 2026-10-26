@@ -28,7 +28,7 @@ Cross-references with `data/processed/equation_invariants.parquet`
 to stratify by E2's spine type (Methodology Resolution 4).
 
 Output:
-  - `outputs/analyses/proof_survey/true_characterization.json` (committed)
+  - `et_studies/proof_survey/outputs/true_characterization.json` (committed)
   - `et_studies/proof_survey/data/true_corpus.parquet` (gitignored,
     per-proof records for Task 4's clustering)
 """
@@ -425,7 +425,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--etp-root', default='/home/gavin/git/equational_theories/equational_theories')
     parser.add_argument('--invariants', default='data/processed/equation_invariants.parquet')
     parser.add_argument('--output-summary',
-                        default='outputs/analyses/proof_survey/true_characterization.json')
+                        default='et_studies/proof_survey/outputs/true_characterization.json')
     parser.add_argument('--output-corpus',
                         default='et_studies/proof_survey/data/true_corpus.parquet')
     parser.add_argument('--force', action='store_true')

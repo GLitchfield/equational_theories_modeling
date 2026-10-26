@@ -22,8 +22,8 @@ Task 2 (rule-set) reports:
     numbers per Methodology Resolution 8)
 
 Outputs (committed):
-  outputs/analyses/rewrite_chain_study/tactic_structure.json
-  outputs/analyses/rewrite_chain_study/ruleset_analysis.json
+  et_studies/rewrite_chain_study/outputs/tactic_structure.json
+  et_studies/rewrite_chain_study/outputs/ruleset_analysis.json
 """
 
 from __future__ import annotations
@@ -168,9 +168,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--dataset',
                         default='et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet')
     parser.add_argument('--tactic-output',
-                        default='outputs/analyses/rewrite_chain_study/tactic_structure.json')
+                        default='et_studies/rewrite_chain_study/outputs/tactic_structure.json')
     parser.add_argument('--ruleset-output',
-                        default='outputs/analyses/rewrite_chain_study/ruleset_analysis.json')
+                        default='et_studies/rewrite_chain_study/outputs/ruleset_analysis.json')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 

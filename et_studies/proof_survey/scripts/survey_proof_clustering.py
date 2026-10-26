@@ -26,7 +26,7 @@ Inputs:
     survey_true_proofs.py, since the parquet stores only metadata)
 
 Output:
-  - outputs/analyses/proof_survey/clustering_results.json
+  - et_studies/proof_survey/outputs/clustering_results.json
   - et_studies/proof_survey/data/normalized_proofs.parquet (gitignored,
     one row per proof with the N1..N5 normalized strings).
 """
@@ -193,7 +193,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--etp-root', default='/home/gavin/git/equational_theories/equational_theories')
     parser.add_argument('--output-summary',
-                        default='outputs/analyses/proof_survey/clustering_results.json')
+                        default='et_studies/proof_survey/outputs/clustering_results.json')
     parser.add_argument('--output-corpus',
                         default='et_studies/proof_survey/data/normalized_proofs.parquet')
     parser.add_argument('--force', action='store_true')

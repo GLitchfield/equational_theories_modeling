@@ -17,7 +17,7 @@ Reads:
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
-  outputs/analyses/coverage_measurement/phase4_soundness.json
+  et_studies/coverage_measurement/outputs/phase4_soundness.json
   et_studies/coverage_measurement/data/phase4_disagreements.parquet
     (only written if disagreements found)
 """
@@ -53,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--output-summary',
-                    default='outputs/analyses/coverage_measurement/phase4_soundness.json')
+                    default='et_studies/coverage_measurement/outputs/phase4_soundness.json')
     ap.add_argument('--output-disagreements',
                     default='et_studies/coverage_measurement/data/phase4_disagreements.parquet')
     ap.add_argument('--spot-check-n', type=int, default=50)

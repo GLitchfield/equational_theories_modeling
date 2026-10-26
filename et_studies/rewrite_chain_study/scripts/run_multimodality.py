@@ -16,7 +16,7 @@ Reads:
   data/raw/etp/equations.txt
 
 Writes:
-  outputs/analyses/rewrite_chain_study/task5_multimodality.json
+  et_studies/rewrite_chain_study/outputs/task5_multimodality.json
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--traces',
                     default='et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet')
     ap.add_argument('--output',
-                    default='outputs/analyses/rewrite_chain_study/task5_multimodality.json')
+                    default='et_studies/rewrite_chain_study/outputs/task5_multimodality.json')
     ap.add_argument('--sample-size', type=int, default=500)
     ap.add_argument('--max-target-depth', type=int, default=6,
                     help='skip closed pairs whose shortest proof exceeds this')

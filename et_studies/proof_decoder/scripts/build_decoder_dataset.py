@@ -187,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--dataset-output',
                         default='et_studies/proof_decoder/data/decoder_phase1_dataset.parquet')
     parser.add_argument('--summary-output',
-                        default='outputs/analyses/proof_decoder/dataset_summary.json')
+                        default='et_studies/proof_decoder/outputs/dataset_summary.json')
     parser.add_argument('--holdout-fraction', type=float, default=0.15)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--force', action='store_true')

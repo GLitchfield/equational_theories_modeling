@@ -19,7 +19,7 @@ Outputs:
   - et_studies/matcher_deliverable/data/matcher_proofs.parquet
         per matched pair: eq1_id, eq2_id, orientation, substitution[6],
         lean_proof_term, lean_proof_tactic. Gitignored.
-  - outputs/analyses/matcher/coverage.json
+  - et_studies/matcher_deliverable/outputs/coverage.json
         aggregate counts: directly_proved, full_TRUE, full_FALSE (must be 0).
 """
 
@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--output-proofs',
                         default='et_studies/matcher_deliverable/data/matcher_proofs.parquet')
     parser.add_argument('--output-coverage',
-                        default='outputs/analyses/matcher/coverage.json')
+                        default='et_studies/matcher_deliverable/outputs/coverage.json')
     parser.add_argument('--force', action='store_true')
     parser.add_argument('--progress-every', type=int, default=1_000_000)
     args = parser.parse_args(argv)

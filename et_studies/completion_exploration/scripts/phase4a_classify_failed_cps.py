@@ -33,7 +33,7 @@ Reads:
   data/raw/etp/equations.txt
 
 Writes:
-  outputs/analyses/completion_study/phase4a_failed_cp_classification.json
+  et_studies/completion_exploration/outputs/phase4a_failed_cp_classification.json
   et_studies/completion_exploration/data/phase4a_failed_cps.parquet
 """
 
@@ -93,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--completions',
                     default='et_studies/completion_exploration/data/equation_completion.parquet')
     ap.add_argument('--output-summary',
-                    default='outputs/analyses/completion_study/phase4a_failed_cp_classification.json')
+                    default='et_studies/completion_exploration/outputs/phase4a_failed_cp_classification.json')
     ap.add_argument('--output-records',
                     default='et_studies/completion_exploration/data/phase4a_failed_cps.parquet')
     ap.add_argument('--max-rules', type=int, default=50)

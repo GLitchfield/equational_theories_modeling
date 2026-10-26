@@ -5,7 +5,7 @@ Filters `et_studies/proof_survey/data/normalized_proofs.parquet` (the
 survey's normalized bodies) by joining against
 `et_studies/proof_survey/data/true_corpus.parquet`'s
 `c_rewrite_chain` category mask on `(e1, e2)` keys. Verifies the
-1,636 count against `outputs/analyses/proof_survey/true_characterization.json`.
+1,636 count against `et_studies/proof_survey/outputs/true_characterization.json`.
 
 Output: `et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet`
 with one row per c_rewrite_chain proof:
@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--categories',
                         default='et_studies/proof_survey/data/true_corpus.parquet')
     parser.add_argument('--survey-summary',
-                        default='outputs/analyses/proof_survey/true_characterization.json')
+                        default='et_studies/proof_survey/outputs/true_characterization.json')
     parser.add_argument('--output',
                         default='et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet')
     parser.add_argument('--force', action='store_true')

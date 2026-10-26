@@ -8,7 +8,7 @@ Reads:
   et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet
 
 Outputs:
-  outputs/analyses/rewrite_chain_study/coverage.json   (committed)
+  et_studies/rewrite_chain_study/outputs/coverage.json   (committed)
   et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet
       (gitignored; per-pair result for Tasks 3 and 5)
 """
@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--dataset',
                         default='et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet')
     parser.add_argument('--output-coverage',
-                        default='outputs/analyses/rewrite_chain_study/coverage.json')
+                        default='et_studies/rewrite_chain_study/outputs/coverage.json')
     parser.add_argument('--output-traces',
                         default='et_studies/rewrite_chain_study/data/rewrite_engine_traces.parquet')
     parser.add_argument('--d-max', type=int, default=6)

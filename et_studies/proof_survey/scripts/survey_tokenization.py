@@ -13,7 +13,7 @@ tokens, then reports:
 Methodology Resolution 9: multi-character Unicode identifiers
 (`α`, `β`, `≃`, etc.) are SINGLE tokens, matching Lean's parser.
 
-Output: outputs/analyses/proof_survey/tokenization_results.json
+Output: et_studies/proof_survey/outputs/tokenization_results.json
 """
 
 from __future__ import annotations
@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--input',
                         default='et_studies/proof_survey/data/normalized_proofs.parquet')
     parser.add_argument('--output',
-                        default='outputs/analyses/proof_survey/tokenization_results.json')
+                        default='et_studies/proof_survey/outputs/tokenization_results.json')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 

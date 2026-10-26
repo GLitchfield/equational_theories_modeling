@@ -21,7 +21,7 @@ Reads:
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
-  outputs/analyses/completion_study/phase4b_strong_vs_weak.json
+  et_studies/completion_exploration/outputs/phase4b_strong_vs_weak.json
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--ground-truth',
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--output',
-                    default='outputs/analyses/completion_study/phase4b_strong_vs_weak.json')
+                    default='et_studies/completion_exploration/outputs/phase4b_strong_vs_weak.json')
     ap.add_argument('--force', action='store_true')
     args = ap.parse_args(argv)
 

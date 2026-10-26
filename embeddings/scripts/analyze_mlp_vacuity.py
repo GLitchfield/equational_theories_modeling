@@ -11,7 +11,7 @@ Inputs:
   - ``--checkpoint``     trained MLP checkpoint (from train_pair_classifier.py)
   - ``--embeddings-path``
   - ``--ids-path``
-  - ``--always-wrong``   path to outputs/analyses/failure_overlap/always_wrong_trained.parquet
+  - ``--always-wrong``   path to et_studies/failure_overlap/outputs/always_wrong_trained.parquet
   - ``--split-path``     same 90/10 split used for training
   - ``--pair-table``
   - ``--invariants``     data/processed/equation_invariants.parquet (for spine breakdown)
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--ids-path',
                         default='embeddings/outputs/runs/skip_h128_seed42_diag/equation_embeddings_ids.npy')
     parser.add_argument('--always-wrong',
-                        default='outputs/analyses/failure_overlap/always_wrong_trained.parquet')
+                        default='et_studies/failure_overlap/outputs/always_wrong_trained.parquet')
     parser.add_argument('--split-path',
                         default='data/splits/level1_holdout_seed42.parquet')
     parser.add_argument('--pair-table',

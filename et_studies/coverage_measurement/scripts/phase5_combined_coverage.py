@@ -33,7 +33,7 @@ Reads:
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
-  outputs/analyses/coverage_measurement/phase5_combined_coverage.json
+  et_studies/coverage_measurement/outputs/phase5_combined_coverage.json
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def _abs(p: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--output',
-                    default='outputs/analyses/coverage_measurement/phase5_combined_coverage.json')
+                    default='et_studies/coverage_measurement/outputs/phase5_combined_coverage.json')
     ap.add_argument('--force', action='store_true')
     args = ap.parse_args(argv)
 

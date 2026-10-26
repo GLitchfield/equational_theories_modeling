@@ -641,7 +641,7 @@ def main(argv: list[str] | None = None) -> int:
         help='glob for per-run predictions parquets (default: %(default)s)',
     )
     parser.add_argument(
-        '--output-dir', default='outputs/analyses/failure_overlap',
+        '--output-dir', default='et_studies/failure_overlap/outputs',
         help='output directory for artifacts (default: %(default)s)',
     )
     parser.add_argument(

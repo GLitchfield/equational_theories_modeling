@@ -19,7 +19,7 @@ Reads:
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
-  outputs/analyses/completion_study/phase4_decision_coverage.json
+  et_studies/completion_exploration/outputs/phase4_decision_coverage.json
   et_studies/completion_exploration/data/phase4_per_e1_decisions.parquet
   et_studies/completion_exploration/data/phase4_disagreements.parquet
 """
@@ -137,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--ground-truth',
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--output-summary',
-                    default='outputs/analyses/completion_study/phase4_decision_coverage.json')
+                    default='et_studies/completion_exploration/outputs/phase4_decision_coverage.json')
     ap.add_argument('--output-per-e1',
                     default='et_studies/completion_exploration/data/phase4_per_e1_decisions.parquet')
     ap.add_argument('--output-disagreements',

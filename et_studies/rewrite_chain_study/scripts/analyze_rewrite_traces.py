@@ -25,7 +25,7 @@ Reads:
   data/raw/etp/equations.txt
 
 Writes:
-  outputs/analyses/rewrite_chain_study/task3_intermediate_states.json
+  et_studies/rewrite_chain_study/outputs/task3_intermediate_states.json
 """
 
 from __future__ import annotations
@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--dataset',
                     default='et_studies/rewrite_chain_study/data/rewrite_chain_dataset.parquet')
     ap.add_argument('--output',
-                    default='outputs/analyses/rewrite_chain_study/task3_intermediate_states.json')
+                    default='et_studies/rewrite_chain_study/outputs/task3_intermediate_states.json')
     ap.add_argument('--sample-size', type=int, default=500)
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--d-max', type=int, default=6)

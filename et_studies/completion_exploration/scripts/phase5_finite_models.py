@@ -34,7 +34,7 @@ Reads:
   data/raw/etp_export/export_raw_implications_5_9_2026.csv
 
 Writes:
-  outputs/analyses/completion_study/phase5_finite_models.json
+  et_studies/completion_exploration/outputs/phase5_finite_models.json
   et_studies/completion_exploration/data/phase5_per_e1_finite_models.parquet
 """
 
@@ -201,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--ground-truth',
                     default='data/raw/etp_export/export_raw_implications_5_9_2026.csv')
     ap.add_argument('--output-summary',
-                    default='outputs/analyses/completion_study/phase5_finite_models.json')
+                    default='et_studies/completion_exploration/outputs/phase5_finite_models.json')
     ap.add_argument('--output-records',
                     default='et_studies/completion_exploration/data/phase5_per_e1_finite_models.parquet')
     ap.add_argument('--max-model-size', type=int, default=50)

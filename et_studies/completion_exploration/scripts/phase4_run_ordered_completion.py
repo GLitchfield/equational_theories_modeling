@@ -21,7 +21,7 @@ Reads:
   et_studies/completion_exploration/data/equation_orientability.parquet
 
 Writes:
-  outputs/analyses/completion_study/phase4_ordered_outcomes.json
+  et_studies/completion_exploration/outputs/phase4_ordered_outcomes.json
   et_studies/completion_exploration/data/equation_ordered_completion.parquet
 """
 
@@ -79,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--phase0',
                     default='et_studies/completion_exploration/data/equation_orientability.parquet')
     ap.add_argument('--output-summary',
-                    default='outputs/analyses/completion_study/phase4_ordered_outcomes.json')
+                    default='et_studies/completion_exploration/outputs/phase4_ordered_outcomes.json')
     ap.add_argument('--output-records',
                     default='et_studies/completion_exploration/data/equation_ordered_completion.parquet')
     ap.add_argument('--max-rules', type=int, default=50)

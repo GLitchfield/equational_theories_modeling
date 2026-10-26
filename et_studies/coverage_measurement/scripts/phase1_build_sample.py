@@ -25,7 +25,7 @@ Reads:
 Writes:
   et_studies/coverage_measurement/data/residual.parquet
   et_studies/coverage_measurement/data/sample.parquet
-  outputs/analyses/coverage_measurement/phase1_residual_summary.json
+  et_studies/coverage_measurement/outputs/phase1_residual_summary.json
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--output-sample',
                     default='et_studies/coverage_measurement/data/sample.parquet')
     ap.add_argument('--output-summary',
-                    default='outputs/analyses/coverage_measurement/phase1_residual_summary.json')
+                    default='et_studies/coverage_measurement/outputs/phase1_residual_summary.json')
     ap.add_argument('--sample-size', type=int, default=30,
                     help='N pairs per non-completed E1 (cap at row size)')
     ap.add_argument('--seed', type=int, default=42)

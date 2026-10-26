@@ -6,7 +6,7 @@ the tokens into instruction / structural / content, and report counts.
 Pins the phase-2 vocab number now so it doesn't slip.
 
 This script doesn't change anything else — it's a one-off counting
-pass that produces `outputs/analyses/proof_decoder/phase2_vocab.json`.
+pass that produces `et_studies/proof_decoder/outputs/phase2_vocab.json`.
 
 The rewrite-chain bodies come from the survey's `normalized_proofs.parquet`
 (N4 normalization: variables → v1..v6, equation refs → E1..EN,
@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
                         default='et_studies/proof_survey/data/true_corpus.parquet',
                         help='used to filter normalized_proofs to category==c_rewrite_chain')
     parser.add_argument('--output',
-                        default='outputs/analyses/proof_decoder/phase2_vocab.json')
+                        default='et_studies/proof_decoder/outputs/phase2_vocab.json')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args(argv)
 

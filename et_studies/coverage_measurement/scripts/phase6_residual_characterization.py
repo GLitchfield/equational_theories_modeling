@@ -19,7 +19,7 @@ Reads:
   et_studies/proof_survey/data/true_corpus.parquet
 
 Writes:
-  outputs/analyses/coverage_measurement/phase6_residual_characterization.json
+  et_studies/coverage_measurement/outputs/phase6_residual_characterization.json
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def _abs(p: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--output',
-                    default='outputs/analyses/coverage_measurement/phase6_residual_characterization.json')
+                    default='et_studies/coverage_measurement/outputs/phase6_residual_characterization.json')
     ap.add_argument('--force', action='store_true')
     args = ap.parse_args(argv)
 

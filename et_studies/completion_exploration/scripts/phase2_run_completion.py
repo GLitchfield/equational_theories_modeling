@@ -41,7 +41,7 @@ Reads:
     (Phase 0 output)
 
 Writes:
-  outputs/analyses/completion_study/phase2_completion_outcomes.json
+  et_studies/completion_exploration/outputs/phase2_completion_outcomes.json
     (summary)
   et_studies/completion_exploration/data/equation_completion.parquet
     (per-equation record + serialized rule systems for Phase 3 to read)
@@ -114,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument('--phase0',
                     default='et_studies/completion_exploration/data/equation_orientability.parquet')
     ap.add_argument('--output-summary',
-                    default='outputs/analyses/completion_study/phase2_completion_outcomes.json')
+                    default='et_studies/completion_exploration/outputs/phase2_completion_outcomes.json')
     ap.add_argument('--output-records',
                     default='et_studies/completion_exploration/data/equation_completion.parquet')
     ap.add_argument('--max-rules', type=int, default=50)

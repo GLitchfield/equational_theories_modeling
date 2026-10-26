@@ -28,7 +28,7 @@ Templates we detect:
   - **irregular**: anything else.
 
 Output:
-  - `outputs/analyses/proof_survey/false_characterization.json` —
+  - `et_studies/proof_survey/outputs/false_characterization.json` —
     aggregate counts (committed).
   - `et_studies/proof_survey/data/facts_corpus.parquet` — per-theorem
     structured records (gitignored).
@@ -272,7 +272,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--etp-root', default='/home/gavin/git/equational_theories/equational_theories')
     parser.add_argument('--output-summary',
-                        default='outputs/analyses/proof_survey/false_characterization.json')
+                        default='et_studies/proof_survey/outputs/false_characterization.json')
     parser.add_argument('--output-corpus',
                         default='et_studies/proof_survey/data/facts_corpus.parquet')
     parser.add_argument('--force', action='store_true')

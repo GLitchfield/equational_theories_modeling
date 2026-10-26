@@ -11,7 +11,7 @@ source files to produce a structured inventory of:
     equational_theories/
   - Lean toolchain version
 
-Output: ``outputs/analyses/proof_survey/inventory.json`` plus a
+Output: ``et_studies/proof_survey/outputs/inventory.json`` plus a
 human-readable summary printed to stdout.
 
 This is the formal counting pass behind `orientation_notes.md`.
@@ -219,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
                         help='path to the ETP equational_theories/ Lean source directory')
     parser.add_argument('--registry', default='/home/gavin/git/equational_theories/full_entries.json',
                         help='path to full_entries.json')
-    parser.add_argument('--output', default='outputs/analyses/proof_survey/inventory.json')
+    parser.add_argument('--output', default='et_studies/proof_survey/outputs/inventory.json')
     parser.add_argument('--force', action='store_true', help='overwrite existing inventory')
     args = parser.parse_args(argv)
 

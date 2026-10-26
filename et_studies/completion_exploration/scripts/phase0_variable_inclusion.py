@@ -16,12 +16,12 @@ methods, including ordered completion. They put a ceiling on what any
 completion-based decision procedure can decide.
 
 Cross-method check: do the zero-direction equations overlap with the
-"always-wrong-trained" cluster from outputs/analyses/failure_overlap/?
+"always-wrong-trained" cluster from et_studies/failure_overlap/outputs/?
 If yes, the same equations resist contrastive-embedding training AND
 rewriting-based decision procedures — a hard cluster across methods.
 
 Writes:
-  outputs/analyses/completion_study/phase0_variable_inclusion.json
+  et_studies/completion_exploration/outputs/phase0_variable_inclusion.json
   et_studies/completion_exploration/data/equation_orientability.parquet
 """
 
@@ -70,9 +70,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--equations', default='data/raw/etp/equations.txt')
     ap.add_argument('--always-wrong',
-                    default='outputs/analyses/failure_overlap/always_wrong_trained.parquet')
+                    default='et_studies/failure_overlap/outputs/always_wrong_trained.parquet')
     ap.add_argument('--output-json',
-                    default='outputs/analyses/completion_study/phase0_variable_inclusion.json')
+                    default='et_studies/completion_exploration/outputs/phase0_variable_inclusion.json')
     ap.add_argument('--output-parquet',
                     default='et_studies/completion_exploration/data/equation_orientability.parquet')
     ap.add_argument('--force', action='store_true')
