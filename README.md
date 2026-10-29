@@ -1,47 +1,70 @@
 # Equational Theories Modeling
 
-Machine-learning and symbolic-reasoning experiments on the implication graph of the [Equational Theories Project](https://github.com/teorth/equational_theories) (ETP). The graph records, for every ordered pair of the 4,694 magma laws with at most four operations, whether one law implies the other: 22,028,942 pairs, each settled in Lean.
+Machine learning and automated reasoning experiments on the implication graph of the [Equational Theories Project](https://github.com/teorth/equational_theories) (ETP).
 
-The project has three threads:
+## The problem
 
-- **Equation embeddings.** A JEPA over equation parse trees gives frozen 768-dim per-equation embeddings (v1.0). The v1.0 encoder was trained on all 22M pairs, so its numbers measure how well the embeddings fit the full implication graph: embedding distance alone classifies implications at 0.984 balanced accuracy, and an MLP head on the frozen embeddings reaches 0.9996. On pairs the encoder never saw, the best result is 0.911, from an earlier recipe trained with a 10% pair holdout.
-- **What deterministic methods can prove.** A first-order matcher, a safe rewrite engine, and Knuth–Bendix completion (plain and ordered) are each measured against ETP's ground truth, alongside a characterization of ETP's own proof corpus. These studies are finished and frozen.
-- **Proof generation (active).** A pilot that runs these methods, Vampire, and Lean's `grind`, checks their Lean output, and records per-tactic proof states as training data for a learned prover. It targets the ETP Stage 2 competition format.
+A magma is a set with one binary operation, written `◇`, and no other rules. An equational law is an identity such as `x = y ◇ (x ◇ z)`, which holds in some magmas and not others. Law A implies law B if every magma that satisfies A also satisfies B.
 
-## Status
+The ETP, led by Terence Tao, took the 4,694 laws with at most four operations and settled every question of the form "does A imply B?" with proofs or counterexamples checked in Lean. That gives 22,028,942 labeled pairs, about 37% of them true.
 
-**Active phase: proof generation pilot.** Phase 1 is complete: a 1,000-pair dataset of `(state, tactic, next_state)` transitions from matcher, Vampire, and `grind` on variable-disjoint TRUE implications, with all proofs checked in Lean 4.29.1 through PyPantograph ([synthesis](proof_generation_pilot/outputs/phase1_synthesis.md)). Phase 2 (a broader, structurally varied sample plus a uniform proof-output spec) is in design. The plan is at [`proof_generation_pilot/pilot_plan.md`](proof_generation_pilot/pilot_plan.md) and the spec at [`proof_generation_pilot/proof_spec.md`](proof_generation_pilot/proof_spec.md).
+This repository asks two questions about that graph. Can a neural network learn its structure from the laws' syntax alone? And how much of it can standard automated reasoning methods prove?
+
+## Equation embeddings
+
+The main result is a set of 768-dimensional embeddings, one per law, where the distance between two laws predicts whether one implies the other.
+
+**The model.**
+
+- Each law is parsed into a small tree, and a graph neural network (GATv2) encodes the tree.
+- The setup is JEPA-style. One copy of the encoder reads the first law, and a slowly updated copy (an exponential moving average of the first) reads the second. A small predictor maps the first law's embedding toward where the second's should be. The predictor makes the relation one-directional, as implication is.
+- A margin contrastive loss pulls true pairs together and pushes false pairs apart. The labels come from the ETP, so this is supervised metric learning that borrows the JEPA architecture.
+
+**Training problems and fixes.**
+
+- Embedding distances grew without bound until the loss stopped penalizing false pairs. Normalizing the embeddings to the unit sphere fixed it.
+- The embeddings collapsed onto about 9 effective dimensions. VICReg variance and covariance terms on the encoder output raised that to 31.
+- Late in training, the model drifted toward predicting "true." Small linear heads that predict structural properties of each law, such as its number of variables, stopped the drift.
+- A parameter-free skip connection from the pooled graph features to the output added about 2 points of balanced accuracy.
+- A SIGReg regularizer (from LeJEPA) failed in all three variants tried. The run records under `embeddings/outputs/runs/` explain why.
+
+**Results.**
+
+| Model | Evaluated on | Balanced accuracy |
+|---|---|---:|
+| Earlier recipe | A random 10% of pairs held out from training | 0.911 |
+| v1.0, embedding distance | All 22M pairs, which it trained on | 0.984 |
+| v1.0 embeddings with a 2-layer MLP head | A random 10% of pairs held out from the head (the encoder trained on all pairs) | 0.9996 |
+
+The v1.0 model was trained on every pair so that a failure analysis could study what it gets wrong on pairs it has already seen. Its numbers measure how well the embeddings represent the whole graph. The earlier recipe's 0.911 is the result on pairs the encoder never saw.
+
+The failure analysis found about 32,500 pairs that every trained model gets wrong. Nearly all are true because the second law is so weak that almost every magma satisfies it, so it looks nothing like the first law. A single distance threshold can't represent that, but an MLP on the same embeddings gets 91% of these pairs right, so the information is in the embeddings.
+
+The v1.0 embeddings, the checkpoint that produced them and a model card are in [`embeddings/outputs/embeddings/v1.0/`](embeddings/outputs/embeddings/v1.0/MODEL_CARD.md).
+
+## What automated reasoning can prove
+
+The studies in [`et_studies/`](et_studies/README.md) measure how much of the graph standard symbolic methods settle, checked against the ETP's labels:
+
+- A first-order matcher proves 59.8% of the implications the ETP proved directly, with no false positives.
+- Knuth–Bendix completion, plain and ordered, soundly decides 13.46% of all 22M pairs.
+- The matcher, a safe rewriting engine and completion together prove 6.54% of all true implications. Most of the rest are out of reach of safe rewriting, rather than limited by search time.
+
+## Proof generation
+
+A pilot in [`proof_generation_pilot/`](proof_generation_pilot/) runs these methods, the Vampire prover and Lean's `grind` tactic on true implications, checks every proof in Lean, and records each proof step as training data for a learned prover. Its first phase produced proof steps for 1,000 implications ([summary](proof_generation_pilot/outputs/phase1_synthesis.md)).
 
 ## Repository layout
 
 ```
 data/                       # ground_truth/ (committed ETP labels), splits/ (committed), raw/ + processed/ (local)
-lib/                        # shared primitives (parser, matching, unification, LPO)
-embeddings/                 # JEPA work, frozen v1.0 embeddings, MLP classifier
-et_studies/                 # frozen studies (each with its own outputs/, scripts/, data/, code/)
-proof_generation_pilot/     # active phase: methods/, Lean project, Phase 1 dataset + outputs
-tests/                      # flat test layout, repo-root
-archive/                    # archived plans (every completed plan ends up here)
+lib/                        # shared code: parser, matching, unification, term ordering
+embeddings/                 # the JEPA model, v1.0 embeddings, MLP classifier
+et_studies/                 # the automated reasoning studies, each with its own outputs and scripts
+proof_generation_pilot/     # the proof generation pilot and its Lean project
+tests/                      # test suite
+archive/                    # completed project plans
 ```
-
-Each top-level area has its own README. See [`et_studies/README.md`](et_studies/README.md) for an index of the nine completed studies with one-line headlines.
-
-## Five durable deliverables
-
-1. **v1.0 embeddings** at [`embeddings/outputs/embeddings/v1.0/`](embeddings/outputs/embeddings/v1.0/): frozen 768-dim equation embeddings; see [`MODEL_CARD.md`](embeddings/outputs/embeddings/v1.0/MODEL_CARD.md).
-2. **Proof-corpus characterization** at [`et_studies/proof_survey/outputs/README.md`](et_studies/proof_survey/outputs/README.md): surveyed ETP's 10,676 explicit-implication proofs and 1,698 facts entries; ends with the three-track architecture recommendation for proof generation.
-3. **Rewrite-chain decision** at [`et_studies/rewrite_chain_study/outputs/synthesis_report.md`](et_studies/rewrite_chain_study/outputs/synthesis_report.md): 83.13% deterministic-search coverage at d_max=6, 99.7% rule set within {h, ← h}, 87% unimodal. Recommendation: neural-guided search targeting the 17% hard tail.
-4. **Completion-based decision procedure** at [`et_studies/completion_exploration/outputs/synthesis_report.md`](et_studies/completion_exploration/outputs/synthesis_report.md): KB completion (plain + ordered) as a unified TRUE/FALSE decision procedure. Headline: 13.46% of 22M pairs decided soundly. Ordered completion lifts TRUE coverage 3× (2.13% → 6.06% of GT TRUE); plain KB FALSE coverage is 17.82% of GT FALSE.
-5. **Deterministic-stack coverage measurement** at [`et_studies/coverage_measurement/outputs/coverage_measurement_synthesis.md`](et_studies/coverage_measurement/outputs/coverage_measurement_synthesis.md): combined matcher + rewrite engine + completion soundly covers 6.54% of GT TRUE. Structural ceiling 46.07%; the deterministic stack captures 14.20% of that ceiling. The dominant within-ceiling failure mode is `frontier_died` (85.74%), meaning the limit is structural reachability of safe first-order rewriting, not search budget.
-
-## v1.0 embeddings at a glance
-
-- **Spec:** 4694 × 768 float32, L2-normalized.
-- **Source:** `skip_h128_seed42_diag` ep9 (h=128 GATv2 encoder with parameter-free skip connection from the pooled rep). The source checkpoint ships with the artifact at `embeddings/outputs/embeddings/v1.0/source_checkpoint.pt`.
-- **Training data:** all 22M pairs, with no holdout. Training on everything was a deliberate switch for the failure analysis, which studies what the model gets wrong on pairs it has seen (CHANGELOG 2026-05-09). The numbers below therefore measure fit to the implication graph, not generalization to unseen pairs.
-- **JEPA distance bal_acc:** 0.9840 on the full 22M corpus (0.9841 on the 10% pair split used for the MLP comparison).
-- **Frozen-embedding MLP-head bal_acc:** 0.9996 on that 10% split. The MLP head did not train on those pairs, but the encoder beneath it did. The head recovers 91.37% of the "always-wrong-trained" subset.
-- **Held-out result:** 0.9112 bal_acc on a random 10% pair holdout the encoder never saw, from the earlier `vicreg_encoder_v0p25c0p25_tw1p0_v2` recipe ([results](embeddings/outputs/results/vicreg_encoder_v0p25c0p25_tw1p0_v2.json)). The v1.0 recipe has not been trained with a holdout.
 
 ## Setup
 
@@ -113,8 +136,6 @@ Licensed under the [Apache License 2.0](LICENSE).
 
 This project builds on the [Equational Theories Project](https://github.com/teorth/equational_theories), led by Terence Tao with many contributors. Its equation list and Lean-verified implication results (Apache-2.0) are the data everything here is trained and measured against; the committed ground-truth export is redistributed under that license. If you use the data, please cite the ETP (see its [`CITATION.cff`](https://github.com/teorth/equational_theories/blob/main/CITATION.cff)).
 
-## See also
+## How this was built
 
-- [`CHANGELOG.md`](CHANGELOG.md): deviations from each plan and why.
-- [`archive/`](archive/): every completed plan, archived in chronological order.
-- [`CLAUDE.md`](CLAUDE.md): the project-state guide used for AI-assisted development (operational rules, current state, JEPA internals worth knowing).
+Most of the code was written by Claude Code agents under my direction. [`CLAUDE.md`](CLAUDE.md) holds the rules they worked under, [`CHANGELOG.md`](CHANGELOG.md) records why the plans changed, and [`archive/`](archive/) holds every completed plan.
