@@ -4,6 +4,12 @@ Deviations from the active plan and other notable project decisions, in reverse-
 
 ---
 
+## 2026-10-29 — Corrected how the v1.0 numbers are described
+
+The README, CLAUDE.md, `embeddings/README.md` and the v1.0 model card described 0.9841 as balanced accuracy "on a 10% pair holdout". The v1.0 encoder (`skip_h128_seed42_diag`) was trained with `holdout_path: null`, on all 22M pairs, as were all runs since the 2026-05-09 switch to failure analysis. The 10% split is held out from the MLP and linear heads only, not from the encoder, so 0.9841 and 0.9996 measure fit to the implication graph, not generalization. The documents now say so and give 0.9112 (`vicreg_encoder_v0p25c0p25_tw1p0_v2`, L1 random-pair holdout) as the best result on pairs the encoder never saw. No numbers or artifacts changed.
+
+---
+
 ## 2026-10-26 — Public-release prep
 
 Cleanup ahead of making the repository public. History is kept as-is (a scan of all commits found no credentials).

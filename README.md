@@ -4,7 +4,7 @@ Machine-learning and symbolic-reasoning experiments on the implication graph of 
 
 The project has three threads:
 
-- **Equation embeddings.** A JEPA over equation parse trees, trained on the full implication graph, gives frozen 768-dim per-equation embeddings (v1.0). Embedding distance alone classifies implications at 0.9841 balanced accuracy on a 10% pair holdout; an MLP head on the frozen embeddings reaches 0.9996.
+- **Equation embeddings.** A JEPA over equation parse trees gives frozen 768-dim per-equation embeddings (v1.0). The v1.0 encoder was trained on all 22M pairs, so its numbers measure how well the embeddings fit the full implication graph: embedding distance alone classifies implications at 0.984 balanced accuracy, and an MLP head on the frozen embeddings reaches 0.9996. On pairs the encoder never saw, the best result is 0.911, from an earlier recipe trained with a 10% pair holdout.
 - **What deterministic methods can prove.** A first-order matcher, a safe rewrite engine, and Knuth–Bendix completion (plain and ordered) are each measured against ETP's ground truth, alongside a characterization of ETP's own proof corpus. These studies are finished and frozen.
 - **Proof generation (active).** A pilot that runs these methods, Vampire, and Lean's `grind`, checks their Lean output, and records per-tactic proof states as training data for a learned prover. It targets the ETP Stage 2 competition format.
 
@@ -38,8 +38,10 @@ Each top-level area has its own README. See [`et_studies/README.md`](et_studies/
 
 - **Spec:** 4694 × 768 float32, L2-normalized.
 - **Source:** `skip_h128_seed42_diag` ep9 (h=128 GATv2 encoder with parameter-free skip connection from the pooled rep). The source checkpoint ships with the artifact at `embeddings/outputs/embeddings/v1.0/source_checkpoint.pt`.
-- **JEPA distance bal_acc on the matched 10% pair holdout:** 0.9841 (0.9840 on the full 22M corpus).
-- **Frozen-embedding MLP-head bal_acc on the same holdout:** 0.9996, recovering 91.37% of the "always-wrong-trained" subset.
+- **Training data:** all 22M pairs, with no holdout. Training on everything was a deliberate switch for the failure analysis, which studies what the model gets wrong on pairs it has seen (CHANGELOG 2026-05-09). The numbers below therefore measure fit to the implication graph, not generalization to unseen pairs.
+- **JEPA distance bal_acc:** 0.9840 on the full 22M corpus (0.9841 on the 10% pair split used for the MLP comparison).
+- **Frozen-embedding MLP-head bal_acc:** 0.9996 on that 10% split. The MLP head did not train on those pairs, but the encoder beneath it did. The head recovers 91.37% of the "always-wrong-trained" subset.
+- **Held-out result:** 0.9112 bal_acc on a random 10% pair holdout the encoder never saw, from the earlier `vicreg_encoder_v0p25c0p25_tw1p0_v2` recipe ([results](embeddings/outputs/results/vicreg_encoder_v0p25c0p25_tw1p0_v2.json)). The v1.0 recipe has not been trained with a holdout.
 
 ## Setup
 

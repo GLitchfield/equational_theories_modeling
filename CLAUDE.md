@@ -54,8 +54,10 @@ wandb/, trash/              # local-only state and reversible-removal staging (b
 
 - **Spec:** 4694 × 768 float32, L2-normalized; produced by the context encoder of `skip_h128_seed42_diag` epoch 9.
 - **Files:** `embeddings/outputs/embeddings/v1.0/embeddings.npy` (gitignored, regenerable), `eq_ids.npy` (gitignored), `source_checkpoint.pt` (committed), `MODEL_CARD.md` (committed).
-- **JEPA bal_acc (matched 10% holdout):** 0.9841 (essentially identical to the 0.9840 full-corpus number).
-- **Frozen-embedding MLP head bal_acc (matched holdout):** 0.9996. The MLP recovers 91.37% of the "always-wrong-trained" subset (TRUE-by-vacuity cases the JEPA distance metric structurally couldn't represent).
+- **Trained on all 22M pairs (no holdout).** v1.0 numbers measure fit to the implication graph, not generalization. Never describe them as held-out results.
+- **JEPA bal_acc:** 0.9840 full corpus; 0.9841 on the 10% pair split used for the MLP comparison (held out from the MLP head only, not from the encoder).
+- **Frozen-embedding MLP head bal_acc (same 10% split):** 0.9996. The MLP recovers 91.37% of the "always-wrong-trained" subset (TRUE-by-vacuity cases the JEPA distance metric structurally couldn't represent).
+- **Best true held-out number:** 0.9112 on the L1 random-pair holdout, from `vicreg_encoder_v0p25c0p25_tw1p0_v2` (earlier recipe). The v1.0 recipe has not been trained with a holdout.
 - **Full model card** with sha256s, reproduction recipe, and known limitations: `embeddings/outputs/embeddings/v1.0/MODEL_CARD.md`.
 
 ## JEPA-phase recap (historical)

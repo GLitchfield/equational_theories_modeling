@@ -6,8 +6,9 @@ All JEPA training, MLP classifier head, and frozen v1.0 equation embeddings. The
 
 | Artifact | Metric | Number |
 |---|---|---|
-| v1.0 embeddings (JEPA distance bal_acc, matched holdout) | 0.9841 |
-| Frozen-embedding MLP head (matched holdout) | 0.9996 |
+| v1.0 embeddings (JEPA distance bal_acc, full corpus; encoder trained on all pairs) | 0.9840 |
+| Frozen-embedding MLP head (10% pair split held out from the head, not the encoder) | 0.9996 |
+| Best held-out result (earlier recipe, 10% pair holdout unseen by the encoder) | 0.9112 |
 | MLP recovery on the "always-wrong-trained" subset (TRUE-by-vacuity) | 91.37% |
 | Probing accuracy on cohomology features (linear) | 80–88% |
 

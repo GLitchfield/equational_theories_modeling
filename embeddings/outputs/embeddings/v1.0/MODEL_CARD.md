@@ -26,8 +26,9 @@ doesn't discard pooled features.
 ## TL;DR
 
 - 4,694 equations → 768-dim L2-normalized vectors.
-- **Balanced accuracy 0.9841** on held-out implication pairs using the
-  embedding's pairwise distance alone.
+- **Balanced accuracy 0.984** on the full implication graph using the
+  embedding's pairwise distance alone. The encoder was trained on all
+  22M pairs, so this measures fit, not generalization (see Evaluation).
 - **0.9996** using the same embeddings with a 2-layer MLP head — the
   embeddings carry more signal than the distance metric exploits.
 - Specifically, the MLP recovers 91% of the "TRUE-by-vacuity" cases the
@@ -136,8 +137,9 @@ discarding; in practice it lifted balanced accuracy by ~2pp.
 - **Distance-based implication queries.** Compute
   `||z_e1 − z_e2||` and threshold to predict whether E1 → E2.
 - **Input features for pair classifiers.** Concatenate `z_e1` and
-  `z_e2` and feed to a 2-layer MLP for state-of-the-art accuracy on
-  this corpus (0.9996 balanced accuracy on a 10% holdout). A linear
+  `z_e2` and feed to a 2-layer MLP for the best accuracy on
+  this corpus (0.9996 balanced accuracy on a 10% pair split held out
+  from the MLP head). A linear
   classifier gives up ~5pp and is not recommended.
 - **Probing the corpus's algebraic structure.** Per-equation
   invariants (spine type, variable count, magma signature, low-prime
@@ -163,6 +165,9 @@ discarding; in practice it lifted balanced accuracy by ~2pp.
   encodes E1 → E2 as TRUE or FALSE, derived from Lean-verified
   proofs and counterexamples).
 - Class balance: 37% TRUE, 63% FALSE.
+- All 22M pairs were used for training, with no holdout. The project
+  switched to full-corpus training for a failure analysis of what the
+  model gets wrong on pairs it has seen.
 
 ## Training procedure
 
@@ -192,8 +197,17 @@ history is needed to use the model.
 
 ## Evaluation
 
-All numbers below are on a random 10% pair holdout (seed 42,
-2,202,894 pairs).
+All numbers below are on a random 10% pair split (seed 42,
+2,202,894 pairs). The MLP and linear heads were trained on the other
+90% and never saw these pairs, but the encoder that produced the
+embeddings was trained on all 22M pairs, including this 10%. These
+numbers compare decision rules on the same embeddings; they are not a
+measure of generalization to unseen pairs.
+
+The best result on pairs the encoder never saw is 0.9112 balanced
+accuracy, on a random 10% pair holdout (seed 42), from an earlier recipe
+(`vicreg_encoder_v0p25c0p25_tw1p0_v2`) trained with that holdout
+excluded. The v1.0 recipe has not been trained with a holdout.
 
 | Decision rule | Params | Balanced acc | TRUE recall | FALSE recall |
 |---|---:|---:|---:|---:|
